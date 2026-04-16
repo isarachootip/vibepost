@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  role          Role      @default(CREATOR)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  workspaces    WorkspaceMember[]
+}
+
+enum Role {
+  ADMIN
+  CREATOR
+  VIEWER
+}
+
+model Workspace {
+  id            String    @id @default(cuid())
+  name          String
+  ownerId       String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  members           WorkspaceMember[]
+  socialConnections SocialConnection[]
+  mediaAssets       MediaAsset[]
+  promptConfigs     PromptConfig[]
+  posts             Post[]
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  userId      String
+  workspaceId String
+  user        User      @relation(fields: [userId], references: [id])
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  joinedAt    DateTime  @default(now())
+
+  @@unique([userId, workspaceId])
+}
+
+model SocialConnection {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  platform      Platform
+  accountId     String    // The ID of the page/account on the platform
+  accountName   String
+  accessToken   String
+  refreshToken  String?
+  tokenExpiresAt DateTime?
+  isActive      Boolean   @default(true)
+  workspace     Workspace @relation(fields: [workspaceId], references: [id])
+  postTargets   PostTarget[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum Platform {
+  FACEBOOK
+  INSTAGRAM
+  TWITTER
+  LINKEDIN
+}
+
+model MediaAsset {
+  id          String    @id @default(cuid())
+  workspaceId String
+  fileName    String
+  fileUrl     String
+  fileType    MediaType
+  status      AssetStatus @default(PENDING)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  posts       PostMedia[]
+  createdAt   DateTime  @default(now())
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum AssetStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model PromptConfig {
+  id          String    @id @default(cuid())
+  workspaceId String
+  provider    AIProvider
+  apiKey      String
+  isActive    Boolean   @default(true)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum AIProvider {
+  OPENROUTER
+  OPENAI
+  CLAUDE
+  GEMINI
+}
+
+model Post {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  content        String
+  status         PostStatus @default(DRAFT)
+  scheduledTime  DateTime?
+  publishedTime  DateTime?
+  errorMessage   String?
+  workspace      Workspace @relation(fields: [workspaceId], references: [id])
+  media          PostMedia[]
+  targets        PostTarget[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+enum PostStatus {
+  DRAFT
+  WAITING_APPROVAL
+  APPROVED
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+}
+
+model PostMedia {
+  id           String     @id @default(cuid())
+  postId       String
+  mediaAssetId String
+  post         Post       @relation(fields: [postId], references: [id])
+  mediaAsset   MediaAsset @relation(fields: [mediaAssetId], references: [id])
+
+  @@unique([postId, mediaAssetId])
+}
+
+model PostTarget {
+  id                 String           @id @default(cuid())
+  postId             String
+  socialConnectionId String
+  externalPostId     String?          // The ID from the social platform if successful
+  status             PostStatus       @default(DRAFT)
+  errorMessage       String?
+  post               Post             @relation(fields: [postId], references: [id])
+  socialConnection   SocialConnection @relation(fields: [socialConnectionId], references: [id])
+
+  @@unique([postId, socialConnectionId])
+}
