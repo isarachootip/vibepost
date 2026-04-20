@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma';
 import { Activity, Plus, RefreshCw, Send, Users, Layers, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   // Fetch real data from Hostinger DB via Prisma
   const workspaces = await prisma.workspace.count();

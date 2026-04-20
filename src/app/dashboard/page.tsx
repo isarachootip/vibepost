@@ -3,6 +3,8 @@ import { getActiveWorkspaceContext } from "@/lib/actions/workspace";
 import Link from "next/link";
 import { auth } from "@/auth";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardOverview() {
   const session = await auth();
   const workspace = await getActiveWorkspaceContext();
