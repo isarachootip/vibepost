@@ -5,9 +5,13 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth
   const isOnDashboard = req.nextUrl.pathname.startsWith('/dashboard')
   
-  if (isOnDashboard) {
-    if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
-    return NextResponse.next()
+  if (isOnDashboard && !isLoggedIn) {
+    return NextResponse.redirect(new URL('/login', req.nextUrl))
+  }
+
+  const isOnLogin = req.nextUrl.pathname === '/login'
+  if (isOnLogin && isLoggedIn) {
+    return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
   }
 
   return NextResponse.next()
