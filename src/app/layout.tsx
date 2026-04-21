@@ -1,21 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { PT_Serif } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "@/components/Sidebar";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const serifFont = PT_Serif({
+  variable: "--font-pt-serif",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "AutoPost AI Dashboard",
-  description: "Modern Social Auto-Post Management System",
+  title: "Modern SaaS Dashboard",
+  description: "Enterprise Content Distribution Node",
 };
 
 export default function RootLayout({
@@ -26,11 +21,19 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${serifFont.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex text-zinc-900 bg-zinc-50 dark:bg-zinc-950 dark:text-zinc-50 selection:bg-indigo-500/30">
-        <Sidebar />
-        <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+      <body className="min-h-full flex text-slate-50 bg-[#1E293B] selection:bg-blue-500/30 overflow-hidden relative font-serif">
+        {/* +20% Brighter ambient glows */}
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-[-5%] left-[5%] w-[55%] h-[55%] rounded-full bg-blue-500/40 blur-[140px]"></div>
+          <div className="absolute bottom-[0%] right-[-5%] w-[70%] h-[70%] rounded-full bg-cyan-400/30 blur-[150px]"></div>
+          <div className="absolute top-[25%] left-[25%] w-[50%] h-[50%] rounded-full bg-indigo-500/25 blur-[120px]"></div>
+          
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.06)_1px,transparent_1px)]" style={{ backgroundSize: '32px 32px' }}></div>
+        </div>
+        
+        <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden relative z-10 w-full max-w-[1600px] mx-auto shadow-2xl bg-white/[0.02]">
           {children}
         </div>
       </body>

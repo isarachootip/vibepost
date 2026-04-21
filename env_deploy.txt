@@ -1,0 +1,3 @@
+DATABASE_URL=postgresql://admin:Aom17102544%40@127.0.0.1:5432/contentdb?schema=public
+AUTH_SECRET=a-very-secure-random-string-for-nextauth-demo
+AUTH_TRUST_HOST=true
