@@ -13,12 +13,12 @@ export default async function WorkspaceMembersPage() {
   if (!workspace) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center h-[60vh]">
-        <div className="w-16 h-16 bg-[#1E293B] border border-slate-700/50 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-black/20">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+        <div className="w-16 h-16 bg-[#060a14] border border-amber-500/20 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-black/20">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
         </div>
         <h2 className="text-2xl font-bold text-white mb-2">No Workspace Found</h2>
         <p className="text-slate-400 max-w-sm mb-6">System requires an active workspace node to function. Initialize a new matrix or contact support.</p>
-        <button className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white px-8 py-3 rounded-full font-semibold transition-all shadow-[0_4px_15px_rgba(59,130,246,0.3)]">Create Workspace</button>
+        <button className="bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-black px-8 py-3 rounded-full font-semibold transition-all shadow-[0_4px_15px_rgba(245,158,11,0.3)]">Create Workspace</button>
       </div>
     )
   }
