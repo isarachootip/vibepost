@@ -16,7 +16,7 @@ export default async function WorkspaceMembersPage() {
       if (dbUser) userId = dbUser.id;
     }
 
-    const workspace = await getActiveWorkspaceContext(userId);
+    const workspace = await getActiveWorkspaceContext();
 
     if (!workspace) {
       const createAction = createDefaultWorkspace.bind(null, userId);

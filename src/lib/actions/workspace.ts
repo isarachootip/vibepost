@@ -5,7 +5,15 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
-export async function getActiveWorkspaceContext(userId: string) {
+export async function getActiveWorkspaceContext() {
+  const session = await auth()
+  
+  let userId = session?.user?.id
+  if (!userId && session?.user?.email) {
+    const dbUser = await prisma.user.findUnique({ where: { email: session.user.email } })
+    if (dbUser) userId = dbUser.id
+  }
+  
   if (!userId) return null
 
   // Fetch the first workspace the user is a member of (can be scaled to switchable later)
