@@ -1,4 +1,4 @@
-import { getActiveWorkspaceContext } from "@/lib/actions/workspace";
+import { getActiveWorkspaceContext, createDefaultWorkspace } from "@/lib/actions/workspace";
 import { CreateWorkspaceButton } from "@/components/CreateWorkspaceButton";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
@@ -11,6 +11,8 @@ export default async function WorkspaceMembersPage() {
   const workspace = await getActiveWorkspaceContext();
 
   if (!workspace) {
+    const createAction = createDefaultWorkspace.bind(null, session?.user?.id as string);
+
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center h-[60vh]">
         <div className="w-16 h-16 bg-[#060a14] border border-amber-500/20 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-black/20">
@@ -18,7 +20,9 @@ export default async function WorkspaceMembersPage() {
         </div>
         <h2 className="text-2xl font-bold text-white mb-2">No Workspace Found</h2>
         <p className="text-slate-400 max-w-sm mb-6">System requires an active workspace node to function. Initialize a new matrix or contact support.</p>
-        <CreateWorkspaceButton />
+        <form action={createAction}>
+          <CreateWorkspaceButton />
+        </form>
       </div>
     )
   }

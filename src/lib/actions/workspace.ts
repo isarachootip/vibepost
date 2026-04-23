@@ -28,27 +28,15 @@ export async function getActiveWorkspaceContext() {
   return member?.workspace || null
 }
 
-export async function createDefaultWorkspace() {
-  try {
-    const session = await auth()
-    if (!session?.user) return { error: "Unauthorized (No Session)" }
+export async function createDefaultWorkspace(userId: string) {
+  if (!userId) throw new Error("No user ID provided")
 
-    let userId = session.user.id
-    if (!userId && session.user.email) {
-       const dbUser = await prisma.user.findUnique({ where: { email: session.user.email } })
-       if (dbUser) userId = dbUser.id
-    }
-
-    if (!userId) return { error: `Unauthorized (No User ID found). Session: ${JSON.stringify(session)}` }
-
-    const existing = await prisma.workspaceMember.findFirst({
-      where: { userId: userId }
-    })
-    if (existing) {
-      return { success: true }
-    }
-
-    const workspace = await prisma.workspace.create({
+  const existing = await prisma.workspaceMember.findFirst({
+    where: { userId: userId }
+  })
+  
+  if (!existing) {
+    await prisma.workspace.create({
       data: {
         name: "Main Workspace",
         ownerId: userId,
@@ -59,11 +47,7 @@ export async function createDefaultWorkspace() {
         }
       }
     })
-
-    revalidatePath("/dashboard")
-    return { success: true }
-  } catch (error: any) {
-    console.error("Workspace creation failed:", error)
-    return { error: error.message || "Failed to create workspace" }
   }
+
+  revalidatePath("/dashboard")
 }
