@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
 
 export async function getActiveWorkspaceContext() {
   const session = await auth()
@@ -28,26 +29,33 @@ export async function getActiveWorkspaceContext() {
 }
 
 export async function createDefaultWorkspace() {
-  const session = await auth()
-  if (!session?.user?.id) throw new Error("Unauthorized")
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return { error: "Unauthorized" }
 
-  const existing = await prisma.workspaceMember.findFirst({
-    where: { userId: session.user.id }
-  })
-  if (existing) return existing.workspaceId
+    const existing = await prisma.workspaceMember.findFirst({
+      where: { userId: session.user.id }
+    })
+    if (existing) {
+      return { success: true }
+    }
 
-  const workspace = await prisma.workspace.create({
-    data: {
-      name: "Main Workspace",
-      ownerId: session.user.id,
-      members: {
-        create: {
-          userId: session.user.id
+    const workspace = await prisma.workspace.create({
+      data: {
+        name: "Main Workspace",
+        ownerId: session.user.id,
+        members: {
+          create: {
+            userId: session.user.id
+          }
         }
       }
-    }
-  })
+    })
 
-  revalidatePath("/dashboard")
-  return workspace.id
+    revalidatePath("/dashboard")
+    return { success: true }
+  } catch (error: any) {
+    console.error("Workspace creation failed:", error)
+    return { error: error.message || "Failed to create workspace" }
+  }
 }
