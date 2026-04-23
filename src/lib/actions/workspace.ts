@@ -31,10 +31,18 @@ export async function getActiveWorkspaceContext() {
 export async function createDefaultWorkspace() {
   try {
     const session = await auth()
-    if (!session?.user?.id) return { error: "Unauthorized" }
+    if (!session?.user) return { error: "Unauthorized (No Session)" }
+
+    let userId = session.user.id
+    if (!userId && session.user.email) {
+       const dbUser = await prisma.user.findUnique({ where: { email: session.user.email } })
+       if (dbUser) userId = dbUser.id
+    }
+
+    if (!userId) return { error: `Unauthorized (No User ID found). Session: ${JSON.stringify(session)}` }
 
     const existing = await prisma.workspaceMember.findFirst({
-      where: { userId: session.user.id }
+      where: { userId: userId }
     })
     if (existing) {
       return { success: true }
@@ -43,10 +51,10 @@ export async function createDefaultWorkspace() {
     const workspace = await prisma.workspace.create({
       data: {
         name: "Main Workspace",
-        ownerId: session.user.id,
+        ownerId: userId,
         members: {
           create: {
-            userId: session.user.id
+            userId: userId
           }
         }
       }
