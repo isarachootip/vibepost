@@ -7,13 +7,21 @@ import { auth } from "@/auth";
 export const dynamic = "force-dynamic";
 
 export default async function WorkspaceMembersPage() {
-  const session = await auth();
-  const workspace = await getActiveWorkspaceContext();
+  try {
+    const session = await auth();
+    let userId = session?.user?.id || "";
+    
+    if (!userId && session?.user?.email) {
+      const dbUser = await prisma.user.findUnique({ where: { email: session.user.email } });
+      if (dbUser) userId = dbUser.id;
+    }
 
-  if (!workspace) {
-    const createAction = createDefaultWorkspace.bind(null, session?.user?.id as string);
+    const workspace = await getActiveWorkspaceContext(userId);
 
-    return (
+    if (!workspace) {
+      const createAction = createDefaultWorkspace.bind(null, userId);
+
+      return (
       <div className="flex flex-col items-center justify-center p-12 text-center h-[60vh]">
         <div className="w-16 h-16 bg-[#060a14] border border-amber-500/20 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-black/20">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
@@ -126,4 +134,16 @@ export default async function WorkspaceMembersPage() {
       </div>
     </div>
   );
+  } catch (error: any) {
+    return (
+      <div className="p-12 text-center flex flex-col items-center justify-center h-[60vh]">
+        <h1 className="text-red-500 font-bold text-2xl mb-4">Server Error Debug</h1>
+        <pre className="text-left bg-black/50 border border-red-500/30 p-6 rounded-xl text-sm text-red-300 whitespace-pre-wrap max-w-4xl overflow-auto shadow-2xl">
+          {error?.message || String(error)}
+          {"\n\n"}
+          {error?.stack}
+        </pre>
+      </div>
+    )
+  }
 }
