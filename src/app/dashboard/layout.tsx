@@ -11,7 +11,7 @@ export default async function DashboardLayout({
   const session = await auth();
 
   return (
-    <div className="flex h-screen w-full selection:bg-blue-500/30 overflow-hidden text-zinc-100">
+    <div className="flex h-screen w-full selection:bg-amber-500/30 overflow-hidden text-zinc-100">
       <Sidebar session={session} />
       
       <main className="flex-1 flex flex-col min-w-0 relative">

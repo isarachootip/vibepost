@@ -9,8 +9,8 @@ const serifFont = PT_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Modern SaaS Dashboard",
-  description: "Enterprise Content Distribution Node",
+  title: "VIBE POST",
+  description: "Social Media Management Node",
 };
 
 export default function RootLayout({
@@ -23,12 +23,12 @@ export default function RootLayout({
       lang="en"
       className={`${serifFont.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex text-slate-50 bg-[#1E293B] selection:bg-blue-500/30 overflow-hidden relative font-serif">
-        {/* +20% Brighter ambient glows */}
+      <body className="min-h-full flex text-slate-50 bg-[#060a14] selection:bg-amber-500/30 overflow-hidden relative font-serif">
+        {/* Ambient gold/navy glows */}
         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-[-5%] left-[5%] w-[55%] h-[55%] rounded-full bg-blue-500/40 blur-[140px]"></div>
-          <div className="absolute bottom-[0%] right-[-5%] w-[70%] h-[70%] rounded-full bg-cyan-400/30 blur-[150px]"></div>
-          <div className="absolute top-[25%] left-[25%] w-[50%] h-[50%] rounded-full bg-indigo-500/25 blur-[120px]"></div>
+          <div className="absolute top-[-5%] left-[5%] w-[55%] h-[55%] rounded-full bg-amber-500/15 blur-[140px]"></div>
+          <div className="absolute bottom-[0%] right-[-5%] w-[70%] h-[70%] rounded-full bg-yellow-500/10 blur-[150px]"></div>
+          <div className="absolute top-[25%] left-[25%] w-[50%] h-[50%] rounded-full bg-amber-600/10 blur-[120px]"></div>
           
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.06)_1px,transparent_1px)]" style={{ backgroundSize: '32px 32px' }}></div>
         </div>
