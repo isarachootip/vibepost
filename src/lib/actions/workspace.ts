@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
+import { revalidatePath } from "next/cache"
 
 export async function getActiveWorkspaceContext() {
   const session = await auth()
@@ -24,4 +25,29 @@ export async function getActiveWorkspaceContext() {
   })
 
   return member?.workspace || null
+}
+
+export async function createDefaultWorkspace() {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  const existing = await prisma.workspaceMember.findFirst({
+    where: { userId: session.user.id }
+  })
+  if (existing) return existing.workspaceId
+
+  const workspace = await prisma.workspace.create({
+    data: {
+      name: "Main Workspace",
+      ownerId: session.user.id,
+      members: {
+        create: {
+          userId: session.user.id
+        }
+      }
+    }
+  })
+
+  revalidatePath("/dashboard")
+  return workspace.id
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { getActiveWorkspaceContext } from "@/lib/actions/workspace";
+import { getActiveWorkspaceContext, createDefaultWorkspace } from "@/lib/actions/workspace";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { auth } from "@/auth";
@@ -18,7 +18,9 @@ export default async function WorkspaceMembersPage() {
         </div>
         <h2 className="text-2xl font-bold text-white mb-2">No Workspace Found</h2>
         <p className="text-slate-400 max-w-sm mb-6">System requires an active workspace node to function. Initialize a new matrix or contact support.</p>
-        <button className="bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-black px-8 py-3 rounded-full font-semibold transition-all shadow-[0_4px_15px_rgba(245,158,11,0.3)]">Create Workspace</button>
+        <form action={createDefaultWorkspace}>
+          <button type="submit" className="bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-black px-8 py-3 rounded-full font-semibold transition-all shadow-[0_4px_15px_rgba(245,158,11,0.3)]">Create Workspace</button>
+        </form>
       </div>
     )
   }
