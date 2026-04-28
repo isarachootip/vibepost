@@ -147,12 +147,22 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
         { platform: "LINKEDIN", accountName: "VibePost Inc." }
       ],
       images: []
+    },
+    {
+      id: "demo-4",
+      content: lang === "en" ? "Check out our latest product demo! The new UI makes managing multiple brands a breeze. Watch till the end for a surprise! 🎬🔥" : lang === "cn" ? "来看看我们最新的产品演示！全新的用户界面让管理多个品牌变得轻而易举。看到最后有惊喜！🎬🔥" : "มาดูวีดีโอสาธิตผลิตภัณฑ์ล่าสุดของเรา! UI ใหม่ช่วยให้การจัดการหลายแบรนด์เป็นเรื่องง่าย ดูให้จบมีเซอร์ไพรส์! 🎬🔥",
+      publishedTime: new Date(Date.now() - 1000 * 60 * 60 * 72),
+      channels: [
+        { platform: "FACEBOOK", accountName: "VibePost Brand" },
+        { platform: "INSTAGRAM", accountName: "@vibepost" }
+      ],
+      images: [{ url: "https://videos.pexels.com/video-files/3129957/3129957-hd_1920_1080_25fps.mp4", fileName: "demo_video.mp4", type: "video" }]
     }
   ] : dbPosts;
 
-  const totalPosts = isDemo ? 3 : initialTotal;
+  const totalPosts = isDemo ? 4 : initialTotal;
   const totalChannels = isDemo ? 4 : initialChannels;
-  const totalSuccess = isDemo ? 7 : posts.reduce((sum: number, p: any) => sum + p.channels.length, 0);
+  const totalSuccess = isDemo ? 9 : posts.reduce((sum: number, p: any) => sum + p.channels.length, 0);
 
   const uniquePlatforms = [
     ...new Set(posts.flatMap((p: any) => p.channels.map((c: any) => c.platform))),
@@ -316,10 +326,15 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
           background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(52,170,220,0.1));
           aspect-ratio: 16/9; flex-shrink: 0;
         }
-        .lp-card-img-wrap img {
+        .lp-card-img-wrap img, .lp-card-img-wrap video {
           width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease;
         }
-        .lp-card:hover .lp-card-img-wrap img { transform: scale(1.04); }
+        .lp-card:hover .lp-card-img-wrap img, .lp-card:hover .lp-card-img-wrap video { transform: scale(1.04); }
+        .video-icon {
+          position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6);
+          backdrop-filter: blur(4px); padding: 6px; border-radius: 50%; color: white;
+          display: flex; align-items: center; justify-content: center; z-index: 10;
+        }
         .lp-card-img-placeholder {
           width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
           flex-direction: column; gap: 8px;
@@ -524,15 +539,33 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
                     className="lp-card"
                     style={{ animationDelay: `${Math.min(idx * 0.05, 0.5)}s` }}
                   >
-                    {/* Image */}
+                    {/* Image or Video */}
                     <div className="lp-card-img-wrap">
                       {mainImage ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={mainImage.url}
-                          alt={mainImage.fileName || "Image"}
-                          loading="lazy"
-                        />
+                        mainImage.type === "video" || mainImage.fileName?.endsWith('.mp4') ? (
+                          <>
+                            <video
+                              src={mainImage.url}
+                              autoPlay
+                              muted
+                              loop
+                              playsInline
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="video-icon">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z" />
+                              </svg>
+                            </div>
+                          </>
+                        ) : (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={mainImage.url}
+                            alt={mainImage.fileName || "Image"}
+                            loading="lazy"
+                          />
+                        )
                       ) : (
                         <div className="lp-card-img-placeholder">
                           <svg
