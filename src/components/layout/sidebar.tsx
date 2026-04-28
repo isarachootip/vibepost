@@ -2,12 +2,19 @@ import React from "react";
 import Link from "next/link";
 import { signOut } from "@/auth";
 import { Session } from "next-auth";
+import { WorkspaceSwitcherClient } from "@/components/WorkspaceSwitcherClient";
+import { getUserWorkspaces } from "@/lib/actions/workspace";
+import { cookies } from "next/headers";
 
-export function Sidebar({ session }: { session: Session | null }) {
+export async function Sidebar({ session }: { session: Session | null }) {
+  const workspaces = await getUserWorkspaces();
+  const cookieStore = await cookies();
+  const activeWorkspaceId = cookieStore.get("activeWorkspaceId")?.value || null;
+
   return (
     <aside className="w-64 border-r border-amber-500/10 bg-[#060a14]/95 backdrop-blur-3xl flex flex-col h-full shrink-0 shadow-[4px_0_30px_rgba(0,0,0,0.5)] relative z-20">
       <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-amber-500/20 to-transparent"></div>
-      <div className="p-6 flex items-center gap-3 pb-8">
+      <div className="p-6 flex items-center gap-3 pb-6">
         <div className="w-10 h-10 flex items-center justify-center relative shrink-0">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_8px_rgba(251,191,36,0.2)]">
             <defs>
@@ -27,6 +34,8 @@ export function Sidebar({ session }: { session: Session | null }) {
           <span className="font-serif text-[0.55rem] text-amber-200/60 italic tracking-widest mt-0.5" style={{fontFamily: "'Playfair Display', serif"}}>Social Media Management</span>
         </div>
       </div>
+
+      <WorkspaceSwitcherClient workspaces={workspaces} activeWorkspaceId={activeWorkspaceId} />
 
       <nav className="flex-1 px-4 space-y-1.5 mt-2">
         <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-transparent text-amber-400 font-semibold text-sm transition-all border border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.05)] relative group">
