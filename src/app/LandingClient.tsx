@@ -393,19 +393,28 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
             
             <div className="flex items-center gap-4">
               {/* Language Selector */}
-              <div className="flex bg-white/5 border border-white/10 rounded-full p-1 shadow-inner">
+              <div className="flex bg-white/5 border border-white/10 rounded-full p-1.5 shadow-inner gap-1.5 mr-2">
                 <button 
                   onClick={() => setLang("en")} 
-                  className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${lang === "en" ? "bg-amber-500 text-black" : "text-slate-300 hover:text-white"}`}
-                >EN</button>
+                  title="English"
+                  className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${lang === "en" ? "ring-2 ring-amber-500 scale-110 shadow-[0_0_10px_rgba(245,158,11,0.5)]" : "opacity-50 hover:opacity-100 hover:scale-105"}`}
+                >
+                  <img src="https://flagcdn.com/w40/us.png" alt="English" className="w-full h-full object-cover" />
+                </button>
                 <button 
                   onClick={() => setLang("th")} 
-                  className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${lang === "th" ? "bg-amber-500 text-black" : "text-slate-300 hover:text-white"}`}
-                >TH</button>
+                  title="ภาษาไทย"
+                  className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${lang === "th" ? "ring-2 ring-amber-500 scale-110 shadow-[0_0_10px_rgba(245,158,11,0.5)]" : "opacity-50 hover:opacity-100 hover:scale-105"}`}
+                >
+                  <img src="https://flagcdn.com/w40/th.png" alt="Thai" className="w-full h-full object-cover" />
+                </button>
                 <button 
                   onClick={() => setLang("cn")} 
-                  className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${lang === "cn" ? "bg-amber-500 text-black" : "text-slate-300 hover:text-white"}`}
-                >CN</button>
+                  title="中文"
+                  className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${lang === "cn" ? "ring-2 ring-amber-500 scale-110 shadow-[0_0_10px_rgba(245,158,11,0.5)]" : "opacity-50 hover:opacity-100 hover:scale-105"}`}
+                >
+                  <img src="https://flagcdn.com/w40/cn.png" alt="Chinese" className="w-full h-full object-cover" />
+                </button>
               </div>
 
               <Link href="/dashboard" className="lp-login-btn">
