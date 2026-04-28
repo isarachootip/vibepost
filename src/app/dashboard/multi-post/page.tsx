@@ -145,7 +145,7 @@ export default function MultiPostDemoPage() {
               </div>
             )}
 
-            <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+            <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between flex-wrap gap-4">
               <div className="flex gap-2">
                 <button className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors" title="Add Media">
                   <ImageIcon className="w-5 h-5" />
@@ -160,6 +160,14 @@ export default function MultiPostDemoPage() {
                   <Smile className="w-5 h-5" />
                 </button>
               </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 mr-1 uppercase">Translate:</span>
+                <button onClick={() => setContent("Excited to announce our upcoming feature release! 🚀 Our team has been working hard to bring you the best experience. Stay tuned for more updates. #TechUpdate #Innovation #VibePost")} className="text-[10px] font-bold px-2 py-1 rounded-md bg-white/5 text-slate-300 hover:bg-blue-500 hover:text-white transition-colors border border-white/10">EN</button>
+                <button onClick={() => setContent("ตื่นเต้นมากที่จะประกาศฟีเจอร์ใหม่ที่กำลังจะเปิดตัว! 🚀 ทีมงานของเราทำงานอย่างหนักเพื่อมอบประสบการณ์ที่ดีที่สุดให้กับคุณ รอติดตามอัปเดตเพิ่มเติมได้เลย #TechUpdate #Innovation #VibePost")} className="text-[10px] font-bold px-2 py-1 rounded-md bg-white/5 text-slate-300 hover:bg-blue-500 hover:text-white transition-colors border border-white/10">TH</button>
+                <button onClick={() => setContent("很高兴宣布我们即将推出的新功能！🚀 我们的团队一直在努力为您带来最佳体验。敬请期待更多更新。#TechUpdate #Innovation #VibePost")} className="text-[10px] font-bold px-2 py-1 rounded-md bg-white/5 text-slate-300 hover:bg-blue-500 hover:text-white transition-colors border border-white/10">CN</button>
+              </div>
+
               <span className="text-xs font-medium text-slate-500">
                 {content.length} / 2200
               </span>
