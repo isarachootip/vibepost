@@ -2,10 +2,6 @@
 
 import React, { useState } from "react";
 import { 
-  Facebook, 
-  Instagram, 
-  Twitter, 
-  Linkedin, 
   Image as ImageIcon, 
   Video, 
   Smile, 
@@ -18,11 +14,16 @@ import {
   Bot
 } from "lucide-react";
 
+const FacebookIcon = (props: any) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>;
+const InstagramIcon = (props: any) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>;
+const TwitterIcon = (props: any) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>;
+const LinkedinIcon = (props: any) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>;
+
 const channels = [
-  { id: "facebook", name: "Facebook Page", icon: Facebook, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20", activeBg: "bg-blue-500" },
-  { id: "instagram", name: "Instagram", icon: Instagram, color: "text-pink-500", bg: "bg-pink-500/10", border: "border-pink-500/20", activeBg: "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500" },
-  { id: "twitter", name: "X (Twitter)", icon: Twitter, color: "text-slate-200", bg: "bg-slate-800/50", border: "border-slate-700", activeBg: "bg-slate-800" },
-  { id: "linkedin", name: "LinkedIn", icon: Linkedin, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20", activeBg: "bg-blue-600" },
+  { id: "facebook", name: "Facebook Page", icon: FacebookIcon, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20", activeBg: "bg-blue-500" },
+  { id: "instagram", name: "Instagram", icon: InstagramIcon, color: "text-pink-500", bg: "bg-pink-500/10", border: "border-pink-500/20", activeBg: "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500" },
+  { id: "twitter", name: "X (Twitter)", icon: TwitterIcon, color: "text-slate-200", bg: "bg-slate-800/50", border: "border-slate-700", activeBg: "bg-slate-800" },
+  { id: "linkedin", name: "LinkedIn", icon: LinkedinIcon, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20", activeBg: "bg-blue-600" },
 ];
 
 export default function MultiPostDemoPage() {
@@ -84,20 +85,20 @@ export default function MultiPostDemoPage() {
                     onClick={() => toggleChannel(channel.id)}
                     className={`relative flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300 overflow-hidden group ${
                       isActive 
-                        ? \`border-transparent shadow-lg shadow-black/20\` 
-                        : \`\${channel.border} \${channel.bg} hover:border-white/20\`
+                        ? `border-transparent shadow-lg shadow-black/20` 
+                        : `${channel.border} ${channel.bg} hover:border-white/20`
                     }`}
                   >
                     {isActive && (
-                      <div className={\`absolute inset-0 \${channel.activeBg} opacity-20\`} />
+                      <div className={`absolute inset-0 ${channel.activeBg} opacity-20`} />
                     )}
                     {isActive && (
                       <div className="absolute top-2 right-2 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center shadow-md">
                         <CheckCircle2 className="w-3 h-3 text-white" />
                       </div>
                     )}
-                    <Icon className={\`w-8 h-8 mb-3 transition-transform group-hover:scale-110 \${isActive ? channel.color : 'text-slate-500'}\`} />
-                    <span className={\`text-xs font-semibold \${isActive ? 'text-white' : 'text-slate-400'}\`}>
+                    <Icon className={`w-8 h-8 mb-3 transition-transform group-hover:scale-110 ${isActive ? channel.color : 'text-slate-500'}`} />
+                    <span className={`text-xs font-semibold ${isActive ? 'text-white' : 'text-slate-400'}`}>
                       {channel.name}
                     </span>
                   </button>
@@ -116,7 +117,7 @@ export default function MultiPostDemoPage() {
               </h3>
               <button 
                 onClick={() => setUseAI(!useAI)}
-                className={\`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full transition-colors \${useAI ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'}\`}
+                className={`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full transition-colors ${useAI ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'}`}
               >
                 <Bot className="w-4 h-4" />
                 AI Assist {useAI ? 'ON' : 'OFF'}
@@ -200,7 +201,7 @@ export default function MultiPostDemoPage() {
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white text-xs">V</div>
                         <div>
                           <p className="text-xs font-bold text-white leading-tight">VibePost Brand</p>
-                          <p className="text-[10px] text-slate-500">Just now • <Icon className={\`inline w-3 h-3 \${channel.color}\`} /></p>
+                          <p className="text-[10px] text-slate-500">Just now • <Icon className={`inline w-3 h-3 ${channel.color}`} /></p>
                         </div>
                       </div>
                       <p className="text-sm text-slate-300 leading-relaxed break-words whitespace-pre-wrap line-clamp-3">
@@ -238,13 +239,13 @@ export default function MultiPostDemoPage() {
              <button 
                onClick={handlePost}
                disabled={selectedChannels.length === 0 || isPosting || isSuccess}
-               className={\`w-full py-4 rounded-xl font-bold text-white text-lg transition-all shadow-xl flex items-center justify-center gap-3 \${
+               className={`w-full py-4 rounded-xl font-bold text-white text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${
                  selectedChannels.length === 0 
                   ? 'bg-slate-700/50 cursor-not-allowed text-slate-400' 
                   : isPosting
                     ? 'bg-indigo-600/80 cursor-wait'
                     : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5'
-               }\`}
+               }`}
              >
                {isPosting ? (
                  <>
