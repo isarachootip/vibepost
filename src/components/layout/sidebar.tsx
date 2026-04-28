@@ -14,26 +14,28 @@ export async function Sidebar({ session }: { session: Session | null }) {
   return (
     <aside className="w-64 border-r border-amber-500/10 bg-[#060a14]/95 backdrop-blur-3xl flex flex-col h-full shrink-0 shadow-[4px_0_30px_rgba(0,0,0,0.5)] relative z-20">
       <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-amber-500/20 to-transparent"></div>
-      <div className="p-6 flex items-center gap-3 pb-6">
-        <div className="w-10 h-10 flex items-center justify-center relative shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_8px_rgba(251,191,36,0.2)]">
-            <defs>
-              <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#fef08a" />
-                <stop offset="40%" stopColor="#d97706" />
-                <stop offset="60%" stopColor="#fbbf24" />
-                <stop offset="100%" stopColor="#92400e" />
-              </linearGradient>
-            </defs>
-            <path d="M10,25 L50,85 L90,25 L75,25 L50,60 L25,25 Z" fill="url(#goldGradient)" />
-            <path d="M5,20 L45,80 L55,80 L95,20 L80,20 L50,65 L20,20 Z" fill="url(#goldGradient)" opacity="0.6" />
-          </svg>
+      <Link href="/" className="p-6 flex items-center gap-3 pb-6 hover:opacity-80 transition-opacity cursor-pointer text-left block w-full outline-none">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 flex items-center justify-center relative shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_8px_rgba(251,191,36,0.2)]">
+              <defs>
+                <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#fef08a" />
+                  <stop offset="40%" stopColor="#d97706" />
+                  <stop offset="60%" stopColor="#fbbf24" />
+                  <stop offset="100%" stopColor="#92400e" />
+                </linearGradient>
+              </defs>
+              <path d="M10,25 L50,85 L90,25 L75,25 L50,60 L25,25 Z" fill="url(#goldGradient)" />
+              <path d="M5,20 L45,80 L55,80 L95,20 L80,20 L50,65 L20,20 Z" fill="url(#goldGradient)" opacity="0.6" />
+            </svg>
+          </div>
+          <div className="flex flex-col">
+            <span className="font-serif font-semibold text-lg tracking-[0.25em] bg-gradient-to-r from-amber-100 via-yellow-500 to-amber-700 bg-clip-text text-transparent drop-shadow-sm leading-tight">VIBE POST</span>
+            <span className="font-serif text-[0.55rem] text-amber-200/60 italic tracking-widest mt-0.5" style={{fontFamily: "'Playfair Display', serif"}}>Social Media Management</span>
+          </div>
         </div>
-        <div className="flex flex-col">
-          <span className="font-serif font-semibold text-lg tracking-[0.25em] bg-gradient-to-r from-amber-100 via-yellow-500 to-amber-700 bg-clip-text text-transparent drop-shadow-sm leading-tight">VIBE POST</span>
-          <span className="font-serif text-[0.55rem] text-amber-200/60 italic tracking-widest mt-0.5" style={{fontFamily: "'Playfair Display', serif"}}>Social Media Management</span>
-        </div>
-      </div>
+      </Link>
 
       <WorkspaceSwitcherClient workspaces={workspaces} activeWorkspaceId={activeWorkspaceId} />
 
