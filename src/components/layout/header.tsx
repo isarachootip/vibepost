@@ -2,8 +2,8 @@ import React from "react";
 
 export function Header() {
   return (
-    <header className="h-20 border-b border-white/[0.05] flex items-center justify-between px-8 shrink-0 bg-[#0F172A]/50 backdrop-blur-3xl relative z-20">
-      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
+    <header className="h-20 border-b border-white/10 flex items-center justify-between px-8 shrink-0 bg-white/[0.02] backdrop-blur-xl relative z-20 shadow-sm">
+      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-fuchsia-500/20 to-transparent"></div>
       
       <div className="flex bg-white/5 rounded-full px-4 py-2 border border-white/10 items-center gap-3">
         <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shadow-[0_0_12px_rgba(59,130,246,0.8)]"></div>

@@ -172,30 +172,28 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
     <>
       <style>{`
         :root {
-          --primary: #f59e0b;
-          --primary-dark: #d97706;
-          --primary-light: #fcd34d;
-          --primary-glow: rgba(245,158,11,0.18);
-          --accent: #fbbf24;
-          --sidebar-bg: #060a14;
-          --sidebar-hover: #0f172a;
-          --bg: #020617;
+          --primary: #c084fc;
+          --primary-dark: #9333ea;
+          --primary-light: #e879f9;
+          --primary-glow: rgba(192,132,252,0.18);
+          --accent: #f472b6;
+          --sidebar-bg: rgba(255,255,255,0.02);
+          --sidebar-hover: rgba(255,255,255,0.05);
+          --bg: transparent;
           --card-bg: rgba(255,255,255,0.03);
           --border: rgba(245,158,11,0.15);
           --text-primary: #f8fafc;
           --text-secondary: rgba(255,255,255,0.65);
           --text-muted: rgba(255,255,255,0.4);
-          --radius: 14px;
+          --radius: 16px;
           --radius-sm: 8px;
-          --shadow: 0 4px 24px rgba(0,0,0,0.6);
-          --transition: all 0.22s ease;
+          --shadow: 0 8px 32px rgba(0,0,0,0.3);
+          --transition: all 0.3s ease;
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         .lp-body {
           font-family: 'Noto Sans Thai','Inter',sans-serif;
-          background: var(--bg);
+          background: #030014;
           color: var(--text-primary);
           min-height: 100vh;
           position: relative;
@@ -203,22 +201,40 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
         }
 
         .lp-body::before {
-          content: ''; position: fixed; top: -20%; left: -10%; width: 60%; height: 60%;
-          background: radial-gradient(ellipse, rgba(245,158,11,0.15) 0%, transparent 65%);
-          pointer-events: none; z-index: 0;
+          content: ''; position: fixed; top: -10%; left: -10%; width: 50%; height: 50%;
+          background: radial-gradient(ellipse, rgba(124,58,237,0.2) 0%, transparent 65%);
+          pointer-events: none; z-index: 0; filter: blur(100px);
         }
         .lp-body::after {
-          content: ''; position: fixed; bottom: -10%; right: -10%; width: 55%; height: 55%;
-          background: radial-gradient(ellipse, rgba(252,211,77,0.1) 0%, transparent 65%);
-          pointer-events: none; z-index: 0;
+          content: ''; position: fixed; bottom: -10%; right: -10%; width: 50%; height: 50%;
+          background: radial-gradient(ellipse, rgba(232,121,249,0.2) 0%, transparent 65%);
+          pointer-events: none; z-index: 0; filter: blur(120px);
+        }
+
+        .lp-mesh-3 {
+          position: fixed; top: 20%; right: 10%; width: 40%; height: 40%;
+          background: radial-gradient(ellipse, rgba(6,182,212,0.1) 0%, transparent 65%);
+          pointer-events: none; z-index: 0; filter: blur(100px);
+        }
+        
+        .lp-mesh-4 {
+          position: fixed; bottom: 20%; left: 10%; width: 40%; height: 40%;
+          background: radial-gradient(ellipse, rgba(37,99,235,0.15) 0%, transparent 65%);
+          pointer-events: none; z-index: 0; filter: blur(120px);
+        }
+
+        .lp-noise {
+          position: fixed; inset: 0; pointer-events: none; z-index: 0;
+          background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+          opacity: 0.15; brightness: 100%; contrast: 150%;
         }
 
         .lp-content { position: relative; z-index: 1; }
 
         .lp-nav {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 18px 40px; background: rgba(26,26,46,0.85); backdrop-filter: blur(20px);
-          border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;
+          padding: 18px 40px; background: rgba(255,255,255,0.02); backdrop-filter: blur(20px);
+          border-bottom: 1px solid rgba(255,255,255,0.1); position: sticky; top: 0; z-index: 100;
         }
         .lp-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
         .lp-logo-icon {
@@ -230,13 +246,14 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
         .lp-logo-text span { color: var(--primary-light); }
         .lp-login-btn {
           display: inline-flex; align-items: center; gap: 6px;
-          padding: 9px 20px; border-radius: 50px; background: var(--primary); color: #000;
+          padding: 9px 20px; border-radius: 50px; background: rgba(255,255,255,0.1); color: #fff;
           font-size: 0.85rem; font-weight: 600; text-decoration: none; transition: var(--transition);
-          box-shadow: 0 4px 14px rgba(245,158,11,0.3); border: none; cursor: pointer;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.2); cursor: pointer;
+          backdrop-filter: blur(10px);
         }
         .lp-login-btn:hover {
-          background: var(--primary-light); box-shadow: 0 6px 20px rgba(245,158,11,0.5);
-          transform: translateY(-1px);
+          background: rgba(255,255,255,0.2); box-shadow: 0 6px 20px rgba(192,132,252,0.3);
+          transform: translateY(-1px); border-color: rgba(255,255,255,0.4);
         }
 
         .lp-hero { text-align: center; padding: 80px 40px 60px; max-width: 720px; margin: 0 auto; }
@@ -266,10 +283,10 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
         }
         .lp-stat-chip {
           display: flex; align-items: center; gap: 10px; padding: 14px 24px;
-          background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
-          backdrop-filter: blur(12px); transition: var(--transition);
+          background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius);
+          backdrop-filter: blur(20px); transition: var(--transition); box-shadow: var(--shadow);
         }
-        .lp-stat-chip:hover { border-color: rgba(245,158,11,0.4); transform: translateY(-2px); }
+        .lp-stat-chip:hover { border-color: rgba(255,255,255,0.25); transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
         .lp-stat-icon {
           width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center;
           justify-content: center; font-size: 1.1rem; flex-shrink: 0;
@@ -303,8 +320,8 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
         }
         .lp-count-badge {
           font-size: 0.72rem; font-weight: 700; padding: 3px 10px;
-          background: rgba(245,158,11,0.2); border: 1px solid rgba(245,158,11,0.3);
-          border-radius: 50px; color: var(--primary-light);
+          background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+          border-radius: 50px; color: var(--primary-light); backdrop-filter: blur(10px);
         }
 
         .lp-gallery {
@@ -312,14 +329,15 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
         }
 
         .lp-card {
-          background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
-          overflow: hidden; transition: var(--transition); backdrop-filter: blur(10px);
+          background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius);
+          overflow: hidden; transition: var(--transition); backdrop-filter: blur(24px);
           display: flex; flex-direction: column; animation: cardIn 0.5s ease both;
+          box-shadow: 0 4px 30px rgba(0,0,0,0.1);
         }
         .lp-card:hover {
-          border-color: rgba(245,158,11,0.45);
-          box-shadow: 0 8px 40px rgba(245,158,11,0.1), 0 0 0 1px rgba(245,158,11,0.15);
-          transform: translateY(-4px);
+          border-color: rgba(255,255,255,0.3);
+          box-shadow: 0 8px 40px rgba(192,132,252,0.15), 0 0 0 1px rgba(255,255,255,0.2);
+          transform: translateY(-6px);
         }
         .lp-card-img-wrap {
           position: relative; overflow: hidden;
@@ -358,8 +376,9 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
         .lp-card-date { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
 
         .lp-footer {
-          text-align: center; padding: 32px 20px; border-top: 1px solid var(--border);
-          color: var(--text-muted); font-size: 0.8rem; background: rgba(26,26,46,0.6);
+          text-align: center; padding: 32px 20px; border-top: 1px solid rgba(255,255,255,0.1);
+          color: var(--text-muted); font-size: 0.8rem; background: rgba(255,255,255,0.02);
+          backdrop-filter: blur(10px);
         }
         .lp-footer a { color: var(--primary-light); text-decoration: none; }
         .lp-footer a:hover { color: var(--accent); }
@@ -384,25 +403,28 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
       `}</style>
 
       <div className="lp-body">
+        <div className="lp-mesh-3"></div>
+        <div className="lp-mesh-4"></div>
+        <div className="lp-noise"></div>
         <div className="lp-content">
           {/* NAV */}
           <nav className="lp-nav">
             <a href="/" className="lp-logo">
-              <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 100 100" className="drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]">
+              <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 100 100" className="drop-shadow-[0_0_12px_rgba(168,85,247,0.4)]">
                 <defs>
-                  <linearGradient id="goldGradientLp" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#fef08a" />
-                    <stop offset="40%" stopColor="#d97706" />
-                    <stop offset="60%" stopColor="#fbbf24" />
-                    <stop offset="100%" stopColor="#92400e" />
+                  <linearGradient id="logoGradientLp" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#e879f9" />
+                    <stop offset="40%" stopColor="#c084fc" />
+                    <stop offset="60%" stopColor="#a855f7" />
+                    <stop offset="100%" stopColor="#7e22ce" />
                   </linearGradient>
                 </defs>
-                <path d="M10,25 L50,85 L90,25 L75,25 L50,60 L25,25 Z" fill="url(#goldGradientLp)" />
-                <path d="M5,20 L45,80 L55,80 L95,20 L80,20 L50,65 L20,20 Z" fill="url(#goldGradientLp)" opacity="0.6" />
+                <path d="M10,25 L50,85 L90,25 L75,25 L50,60 L25,25 Z" fill="url(#logoGradientLp)" />
+                <path d="M5,20 L45,80 L55,80 L95,20 L80,20 L50,65 L20,20 Z" fill="url(#logoGradientLp)" opacity="0.6" />
               </svg>
-              <div className="lp-logo-text flex flex-col ml-1" style={{fontFamily: "serif", fontSize: "1.2rem", letterSpacing: "0.15em", color: "#fcd34d"}}>
+              <div className="lp-logo-text flex flex-col ml-1" style={{fontFamily: "serif", fontSize: "1.2rem", letterSpacing: "0.15em", color: "#f5d0fe"}}>
                 VIBE POST
-                <span style={{fontSize: "0.55rem", letterSpacing: "0.2em", color: "rgba(252,211,77,0.7)", marginTop: "-4px"}}>Social Media</span>
+                <span style={{fontSize: "0.55rem", letterSpacing: "0.2em", color: "rgba(245,208,254,0.7)", marginTop: "-4px"}}>Social Media</span>
               </div>
             </a>
             
