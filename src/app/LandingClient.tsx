@@ -172,28 +172,26 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
     <>
       <style>{`
         :root {
-          --primary: #c084fc;
-          --primary-dark: #9333ea;
-          --primary-light: #e879f9;
-          --primary-glow: rgba(192,132,252,0.18);
-          --accent: #f472b6;
-          --sidebar-bg: rgba(255,255,255,0.02);
-          --sidebar-hover: rgba(255,255,255,0.05);
-          --bg: transparent;
-          --card-bg: rgba(255,255,255,0.03);
-          --border: rgba(245,158,11,0.15);
-          --text-primary: #f8fafc;
-          --text-secondary: rgba(255,255,255,0.65);
-          --text-muted: rgba(255,255,255,0.4);
+          --primary: #dc2626; /* red-600 */
+          --primary-dark: #b91c1c; /* red-700 */
+          --primary-light: #ef4444; /* red-500 */
+          --primary-glow: rgba(220, 38, 38, 0.1);
+          --accent: #f87171; /* red-400 */
+          --bg: #ffffff;
+          --card-bg: #ffffff;
+          --border: #e2e8f0; /* slate-200 */
+          --text-primary: #0f172a; /* slate-900 */
+          --text-secondary: #475569; /* slate-600 */
+          --text-muted: #64748b; /* slate-500 */
           --radius: 16px;
           --radius-sm: 8px;
-          --shadow: 0 8px 32px rgba(0,0,0,0.3);
+          --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
           --transition: all 0.3s ease;
         }
 
         .lp-body {
           font-family: 'Noto Sans Thai','Inter',sans-serif;
-          background: #030014;
+          background: var(--bg);
           color: var(--text-primary);
           min-height: 100vh;
           position: relative;
@@ -202,147 +200,130 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
 
         .lp-body::before {
           content: ''; position: fixed; top: -10%; left: -10%; width: 50%; height: 50%;
-          background: radial-gradient(ellipse, rgba(124,58,237,0.2) 0%, transparent 65%);
+          background: radial-gradient(ellipse, rgba(220,38,38,0.05) 0%, transparent 65%);
           pointer-events: none; z-index: 0; filter: blur(100px);
         }
         .lp-body::after {
           content: ''; position: fixed; bottom: -10%; right: -10%; width: 50%; height: 50%;
-          background: radial-gradient(ellipse, rgba(232,121,249,0.2) 0%, transparent 65%);
+          background: radial-gradient(ellipse, rgba(15,23,42,0.03) 0%, transparent 65%);
           pointer-events: none; z-index: 0; filter: blur(120px);
-        }
-
-        .lp-mesh-3 {
-          position: fixed; top: 20%; right: 10%; width: 40%; height: 40%;
-          background: radial-gradient(ellipse, rgba(6,182,212,0.1) 0%, transparent 65%);
-          pointer-events: none; z-index: 0; filter: blur(100px);
-        }
-        
-        .lp-mesh-4 {
-          position: fixed; bottom: 20%; left: 10%; width: 40%; height: 40%;
-          background: radial-gradient(ellipse, rgba(37,99,235,0.15) 0%, transparent 65%);
-          pointer-events: none; z-index: 0; filter: blur(120px);
-        }
-
-        .lp-noise {
-          position: fixed; inset: 0; pointer-events: none; z-index: 0;
-          background-image: url('https://grainy-gradients.vercel.app/noise.svg');
-          opacity: 0.15; brightness: 100%; contrast: 150%;
         }
 
         .lp-content { position: relative; z-index: 1; }
 
         .lp-nav {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 18px 40px; background: rgba(255,255,255,0.02); backdrop-filter: blur(20px);
-          border-bottom: 1px solid rgba(255,255,255,0.1); position: sticky; top: 0; z-index: 100;
+          padding: 18px 40px; background: rgba(255,255,255,0.9); backdrop-filter: blur(20px);
+          border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;
         }
         .lp-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
         .lp-logo-icon {
           width: 38px; height: 38px; background: var(--primary); border-radius: 10px;
           display: flex; align-items: center; justify-content: center;
-          font-size: 18px; box-shadow: 0 4px 16px rgba(88,86,214,0.5);
+          font-size: 18px; box-shadow: 0 4px 16px rgba(220,38,38,0.3);
         }
-        .lp-logo-text { font-size: 1.15rem; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
-        .lp-logo-text span { color: var(--primary-light); }
+        .lp-logo-text { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
+        .lp-logo-text span { color: var(--primary); }
         .lp-login-btn {
           display: inline-flex; align-items: center; gap: 6px;
-          padding: 9px 20px; border-radius: 50px; background: rgba(255,255,255,0.1); color: #fff;
+          padding: 9px 24px; border-radius: 50px; background: var(--primary); color: #fff;
           font-size: 0.85rem; font-weight: 600; text-decoration: none; transition: var(--transition);
-          box-shadow: 0 4px 14px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.2); cursor: pointer;
-          backdrop-filter: blur(10px);
+          box-shadow: 0 4px 14px rgba(220,38,38,0.2); border: none; cursor: pointer;
         }
         .lp-login-btn:hover {
-          background: rgba(255,255,255,0.2); box-shadow: 0 6px 20px rgba(192,132,252,0.3);
-          transform: translateY(-1px); border-color: rgba(255,255,255,0.4);
+          background: var(--primary-dark); box-shadow: 0 6px 20px rgba(220,38,38,0.3);
+          transform: translateY(-1px);
         }
 
         .lp-hero { text-align: center; padding: 80px 40px 60px; max-width: 720px; margin: 0 auto; }
         .lp-hero-badge {
-          display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 50px;
-          background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
-          color: var(--primary-light); font-size: 0.78rem; font-weight: 600;
+          display: inline-flex; align-items: center; gap: 6px; padding: 6px 16px; border-radius: 50px;
+          background: #f1f5f9; border: 1px solid #e2e8f0;
+          color: var(--text-secondary); font-size: 0.78rem; font-weight: 600;
           margin-bottom: 24px; letter-spacing: 0.04em; animation: fadeInDown 0.6s ease;
         }
+        .lp-hero-badge span { color: var(--primary); }
         .lp-hero h1 {
-          font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.15;
-          color: #fff; margin-bottom: 16px; letter-spacing: -0.02em;
+          font-size: clamp(2.5rem, 5vw, 3.8rem); font-weight: 800; line-height: 1.15;
+          color: var(--text-primary); margin-bottom: 20px; letter-spacing: -0.02em;
           animation: fadeInDown 0.7s ease 0.1s both;
         }
         .lp-hero h1 .gradient-text {
-          background: linear-gradient(135deg, var(--primary-light), var(--accent));
+          background: linear-gradient(135deg, var(--primary), var(--primary-dark));
           -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
         .lp-hero p {
-          color: var(--text-secondary); font-size: 1rem; line-height: 1.65;
-          max-width: 520px; margin: 0 auto 36px; animation: fadeInDown 0.7s ease 0.2s both;
+          color: var(--text-secondary); font-size: 1.1rem; line-height: 1.65;
+          max-width: 580px; margin: 0 auto 36px; animation: fadeInDown 0.7s ease 0.2s both;
         }
 
         .lp-stats {
-          display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;
+          display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;
           padding: 0 40px 60px; animation: fadeInDown 0.7s ease 0.3s both;
         }
         .lp-stat-chip {
-          display: flex; align-items: center; gap: 10px; padding: 14px 24px;
-          background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius);
-          backdrop-filter: blur(20px); transition: var(--transition); box-shadow: var(--shadow);
+          display: flex; align-items: center; gap: 16px; padding: 16px 28px;
+          background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+          transition: var(--transition); box-shadow: var(--shadow);
         }
-        .lp-stat-chip:hover { border-color: rgba(255,255,255,0.25); transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+        .lp-stat-chip:hover { border-color: #cbd5e1; transform: translateY(-4px); box-shadow: 0 12px 24px -4px rgba(0,0,0,0.08); }
         .lp-stat-icon {
-          width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center;
-          justify-content: center; font-size: 1.1rem; flex-shrink: 0;
+          width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center;
+          justify-content: center; font-size: 1.3rem; flex-shrink: 0;
         }
-        .lp-stat-icon.purple { background: rgba(245,158,11,0.15); }
-        .lp-stat-icon.blue { background: rgba(252,211,77,0.15); }
-        .lp-stat-icon.green { background: rgba(48,209,88,0.15); }
-        .lp-stat-value { font-size: 1.5rem; font-weight: 800; color: #fff; line-height: 1; }
-        .lp-stat-label { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; }
+        .lp-stat-icon.purple { background: #fef2f2; color: #ef4444; }
+        .lp-stat-icon.blue { background: #eff6ff; color: #3b82f6; }
+        .lp-stat-icon.green { background: #f0fdf4; color: #22c55e; }
+        .lp-stat-value { font-size: 1.75rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+        .lp-stat-label { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
 
         .lp-platforms {
-          display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap;
+          display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;
           padding: 0 40px 48px;
         }
         .lp-platforms-label {
-          font-size: 0.75rem; color: var(--text-muted); margin-right: 4px;
-          font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+          font-size: 0.75rem; color: var(--text-muted); margin-right: 6px;
+          font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
         }
 
         .lp-section { max-width: 1400px; margin: 0 auto; padding: 0 32px 80px; }
         .lp-section-header {
           display: flex; align-items: center; justify-content: space-between;
-          margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+          margin-bottom: 32px; padding-bottom: 16px; border-bottom: 2px solid #f1f5f9;
         }
         .lp-section-title {
-          font-size: 1.25rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px;
+          font-size: 1.5rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 12px;
         }
         .lp-section-title::before {
-          content: ''; display: block; width: 4px; height: 20px;
-          background: linear-gradient(180deg, var(--primary), var(--accent)); border-radius: 2px;
+          content: ''; display: block; width: 6px; height: 24px;
+          background: linear-gradient(180deg, var(--primary), var(--primary-dark)); border-radius: 3px;
         }
         .lp-count-badge {
-          font-size: 0.72rem; font-weight: 700; padding: 3px 10px;
-          background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-          border-radius: 50px; color: var(--primary-light); backdrop-filter: blur(10px);
+          font-size: 0.8rem; font-weight: 700; padding: 4px 12px;
+          background: #f1f5f9; border: 1px solid #e2e8f0;
+          border-radius: 50px; color: var(--text-secondary);
         }
 
         .lp-gallery {
-          display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;
+          display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px;
         }
 
         .lp-card {
-          background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius);
-          overflow: hidden; transition: var(--transition); backdrop-filter: blur(24px);
+          background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+          overflow: hidden; transition: var(--transition);
           display: flex; flex-direction: column; animation: cardIn 0.5s ease both;
-          box-shadow: 0 4px 30px rgba(0,0,0,0.1);
+          box-shadow: var(--shadow);
         }
         .lp-card:hover {
-          border-color: rgba(255,255,255,0.3);
-          box-shadow: 0 8px 40px rgba(192,132,252,0.15), 0 0 0 1px rgba(255,255,255,0.2);
+          border-color: #cbd5e1;
+          box-shadow: 0 16px 32px -4px rgba(0,0,0,0.1);
           transform: translateY(-6px);
         }
         .lp-card-img-wrap {
           position: relative; overflow: hidden;
-          background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(52,170,220,0.1));
+          background: #f8fafc;
           aspect-ratio: 16/9; flex-shrink: 0;
+          border-bottom: 1px solid var(--border);
         }
         .lp-card-img-wrap img, .lp-card-img-wrap video {
           width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease;
@@ -350,38 +331,38 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
         .lp-card:hover .lp-card-img-wrap img, .lp-card:hover .lp-card-img-wrap video { transform: scale(1.04); }
         .video-icon {
           position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6);
-          backdrop-filter: blur(4px); padding: 6px; border-radius: 50%; color: white;
+          backdrop-filter: blur(4px); padding: 8px; border-radius: 50%; color: white;
           display: flex; align-items: center; justify-content: center; z-index: 10;
         }
         .lp-card-img-placeholder {
           width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-          flex-direction: column; gap: 8px;
+          flex-direction: column; gap: 10px;
         }
-        .lp-card-img-placeholder svg { opacity: 0.3; }
-        .lp-card-img-placeholder span { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; }
-        .lp-card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+        .lp-card-img-placeholder svg { opacity: 0.4; color: var(--text-muted); }
+        .lp-card-img-placeholder span { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+        .lp-card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
         .lp-card-content {
-          font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;
+          font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6;
           display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex: 1;
         }
         .lp-card-footer {
-          display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
-          padding-top: 12px; border-top: 1px solid var(--border);
+          display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+          padding-top: 16px; border-top: 1px solid #f1f5f9;
         }
-        .lp-channels { display: flex; gap: 5px; flex-wrap: wrap; }
+        .lp-channels { display: flex; gap: 6px; flex-wrap: wrap; }
         .lp-platform-badge {
-          display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 50px;
-          font-size: 0.68rem; font-weight: 700; color: #fff; white-space: nowrap;
+          display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 50px;
+          font-size: 0.7rem; font-weight: 700; color: #fff; white-space: nowrap;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .lp-card-date { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
+        .lp-card-date { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; white-space: nowrap; }
 
         .lp-footer {
-          text-align: center; padding: 32px 20px; border-top: 1px solid rgba(255,255,255,0.1);
-          color: var(--text-muted); font-size: 0.8rem; background: rgba(255,255,255,0.02);
-          backdrop-filter: blur(10px);
+          text-align: center; padding: 40px 20px; border-top: 1px solid var(--border);
+          color: var(--text-muted); font-size: 0.9rem; background: #f8fafc; font-weight: 500;
         }
-        .lp-footer a { color: var(--primary-light); text-decoration: none; }
-        .lp-footer a:hover { color: var(--accent); }
+        .lp-footer a { color: var(--primary); text-decoration: none; font-weight: 600; transition: var(--transition); }
+        .lp-footer a:hover { color: var(--primary-dark); }
 
         @keyframes fadeInDown {
           from { opacity: 0; transform: translateY(-16px); }
@@ -393,62 +374,59 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
         }
 
         @media (max-width: 640px) {
-          .lp-nav { padding: 14px 20px; }
-          .lp-hero { padding: 48px 20px 40px; }
-          .lp-stats { padding: 0 20px 40px; }
-          .lp-platforms { padding: 0 20px 36px; }
-          .lp-section { padding: 0 16px 60px; }
+          .lp-nav { padding: 16px 20px; }
+          .lp-hero { padding: 56px 20px 48px; }
+          .lp-stats { padding: 0 20px 48px; }
+          .lp-platforms { padding: 0 20px 40px; }
+          .lp-section { padding: 0 16px 64px; }
           .lp-gallery { grid-template-columns: 1fr; }
         }
       `}</style>
 
       <div className="lp-body">
-        <div className="lp-mesh-3"></div>
-        <div className="lp-mesh-4"></div>
-        <div className="lp-noise"></div>
         <div className="lp-content">
           {/* NAV */}
           <nav className="lp-nav">
             <a href="/" className="lp-logo">
-              <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 100 100" className="drop-shadow-[0_0_12px_rgba(168,85,247,0.4)]">
+              <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 100 100" className="drop-shadow-sm">
                 <defs>
                   <linearGradient id="logoGradientLp" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#e879f9" />
-                    <stop offset="40%" stopColor="#c084fc" />
-                    <stop offset="60%" stopColor="#a855f7" />
-                    <stop offset="100%" stopColor="#7e22ce" />
+                    <stop offset="0%" stopColor="#ef4444" />
+                    <stop offset="40%" stopColor="#dc2626" />
+                    <stop offset="60%" stopColor="#b91c1c" />
+                    <stop offset="100%" stopColor="#991b1b" />
                   </linearGradient>
                 </defs>
                 <path d="M10,25 L50,85 L90,25 L75,25 L50,60 L25,25 Z" fill="url(#logoGradientLp)" />
                 <path d="M5,20 L45,80 L55,80 L95,20 L80,20 L50,65 L20,20 Z" fill="url(#logoGradientLp)" opacity="0.6" />
               </svg>
-              <div className="lp-logo-text flex flex-col ml-1" style={{fontFamily: "serif", fontSize: "1.2rem", letterSpacing: "0.15em", color: "#f5d0fe"}}>
+              <div className="lp-logo-text flex flex-col ml-1" style={{fontFamily: "serif", fontSize: "1.2rem", letterSpacing: "0.15em", color: "#0f172a"}}>
                 VIBE POST
-                <span style={{fontSize: "0.55rem", letterSpacing: "0.2em", color: "rgba(245,208,254,0.7)", marginTop: "-4px"}}>Social Media</span>
+                <span style={{fontSize: "0.55rem", letterSpacing: "0.2em", color: "#64748b", marginTop: "-4px"}}>Social Media</span>
               </div>
             </a>
             
             <div className="flex items-center gap-4">
               {/* Language Selector */}
-              <div className="flex bg-white/5 border border-white/10 rounded-full p-1.5 shadow-inner gap-1.5 mr-2">
+              <div className="flex bg-slate-100 border border-slate-200 rounded-full p-1.5 shadow-inner gap-1.5 mr-2">
                 <button 
                   onClick={() => setLang("en")} 
                   title="English"
-                  className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${lang === "en" ? "ring-2 ring-amber-500 scale-110 shadow-[0_0_10px_rgba(245,158,11,0.5)]" : "opacity-50 hover:opacity-100 hover:scale-105"}`}
+                  className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${lang === "en" ? "ring-2 ring-red-500 scale-110 shadow-sm" : "opacity-50 hover:opacity-100 hover:scale-105"}`}
                 >
                   <img src="https://flagcdn.com/w40/us.png" alt="English" className="w-full h-full object-cover" />
                 </button>
                 <button 
                   onClick={() => setLang("th")} 
                   title="ภาษาไทย"
-                  className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${lang === "th" ? "ring-2 ring-amber-500 scale-110 shadow-[0_0_10px_rgba(245,158,11,0.5)]" : "opacity-50 hover:opacity-100 hover:scale-105"}`}
+                  className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${lang === "th" ? "ring-2 ring-red-500 scale-110 shadow-sm" : "opacity-50 hover:opacity-100 hover:scale-105"}`}
                 >
                   <img src="https://flagcdn.com/w40/th.png" alt="Thai" className="w-full h-full object-cover" />
                 </button>
                 <button 
                   onClick={() => setLang("cn")} 
                   title="中文"
-                  className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${lang === "cn" ? "ring-2 ring-amber-500 scale-110 shadow-[0_0_10px_rgba(245,158,11,0.5)]" : "opacity-50 hover:opacity-100 hover:scale-105"}`}
+                  className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${lang === "cn" ? "ring-2 ring-red-500 scale-110 shadow-sm" : "opacity-50 hover:opacity-100 hover:scale-105"}`}
                 >
                   <img src="https://flagcdn.com/w40/cn.png" alt="Chinese" className="w-full h-full object-cover" />
                 </button>
