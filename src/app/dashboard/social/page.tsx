@@ -1,12 +1,13 @@
 import React from "react";
 import { getActiveWorkspaceContext } from "@/lib/actions/workspace";
+import { ConnectSocialModal } from "./ConnectSocialModal";
 
 const PLATFORMS = [
   { id: "FACEBOOK", name: "Facebook Page", color: "bg-blue-600", icon: "F" },
   { id: "INSTAGRAM", name: "Instagram", color: "bg-pink-600", icon: "I" },
   { id: "TWITTER", name: "X (Twitter)", color: "bg-neutral-800", icon: "X" },
   { id: "LINKEDIN", name: "LinkedIn", color: "bg-blue-700", icon: "in" }
-]
+] as const;
 
 export default async function SocialAccountsPage() {
   const workspace = await getActiveWorkspaceContext();
@@ -28,9 +29,15 @@ export default async function SocialAccountsPage() {
         {PLATFORMS.map((platform) => {
           const connection = workspace.socialConnections.find(c => c.platform === platform.id);
           const isConnected = !!connection;
+          
+          const buttonClass = `px-4 py-2 rounded-xl text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] ${
+            isConnected 
+            ? "bg-white/5 text-zinc-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/50 border border-white/10" 
+            : "bg-white text-black hover:bg-neutral-200 focus:ring-white"
+          }`;
 
           return (
-            <div key={platform.id} className="relative rounded-3xl border border-white/10 bg-white/[0.02] p-6 backdrop-blur-xl overflow-hidden group">
+            <div key={platform.id} className="relative rounded-3xl border border-white/10 bg-white/[0.02] p-6 backdrop-blur-xl overflow-hidden group shadow-lg">
               <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-[80px] -mr-16 -mt-16 opacity-20 pointer-events-none transition-opacity ${isConnected ? platform.color.replace('bg-', 'bg-') : 'bg-transparent'}`}></div>
               
               <div className="flex items-start justify-between relative z-10">
@@ -46,15 +53,12 @@ export default async function SocialAccountsPage() {
                   </div>
                 </div>
 
-                <button 
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] ${
-                    isConnected 
-                    ? "bg-white/5 text-zinc-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/50 border border-white/10" 
-                    : "bg-white text-black hover:bg-neutral-200 focus:ring-white"
-                  }`}
-                >
-                  {isConnected ? "Disconnect" : "Connect"}
-                </button>
+                <ConnectSocialModal 
+                  platformId={platform.id}
+                  platformName={platform.name}
+                  isConnected={isConnected}
+                  buttonClass={buttonClass}
+                />
               </div>
 
               {isConnected && connection && (
