@@ -259,21 +259,17 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
                     <div className="flex-1 w-full">
                       <label className="text-xs font-bold text-slate-400 mb-2 block">Schedule Date</label>
                       <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant={"outline"}
-                            className={`w-full justify-start text-left font-normal bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white ${!date && "text-muted-foreground"}`}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4 text-fuchsia-400" />
-                            {date ? format(date, "PPP") : <span>Pick a date</span>}
-                          </Button>
+                        <PopoverTrigger 
+                          className={`w-full justify-start text-left font-normal bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:text-white inline-flex items-center rounded-md text-sm transition-colors h-10 px-4 py-2 ${!date && "text-muted-foreground"}`}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4 text-fuchsia-400" />
+                          {date ? format(date, "PPP") : <span>Pick a date</span>}
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0 bg-[#0f1423] border-white/10 text-white">
                           <Calendar
                             mode="single"
                             selected={date}
                             onSelect={setDate}
-                            initialFocus
                             className="bg-[#0f1423] text-white"
                           />
                         </PopoverContent>
