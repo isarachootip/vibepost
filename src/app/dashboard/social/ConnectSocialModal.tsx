@@ -67,9 +67,7 @@ export function ConnectSocialModal({ platformId, platformName, isConnected, butt
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button className={buttonClass}>Connect</button>
-      </DialogTrigger>
+      <button className={buttonClass} onClick={() => setOpen(true)}>Connect</button>
       <DialogContent className="sm:max-w-[425px] bg-[#0A0F1D] border-white/10 text-slate-100 backdrop-blur-xl">
         <DialogHeader>
           <DialogTitle>Connect {platformName}</DialogTitle>
