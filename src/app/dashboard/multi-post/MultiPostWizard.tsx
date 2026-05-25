@@ -21,7 +21,7 @@ type Connection = {
 
 export function MultiPostWizard({ connections }: { connections: Connection[] }) {
   const [step, setStep] = useState(1);
-  const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
+  const [selectedChannels, setถูกเลือกแล้วChannels] = useState<string[]>([]);
   
   // Step 1 State
   const [topic, setTopic] = useState("");
@@ -31,7 +31,7 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
   // Step 2 & 3 State
   const [isGenerating, setIsGenerating] = useState(false);
   const [variants, setVariants] = useState<string[]>([]);
-  const [selectedContent, setSelectedContent] = useState("");
+  const [selectedContent, setถูกเลือกแล้วContent] = useState("");
   
   // Step 4 State
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -40,7 +40,7 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
   const [error, setError] = useState("");
 
   const toggleChannel = (id: string) => {
-    setSelectedChannels(prev => 
+    setถูกเลือกแล้วChannels(prev => 
       prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
     );
   };
@@ -220,7 +220,7 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
                 <LayoutTemplate className="text-red-600" /> Choose the Best Variant
               </h3>
               <Button variant="outline" className="border-slate-200 text-slate-600 hover:bg-slate-50 font-medium" onClick={() => setStep(1)}>
-                Back to Edit
+                ย้อนกลับ to Edit
               </Button>
             </div>
 
@@ -228,7 +228,7 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
               {variants.map((variant, idx) => (
                 <div 
                   key={idx}
-                  onClick={() => setSelectedContent(variant)}
+                  onClick={() => setถูกเลือกแล้วContent(variant)}
                   className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
                     selectedContent === variant 
                       ? 'border-red-600 bg-red-50 shadow-md ring-4 ring-red-600/10' 
@@ -248,7 +248,7 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
                 <h4 className="text-sm font-bold text-slate-800 mb-3 uppercase tracking-wider border-b border-slate-100 pb-2">Fine-tune your selected content:</h4>
                 <Textarea 
                   value={selectedContent}
-                  onChange={(e) => setSelectedContent(e.target.value)}
+                  onChange={(e) => setถูกเลือกแล้วContent(e.target.value)}
                   className="bg-white border-slate-200 text-slate-800 h-40 resize-none text-lg leading-relaxed focus-visible:ring-red-600 shadow-inner"
                 />
                 
@@ -317,7 +317,7 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
                 setStep(1);
                 setPublishSuccess(false);
                 setTopic("");
-                setSelectedContent("");
+                setถูกเลือกแล้วContent("");
               }}>
                 Create Another Post
               </Button>
