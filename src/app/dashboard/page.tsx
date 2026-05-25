@@ -27,12 +27,12 @@ export default async function DashboardOverview() {
       <header className="flex items-end justify-between">
         <div>
           <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-2 font-heading tracking-tight drop-shadow-sm">
-            System Overview
+            ภาพรวมระบบ
           </h1>
-          <p className="text-slate-500 font-medium tracking-wide">Manage auto-post workflow for <span className="text-blue-600 font-bold">{workspace.name}</span></p>
+          <p className="text-slate-500 font-medium tracking-wide">จัดการระบบโพสต์อัตโนมัติสำหรับ <span className="text-blue-600 font-bold">{workspace.name}</span></p>
         </div>
         <Link href="/dashboard/posts" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-full font-semibold text-sm transition-all shadow-[0_4px_15px_rgba(59,130,246,0.2)] flex items-center gap-2">
-          New Campaign
+          สร้างโพสต์ใหม่
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </Link>
       </header>
@@ -60,7 +60,7 @@ export default async function DashboardOverview() {
               <p className="text-slate-500 text-sm mb-6 max-w-[200px]">ตั้งค่าข้อมูลแบรนด์และกำหนดสไตล์คำสั่ง (Prompts) ให้กับ AI</p>
               
               <Link href="/dashboard/settings" className="px-5 py-2 rounded-full border border-blue-200 text-blue-600 bg-blue-50 text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm z-20">
-                {workspace.promptConfigs.length > 0 ? "Edit Configs" : "Start Setup"}
+                {workspace.promptConfigs.length > 0 ? "แก้ไขการตั้งค่า" : "เริ่มตั้งค่า"}
               </Link>
             </div>
 

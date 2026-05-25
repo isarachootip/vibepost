@@ -5,7 +5,7 @@ import { getActiveWorkspaceContext } from "@/lib/actions/workspace";
 import { revalidatePath } from "next/cache";
 
 export async function connectSocialPlatform(data: {
-  platform: "FACEBOOK" | "INSTAGRAM" | "TWITTER" | "LINKEDIN";
+  platform: "FACEBOOK" | "INSTAGRAM" | "TWITTER" | "LINKEDIN" | "LINE" | "TIKTOK";
   accountName: string;
   accountId: string;
   accessToken: string;
@@ -22,6 +22,7 @@ export async function connectSocialPlatform(data: {
       where: {
         workspaceId: workspace.id,
         platform: data.platform,
+        accountId: data.accountId,
       },
     });
 
@@ -57,7 +58,7 @@ export async function connectSocialPlatform(data: {
   }
 }
 
-export async function disconnectSocialPlatform(platform: "FACEBOOK" | "INSTAGRAM" | "TWITTER" | "LINKEDIN") {
+export async function disconnectSocialPlatform(connectionId: string) {
   const workspace = await getActiveWorkspaceContext();
 
   if (!workspace) {
@@ -65,10 +66,10 @@ export async function disconnectSocialPlatform(platform: "FACEBOOK" | "INSTAGRAM
   }
 
   try {
-    await prisma.socialConnection.deleteMany({
+    await prisma.socialConnection.delete({
       where: {
+        id: connectionId,
         workspaceId: workspace.id,
-        platform: platform,
       },
     });
 

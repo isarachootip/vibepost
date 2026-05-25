@@ -18,14 +18,14 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 ease-out max-w-5xl mx-auto pb-12">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-2">Workspace Settings</h1>
-        <p className="text-slate-500 text-sm">Configure how your content is generated using AI providers.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-2">การตั้งค่าพื้นที่ทำงาน</h1>
+        <p className="text-slate-500 text-sm">ตั้งค่าผู้ให้บริการ AI ที่ใช้ในการสร้างคอนเทนต์</p>
       </header>
 
       <div className="rounded-3xl border border-slate-200 bg-white p-6 md:p-8 ">
         <h2 className="text-lg font-medium text-slate-900 mb-6 flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
-          AI API Configuration
+          การตั้งค่า AI API
         </h2>
         
         <div className="space-y-6">
@@ -40,7 +40,7 @@ export default async function SettingsPage() {
                     <div className="flex items-center gap-3 mb-1">
                       <h3 className="font-semibold text-slate-900">{provider.name}</h3>
                       {isConfigured && (
-                         <span className="px-2 py-0.5 rounded-md bg-green-500/10 text-green-600 text-xs font-medium border border-green-500/20">Active</span>
+                         <span className="px-2 py-0.5 rounded-md bg-green-500/10 text-green-600 text-xs font-medium border border-green-500/20">ใช้งานอยู่</span>
                       )}
                     </div>
                     <p className="text-sm text-slate-500">{provider.description}</p>
@@ -51,7 +51,7 @@ export default async function SettingsPage() {
                       <div className="relative flex-1">
                         <input 
                           type="password" 
-                          placeholder={isConfigured ? "Wait, API Key is already set (••••••••)" : "Enter API Key..."}
+                          placeholder={isConfigured ? "มีการตั้งค่า API Key แล้ว (••••••••)" : "ใส่ API Key..."}
                           className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
@@ -67,15 +67,15 @@ export default async function SettingsPage() {
         </div>
       </div>
       
-      {/* Danger Zone */}
+      {/* พื้นที่อันตราย */}
       <div className="rounded-3xl border border-red-200 bg-red-500/5 p-6 md:p-8  mt-8">
-         <h2 className="text-lg font-medium text-red-600 mb-2">Danger Zone</h2>
-         <p className="text-sm text-red-600/70 mb-6">Irreversible actions for this workspace.</p>
+         <h2 className="text-lg font-medium text-red-600 mb-2">พื้นที่อันตราย</h2>
+         <p className="text-sm text-red-600/70 mb-6">การกระทำที่ไม่สามารถย้อนกลับได้สำหรับพื้นที่ทำงานนี้</p>
          
          <div className="flex items-center justify-between p-4 rounded-2xl border border-red-200 bg-slate-50">
             <div>
-               <h4 className="text-slate-900 text-sm font-medium">Delete Workspace</h4>
-               <p className="text-xs text-slate-500 mt-1">Permanently remove this workspace and all its data.</p>
+               <h4 className="text-slate-900 text-sm font-medium">ลบพื้นที่ทำงาน</h4>
+               <p className="text-xs text-slate-500 mt-1">ลบพื้นที่ทำงานนี้และข้อมูลทั้งหมดอย่างถาวร</p>
             </div>
             <button className="bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
                Delete Everything

@@ -8,13 +8,12 @@ import { Button } from "@/components/ui/button";
 import { connectSocialPlatform, disconnectSocialPlatform } from "@/lib/actions/social";
 
 interface ConnectSocialModalProps {
-  platformId: "FACEBOOK" | "INSTAGRAM" | "TWITTER" | "LINKEDIN";
+  platformId: "FACEBOOK" | "INSTAGRAM" | "TWITTER" | "LINKEDIN" | "LINE" | "TIKTOK";
   platformName: string;
-  isConnected: boolean;
   buttonClass: string;
 }
 
-export function ConnectSocialModal({ platformId, platformName, isConnected, buttonClass }: ConnectSocialModalProps) {
+export function ConnectSocialModal({ platformId, platformName, buttonClass }: ConnectSocialModalProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [accountName, setAccountName] = useState("");
@@ -45,29 +44,11 @@ export function ConnectSocialModal({ platformId, platformName, isConnected, butt
     setIsLoading(false);
   };
 
-  const handleDisconnect = async () => {
-    if (!confirm(`Are you sure you want to disconnect ${platformName}?`)) return;
-    
-    setIsLoading(true);
-    await disconnectSocialPlatform(platformId);
-    setIsLoading(false);
-  };
 
-  if (isConnected) {
-    return (
-      <button 
-        onClick={handleDisconnect}
-        disabled={isLoading}
-        className={buttonClass}
-      >
-        {isLoading ? "Disconnecting..." : "Disconnect"}
-      </button>
-    );
-  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <button className={buttonClass} onClick={() => setOpen(true)}>Connect</button>
+      <button className={buttonClass} onClick={() => setOpen(true)}>+ Add Account</button>
       <DialogContent className="sm:max-w-[425px] bg-[#0A0F1D] border-white/10 text-slate-100 backdrop-blur-xl">
         <DialogHeader>
           <DialogTitle>Connect {platformName}</DialogTitle>

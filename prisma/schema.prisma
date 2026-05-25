@@ -70,6 +70,8 @@ enum Platform {
   INSTAGRAM
   TWITTER
   LINKEDIN
+  LINE
+  TIKTOK
 }
 
 model MediaAsset {

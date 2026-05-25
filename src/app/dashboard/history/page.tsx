@@ -57,6 +57,26 @@ const PLATFORM_CONFIG: Record<
       </svg>
     ),
   },
+  LINE: {
+    label: "LINE",
+    color: "text-green-500",
+    bgGlow: "rgba(34,197,94,0.15)",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+        <path d="M24 10.3c0-4.4-4.5-8-10.1-8C8.3 2.3 3.8 5.9 3.8 10.3c0 3.9 3.2 7.2 7.7 7.9-.3 1.1-.9 2.7-.9 2.8-.1.3.1.5.3.6.1 0 .2.1.3.1.2 0 .4-.1.6-.2 1.2-.8 6.4-3.8 8.4-6 1.7-1.3 2.8-3.1 2.8-5.2z"/>
+      </svg>
+    ),
+  },
+  TIKTOK: {
+    label: "TikTok",
+    color: "text-slate-900",
+    bgGlow: "rgba(15,23,42,0.15)",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+        <path d="M12.5 0v16.1c0 2.2-1.8 3.9-3.9 3.9s-3.9-1.8-3.9-3.9 1.8-3.9 3.9-3.9v-3c-3.9 0-7 3.1-7 7s3.1 7 7 7 7-3.1 7-7V4.3c2.4 1.8 5.5 2 6.4 2v-3c-1.5 0-4.3-.4-6.5-2.3z"/>
+      </svg>
+    ),
+  }
 };
 
 function formatDate(date: Date | null) {

@@ -47,13 +47,13 @@ export default async function WorkspaceMembersPage() {
       <header className="flex items-end justify-between">
         <div>
           <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-2 font-heading tracking-tight drop-shadow-sm">
-            Workspace & Team
+            พื้นที่ทำงานและทีม
           </h1>
-          <p className="text-slate-600 font-medium tracking-wide">Manage access and settings for <span className="text-blue-600 font-bold">{workspace.name}</span></p>
+          <p className="text-slate-600 font-medium tracking-wide">จัดการสิทธิ์การเข้าถึงและการตั้งค่าสำหรับ <span className="text-blue-600 font-bold">{workspace.name}</span></p>
         </div>
         <button className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-slate-900 px-6 py-2.5 rounded-full font-semibold text-sm transition-all shadow-[0_4px_15px_rgba(59,130,246,0.3)] flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
-          Invite Member
+          เชิญสมาชิก
         </button>
       </header>
 
@@ -61,16 +61,16 @@ export default async function WorkspaceMembersPage() {
         
         {/* Workspace Info Card */}
         <div className="rounded-[2rem] border border-slate-200 bg-white p-8  shadow-xl shadow-black/20 h-max">
-          <h3 className="text-xl font-bold text-slate-900 mb-6 drop-shadow-sm">Workspace Details</h3>
+          <h3 className="text-xl font-bold text-slate-900 mb-6 drop-shadow-sm">รายละเอียดพื้นที่ทำงาน</h3>
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Workspace Name</label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">ชื่อพื้นที่ทำงาน</label>
               <div className="mt-1 text-lg font-semibold text-slate-900 bg-white border border-slate-200 rounded-xl px-4 py-3">
                 {workspace.name}
               </div>
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Workspace ID</label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">รหัสพื้นที่ทำงาน</label>
               <div className="mt-1 text-sm font-code text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-mono">
                 {workspace.id}
               </div>
@@ -88,7 +88,7 @@ export default async function WorkspaceMembersPage() {
         <div className="lg:col-span-2 rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl shadow-black/20 relative overflow-hidden ">
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl pointer-events-none"></div>
           
-          <h3 className="text-xl font-bold text-slate-900 mb-6 drop-shadow-sm">Team Members ({members.length})</h3>
+          <h3 className="text-xl font-bold text-slate-900 mb-6 drop-shadow-sm">สมาชิกในทีม ({members.length})</h3>
           
           <div className="space-y-4 relative z-10">
             {members.map((member) => (
@@ -99,9 +99,9 @@ export default async function WorkspaceMembersPage() {
                   </div>
                   <div>
                     <h4 className="text-base font-bold text-slate-900 leading-tight">
-                      {member.user.name || "Unnamed User"}
+                      {member.user.name || "ผู้ใช้ไม่มีชื่อ"}
                       {member.userId === workspace.ownerId && (
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-600 border border-amber-500/30 uppercase">Owner</span>
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-600 border border-amber-500/30 uppercase">เจ้าของ</span>
                       )}
                     </h4>
                     <p className="text-sm text-slate-500">{member.user.email}</p>
@@ -114,7 +114,7 @@ export default async function WorkspaceMembersPage() {
                   </div>
                   
                   {member.userId !== workspace.ownerId && (
-                    <button className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:text-red-600 hover:bg-red-400/10 transition-colors" title="Remove Member">
+                    <button className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:text-red-600 hover:bg-red-400/10 transition-colors" title="ลบสมาชิก">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                     </button>
                   )}
@@ -126,7 +126,7 @@ export default async function WorkspaceMembersPage() {
           <div className="mt-6 pt-6 border-t border-slate-200">
             <div className="flex items-center gap-4 p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-200">
                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-               <p className="text-sm">Additional roles and permission levels will be active after phase 2 deployment. Currently all team members have CREATOR access by default.</p>
+               <p className="text-sm">ระดับสิทธิ์การเข้าถึงแบบละเอียดจะเปิดให้ใช้งานในเฟสที่ 2 ปัจจุบันสมาชิกในทีมทุกคนจะได้รับสิทธิ์ CREATOR เป็นค่าเริ่มต้น</p>
             </div>
           </div>
         </div>
