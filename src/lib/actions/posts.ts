@@ -146,7 +146,7 @@ export async function generateAIPost(topic: string, variantCount: number) {
     return { success: true, variants };
   } catch (error: any) {
     console.error("AI Generation Error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message, variants: [] };
   }
 }
 
