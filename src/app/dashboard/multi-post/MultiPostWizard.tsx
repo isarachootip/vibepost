@@ -175,11 +175,21 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
 
               <div>
                 <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">3. Attach Media</h3>
-                <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-slate-300 transition-colors h-32 flex flex-col items-center justify-center bg-slate-50 cursor-pointer">
+                <label className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-slate-300 transition-colors h-32 flex flex-col items-center justify-center bg-slate-50 cursor-pointer block">
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setImageUrl(URL.createObjectURL(e.target.files[0]));
+                      }
+                    }} 
+                  />
                   <ImageIcon className="w-8 h-8 text-slate-400 mb-2" />
                   <p className="text-sm font-medium text-slate-600">Click to upload image/video</p>
-                  <p className="text-xs text-slate-400 mt-1">(Demo: using placeholder image)</p>
-                </div>
+                  <p className="text-xs text-slate-400 mt-1">(Select a file from your computer)</p>
+                </label>
                 {imageUrl && (
                   <div className="mt-4 relative w-full h-24 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
                     <img src={imageUrl} alt="Attached" className="w-full h-full object-cover" />

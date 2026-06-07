@@ -31,7 +31,7 @@ export default async function DashboardOverview() {
           </h1>
           <p className="text-slate-500 font-medium tracking-wide">จัดการระบบโพสต์อัตโนมัติสำหรับ <span className="text-blue-600 font-bold">{workspace.name}</span></p>
         </div>
-        <Link href="/dashboard/posts" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-full font-semibold text-sm transition-all shadow-[0_4px_15px_rgba(59,130,246,0.2)] flex items-center gap-2">
+        <Link href="/dashboard/multi-post" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-full font-semibold text-sm transition-all shadow-[0_4px_15px_rgba(59,130,246,0.2)] flex items-center gap-2">
           สร้างโพสต์ใหม่
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </Link>
@@ -95,7 +95,7 @@ export default async function DashboardOverview() {
       {/* Metrics Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: "Total Posts", value: workspace._count.posts, link: "/dashboard/posts", color: "text-blue-600" },
+          { label: "Total Posts", value: workspace._count.posts, link: "/dashboard/history", color: "text-blue-600" },
           { label: "Connected Accounts", value: workspace.socialConnections.length, link: "/dashboard/social", color: "text-purple-600" },
           { label: "Team Members", value: workspace._count.members, link: "/dashboard/workspaces", color: "text-slate-600" },
           { label: "AI Configs", value: workspace.promptConfigs.length, link: "/dashboard/settings", color: "text-emerald-600" }
