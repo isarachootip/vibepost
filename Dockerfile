@@ -17,7 +17,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Now schema.prisma exists - run generate + build
-RUN npm install -g npm@latest && npx prisma generate && npm run build
+RUN npx prisma generate && npm run build
 
 # Production image
 FROM base AS runner
