@@ -22,7 +22,7 @@ export async function getPublishedPostsForLanding(): Promise<{
 }> {
   try {
     const posts = await prisma.post.findMany({
-      where: { status: "PUBLISHED" },
+      where: { status: "PUBLISHED", isDeleted: false },
       orderBy: { publishedTime: "desc" },
       take: 60,
       include: {
@@ -89,7 +89,7 @@ import { revalidatePath } from "next/cache";
  * Super Admin (User.role=ADMIN) is treated as workspace ADMIN.
  * Returns null if not a member.
  */
-async function getUserWorkspaceRole(workspaceId: string): Promise<"ADMIN" | "MEMBER" | "VIEWER" | null> {
+export async function getUserWorkspaceRole(workspaceId: string): Promise<"ADMIN" | "MEMBER" | "VIEWER" | null> {
   const session = await auth();
   if (!session?.user?.email) return null;
 
@@ -280,6 +280,160 @@ export async function createScheduledPost(data: {
   } catch (error: any) {
     console.error("Create Post Error:", error);
     return { success: false, error: error.message };
+  }
+}
+
+export async function movePostToTrash(postId: string) {
+  try {
+    const session = await auth();
+    if (!session?.user) throw new Error("Unauthorized");
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { workspaceId: true }
+    });
+    if (!post) throw new Error("Post not found");
+
+    const role = await getUserWorkspaceRole(post.workspaceId);
+    if (role === "VIEWER") {
+      throw new Error("สิทธิ์ไม่เพียงพอ — Viewer ไม่สามารถย้ายโพสต์ลงถังขยะได้");
+    }
+
+    await prisma.post.update({
+      where: { id: postId },
+      data: { isDeleted: true }
+    });
+
+    revalidatePath("/dashboard/history");
+    revalidatePath("/dashboard/trash");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function restorePostFromTrash(postId: string) {
+  try {
+    const session = await auth();
+    if (!session?.user) throw new Error("Unauthorized");
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { workspaceId: true }
+    });
+    if (!post) throw new Error("Post not found");
+
+    const role = await getUserWorkspaceRole(post.workspaceId);
+    if (role === "VIEWER") {
+      throw new Error("สิทธิ์ไม่เพียงพอ — Viewer ไม่สามารถกู้คืนโพสต์ได้");
+    }
+
+    await prisma.post.update({
+      where: { id: postId },
+      data: { isDeleted: false }
+    });
+
+    revalidatePath("/dashboard/history");
+    revalidatePath("/dashboard/trash");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deletePostPermanently(postId: string) {
+  try {
+    const session = await auth();
+    if (!session?.user) throw new Error("Unauthorized");
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { workspaceId: true }
+    });
+    if (!post) throw new Error("Post not found");
+
+    const role = await getUserWorkspaceRole(post.workspaceId);
+    if (role !== "ADMIN") {
+      throw new Error("สิทธิ์ไม่เพียงพอ — เฉพาะ Admin เท่านั้นที่สามารถลบโพสต์ถาวรได้");
+    }
+
+    await prisma.postTarget.deleteMany({
+      where: { postId }
+    });
+
+    await prisma.postMedia.deleteMany({
+      where: { postId }
+    });
+
+    await prisma.post.delete({
+      where: { id: postId }
+    });
+
+    revalidatePath("/dashboard/history");
+    revalidatePath("/dashboard/trash");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getTrashPosts(): Promise<{
+  posts: PublishedPostForGallery[];
+  totalPosts: number;
+}> {
+  try {
+    const workspace = await getActiveWorkspaceContext();
+    if (!workspace) return { posts: [], totalPosts: 0 };
+
+    const posts = await prisma.post.findMany({
+      where: {
+        workspaceId: workspace.id,
+        isDeleted: true
+      },
+      orderBy: { updatedAt: "desc" },
+      include: {
+        media: {
+          include: {
+            mediaAsset: {
+              select: { fileUrl: true, fileType: true, fileName: true },
+            },
+          },
+        },
+        targets: {
+          include: {
+            socialConnection: {
+              select: { platform: true, accountName: true },
+            },
+          },
+        },
+        workspace: { select: { name: true } },
+      },
+    });
+
+    const data: PublishedPostForGallery[] = posts.map((post) => ({
+      id: post.id,
+      content: post.content,
+      publishedTime: post.publishedTime || post.updatedAt,
+      workspace: post.workspace.name,
+      images: post.media
+        .filter((m) => m.mediaAsset.fileType === "IMAGE")
+        .map((m) => ({
+          url: m.mediaAsset.fileUrl,
+          fileName: m.mediaAsset.fileName,
+        })),
+      channels: post.targets.map((t) => ({
+        platform: t.socialConnection.platform,
+        accountName: t.socialConnection.accountName,
+        status: t.status,
+      })),
+    }));
+
+    return {
+      posts: data,
+      totalPosts: data.length
+    };
+  } catch {
+    return { posts: [], totalPosts: 0 };
   }
 }
 

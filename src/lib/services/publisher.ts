@@ -14,6 +14,7 @@ export async function executeAutoPost() {
     const postsToPublish = await prisma.post.findMany({
       where: {
         status: "SCHEDULED",
+        isDeleted: false,
         scheduledTime: {
           lte: now,
         },

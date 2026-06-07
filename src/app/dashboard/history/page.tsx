@@ -1,6 +1,7 @@
 import React from "react";
 import { getPublishedPostsForLanding } from "@/lib/actions/posts";
 import { getActiveWorkspaceContext } from "@/lib/actions/workspace";
+import { HistoryRowActions } from "./HistoryRowActions";
 
 export const dynamic = "force-dynamic";
 
@@ -266,6 +267,9 @@ export default async function AutoPostHistoryPage() {
                   <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
                     สถานะ
                   </th>
+                  <th className="text-right px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                    การจัดการ
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -348,6 +352,11 @@ export default async function AutoPostHistoryPage() {
                           <StatusBadge key={idx} status={ch.status} />
                         ))}
                       </div>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                      <HistoryRowActions postId={post.id} />
                     </td>
                   </tr>
                 ))}
