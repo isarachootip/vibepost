@@ -2,13 +2,43 @@
 
 import { prisma } from "@/lib/prisma";
 import { getActiveWorkspaceContext } from "@/lib/actions/workspace";
+import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { AIProvider } from "@prisma/client";
+
+/** Check if the current user has admin rights for the active workspace */
+async function requireWorkspaceAdmin(workspaceId: string) {
+  const session = await auth();
+  if (!session?.user?.email) return false;
+
+  const dbUser = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    select: { id: true, role: true },
+  });
+  if (!dbUser) return false;
+
+  // Super Admin always allowed
+  if (dbUser.role === "ADMIN") return true;
+
+  // Check workspace-level role
+  const member = await prisma.workspaceMember.findUnique({
+    where: { userId_workspaceId: { userId: dbUser.id, workspaceId } },
+    select: { role: true },
+  });
+
+  return member?.role === "ADMIN";
+}
 
 export async function saveAIProviderKey(provider: AIProvider, apiKey: string) {
   const workspace = await getActiveWorkspaceContext();
   if (!workspace) {
     return { success: false, error: "No active workspace found." };
+  }
+
+  // 🔒 Role Guard: only workspace ADMIN or Super Admin can save keys
+  const isAdmin = await requireWorkspaceAdmin(workspace.id);
+  if (!isAdmin) {
+    return { success: false, error: "Permission denied. Only Workspace Admins can manage API keys." };
   }
 
   if (!apiKey || apiKey.trim() === "") {
@@ -54,6 +84,12 @@ export async function deleteAIProviderKey(provider: AIProvider) {
   const workspace = await getActiveWorkspaceContext();
   if (!workspace) {
     return { success: false, error: "No active workspace found." };
+  }
+
+  // 🔒 Role Guard: only workspace ADMIN or Super Admin can delete keys
+  const isAdmin = await requireWorkspaceAdmin(workspace.id);
+  if (!isAdmin) {
+    return { success: false, error: "Permission denied. Only Workspace Admins can manage API keys." };
   }
 
   try {

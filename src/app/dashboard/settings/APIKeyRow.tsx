@@ -10,9 +10,10 @@ type APIKeyRowProps = {
   name: string;
   description: string;
   isConfigured: boolean;
+  isReadOnly?: boolean;
 };
 
-export function APIKeyRow({ providerId, name, description, isConfigured }: APIKeyRowProps) {
+export function APIKeyRow({ providerId, name, description, isConfigured, isReadOnly = false }: APIKeyRowProps) {
   const [apiKey, setApiKey] = useState(isConfigured ? "••••••••••••••••••••••••••••••••" : "");
   const [isFocused, setIsFocused] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -126,7 +127,7 @@ export function APIKeyRow({ providerId, name, description, isConfigured }: APIKe
                   onCopy={handleCopyCut}
                   onCut={handleCopyCut}
                   placeholder={isConfigured ? "บันทึกคีย์ความปลอดภัยสูงแล้ว" : "ใส่ API Key..."}
-                  disabled={isPending || isDeleting}
+                  disabled={isPending || isDeleting || isReadOnly}
                   className={`w-full rounded-xl px-4 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 select-none font-mono ${
                     isConfigured 
                       ? "bg-white border border-emerald-200 text-emerald-700 placeholder:text-emerald-400 focus:ring-emerald-500/20 focus:border-emerald-500" 
@@ -149,40 +150,47 @@ export function APIKeyRow({ providerId, name, description, isConfigured }: APIKe
 
               {/* Action Buttons */}
               <div className="flex gap-1">
-                {isConfigured && (
-                  <button 
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={isPending || isDeleting}
-                    title="ลบ API Key"
-                    className="p-2.5 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center disabled:opacity-50"
-                  >
-                    {isDeleting ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-5 h-5" />
+                {isReadOnly ? (
+                  <span className="px-3 py-2 text-xs rounded-xl border border-slate-200 text-slate-400 font-medium bg-slate-50">
+                    🔒 Read Only
+                  </span>
+                ) : (
+                  <>
+                    {isConfigured && (
+                      <button 
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={isPending || isDeleting}
+                        title="ลบ API Key"
+                        className="p-2.5 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center disabled:opacity-50"
+                      >
+                        {isDeleting ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-5 h-5" />
+                        )}
+                      </button>
                     )}
-                  </button>
+                    <button 
+                      type="submit" 
+                      disabled={isPending || isDeleting || (!hasNewValue && isConfigured)}
+                      className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all border flex items-center justify-center gap-1.5 shadow-sm min-w-[80px] disabled:opacity-40 disabled:pointer-events-none ${
+                        isConfigured 
+                          ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 hover:border-emerald-700" 
+                          : "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 hover:border-blue-700"
+                      }`}
+                    >
+                      {isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          {isConfigured ? "Update" : "Save"}
+                        </>
+                      )}
+                    </button>
+                  </>
                 )}
-                
-                <button 
-                  type="submit" 
-                  disabled={isPending || isDeleting || (!hasNewValue && isConfigured)}
-                  className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all border flex items-center justify-center gap-1.5 shadow-sm min-w-[80px] disabled:opacity-40 disabled:pointer-events-none ${
-                    isConfigured 
-                      ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 hover:border-emerald-700" 
-                      : "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 hover:border-blue-700"
-                  }`}
-                >
-                  {isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      {isConfigured ? "Update" : "Save"}
-                    </>
-                  )}
-                </button>
               </div>
             </div>
             
