@@ -102,12 +102,12 @@ export async function generateAIPost(topic: string, variantCount: number) {
     let textContent = "";
 
     if (promptConfig.provider === "GEMINI") {
-      // Try models in priority order - gemini-2.0-flash is the current default
+      // Priority order based on confirmed available models for this API key
       const geminiModels = [
+        "gemini-2.5-flash",
+        "gemini-2.5-pro",
         "gemini-2.0-flash",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro",
-        "gemini-1.0-pro",
+        "gemini-2.0-flash-001",
       ];
 
       let geminiSuccess = false;
