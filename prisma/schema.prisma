@@ -38,13 +38,20 @@ model Workspace {
   posts             Post[]
 }
 
+enum WorkspaceRole {
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
 model WorkspaceMember {
-  id          String    @id @default(cuid())
+  id          String        @id @default(cuid())
   userId      String
   workspaceId String
-  user        User      @relation(fields: [userId], references: [id])
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
-  joinedAt    DateTime  @default(now())
+  role        WorkspaceRole @default(MEMBER)
+  user        User          @relation(fields: [userId], references: [id])
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id])
+  joinedAt    DateTime      @default(now())
 
   @@unique([userId, workspaceId])
 }

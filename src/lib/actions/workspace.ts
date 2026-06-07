@@ -10,18 +10,29 @@ export async function getUserWorkspaces() {
   const session = await auth()
   
   let userId = session?.user?.id
+  let userRole = (session?.user as any)?.role
+  
   if (!userId && session?.user?.email) {
     const dbUser = await prisma.user.findUnique({ where: { email: session.user.email } })
-    if (dbUser) userId = dbUser.id
+    if (dbUser) {
+      userId = dbUser.id
+      userRole = dbUser.role
+    }
   }
   
   if (!userId) return []
 
+  // Super Admin sees ALL workspaces
+  if (userRole === 'ADMIN') {
+    return await prisma.workspace.findMany({
+      orderBy: { createdAt: 'asc' }
+    })
+  }
+
+  // Regular users see only their workspaces
   const members = await prisma.workspaceMember.findMany({
     where: { userId: userId },
-    include: {
-      workspace: true
-    },
+    include: { workspace: true },
     orderBy: { joinedAt: 'asc' }
   })
 
@@ -32,9 +43,14 @@ export async function getActiveWorkspaceContext() {
   const session = await auth()
   
   let userId = session?.user?.id
+  let userRole = (session?.user as any)?.role
+
   if (!userId && session?.user?.email) {
     const dbUser = await prisma.user.findUnique({ where: { email: session.user.email } })
-    if (dbUser) userId = dbUser.id
+    if (dbUser) {
+      userId = dbUser.id
+      userRole = dbUser.role
+    }
   }
   
   if (!userId) return null
@@ -42,6 +58,19 @@ export async function getActiveWorkspaceContext() {
   // Check cookie for active workspace
   const cookieStore = await cookies();
   const activeId = cookieStore.get("activeWorkspaceId")?.value;
+
+  // Super Admin can access any workspace directly by ID
+  if (userRole === 'ADMIN' && activeId) {
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: activeId },
+      include: {
+        socialConnections: true,
+        promptConfigs: true,
+        _count: { select: { posts: true, mediaAssets: true, members: true } }
+      }
+    })
+    if (workspace) return workspace
+  }
 
   let whereClause: any = { userId: userId }
   if (activeId) {
@@ -83,6 +112,7 @@ export async function getActiveWorkspaceContext() {
   }
 
   return member?.workspace || null
+}
 }
 
 export async function createDefaultWorkspace(userId: string) {
