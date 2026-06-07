@@ -1,0 +1,130 @@
+"use server";
+
+import { prisma } from "@/lib/prisma";
+import { getActiveWorkspaceContext } from "./workspace";
+import { auth } from "@/auth";
+
+export type MonitorChannel = {
+  id: string;
+  platform: string;
+  accountName: string;
+};
+
+export type MonitorPost = {
+  id: string;
+  content: string;
+  status: string;
+  scheduledTime: Date | null;
+  publishedTime: Date | null;
+  errorMessage: string | null;
+  images: { url: string }[];
+  targetConnections: {
+    socialConnectionId: string;
+    status: string;
+    errorMessage: string | null;
+  }[];
+};
+
+export async function getMonitorData(
+  startDateStr: string,
+  endDateStr: string
+): Promise<{
+  success: boolean;
+  channels: MonitorChannel[];
+  posts: MonitorPost[];
+  error?: string;
+}> {
+  try {
+    const session = await auth();
+    if (!session?.user) throw new Error("Unauthorized");
+
+    const workspace = await getActiveWorkspaceContext();
+    if (!workspace) return { success: true, channels: [], posts: [] };
+
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+
+    // Get all active social connections/channels for the workspace
+    const connections = await prisma.socialConnection.findMany({
+      where: {
+        workspaceId: workspace.id,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        platform: true,
+        accountName: true,
+      },
+      orderBy: {
+        platform: "asc",
+      },
+    });
+
+    // Get posts scheduled/published within range
+    const posts = await prisma.post.findMany({
+      where: {
+        workspaceId: workspace.id,
+        isDeleted: false,
+        OR: [
+          {
+            scheduledTime: {
+              gte: startDate,
+              lte: endDate,
+            },
+          },
+          {
+            publishedTime: {
+              gte: startDate,
+              lte: endDate,
+            },
+          },
+        ],
+      },
+      include: {
+        media: {
+          include: {
+            mediaAsset: {
+              select: { fileUrl: true, fileType: true },
+            },
+          },
+        },
+        targets: {
+          select: {
+            socialConnectionId: true,
+            status: true,
+            errorMessage: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
+
+    const formattedPosts: MonitorPost[] = posts.map((p) => ({
+      id: p.id,
+      content: p.content,
+      status: p.status,
+      scheduledTime: p.scheduledTime,
+      publishedTime: p.publishedTime,
+      errorMessage: p.errorMessage,
+      images: p.media
+        .filter((m) => m.mediaAsset.fileType === "IMAGE")
+        .map((m) => ({ url: m.mediaAsset.fileUrl })),
+      targetConnections: p.targets.map((t) => ({
+        socialConnectionId: t.socialConnectionId,
+        status: t.status,
+        errorMessage: t.errorMessage,
+      })),
+    }));
+
+    return {
+      success: true,
+      channels: connections,
+      posts: formattedPosts,
+    };
+  } catch (error: any) {
+    console.error("Monitor fetch error:", error);
+    return { success: false, channels: [], posts: [], error: error.message };
+  }
+}
