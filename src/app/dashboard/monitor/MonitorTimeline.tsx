@@ -20,6 +20,18 @@ const STATUS_MAP: Record<string, { label: string; bg: string; dot: string }> = {
   DRAFT: { label: "ร่าง", bg: "bg-slate-500/10 text-slate-700 border-slate-500/20", dot: "bg-slate-500" },
 };
 
+function formatDate(date: Date | null | string) {
+  if (!date) return "—";
+  return new Intl.DateTimeFormat("th-TH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Bangkok",
+  }).format(new Date(date));
+}
+
 export function MonitorTimeline() {
   const [viewMode, setViewMode] = useState<"week" | "day">("week");
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
