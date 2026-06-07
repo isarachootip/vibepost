@@ -26,6 +26,7 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
   // Step 1 State
   const [topic, setTopic] = useState("");
   const [variantCount, setVariantCount] = useState("3");
+  const [language, setLanguage] = useState("Thai");
   // imageUrl now stores the server-uploaded public URL (not blob/base64)
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -98,7 +99,7 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
     setStep(2);
     setIsGenerating(true);
 
-    const res = await generateAIPost(topic, parseInt(variantCount) || 3);
+    const res = await generateAIPost(topic, parseInt(variantCount) || 3, language);
     setIsGenerating(false);
 
     if (res.success) {
@@ -208,6 +209,27 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
                     <option value="1">1 Option</option>
                     <option value="3">3 Options</option>
                     <option value="5">5 Options</option>
+                  </select>
+                </div>
+
+                <div className="mt-4">
+                  <label className="text-xs font-bold text-slate-600 mb-2 block uppercase tracking-wide">🌐 Language / ภาษา</label>
+                  <select 
+                    value={language} 
+                    onChange={(e) => setLanguage(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent font-medium"
+                  >
+                    <option value="Thai">🇹🇭 ภาษาไทย</option>
+                    <option value="English">🇬🇧 English</option>
+                    <option value="Chinese (Simplified)">🇨🇳 中文 (简体)</option>
+                    <option value="Chinese (Traditional)">🇹🇼 中文 (繁體)</option>
+                    <option value="Japanese">🇯🇵 日本語</option>
+                    <option value="Korean">🇰🇷 한국어</option>
+                    <option value="Arabic">🇸🇦 العربية</option>
+                    <option value="French">🇫🇷 Français</option>
+                    <option value="German">🇩🇪 Deutsch</option>
+                    <option value="Spanish">🇪🇸 Español</option>
+                    <option value="Malay">🇲🇾 Bahasa Melayu</option>
                   </select>
                 </div>
               </div>

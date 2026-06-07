@@ -83,7 +83,7 @@ export async function getPublishedPostsForLanding(): Promise<{
 import { getActiveWorkspaceContext } from "./workspace";
 import { revalidatePath } from "next/cache";
 
-export async function generateAIPost(topic: string, variantCount: number) {
+export async function generateAIPost(topic: string, variantCount: number, language: string = "Thai") {
   const workspace = await getActiveWorkspaceContext();
   if (!workspace) throw new Error("Workspace not found");
 
@@ -95,8 +95,8 @@ export async function generateAIPost(topic: string, variantCount: number) {
     throw new Error("No active AI Prompt Configuration found. Please set it up in Settings.");
   }
 
-  const systemPrompt = "You are an expert social media manager. Generate engaging social media captions based on the user's topic. Do NOT wrap the response in markdown blocks. Output exactly the requested number of variations separated by '|||'. Example: variation 1 ||| variation 2";
-  const userPrompt = `Topic: ${topic}\nPlease generate ${variantCount} different variations of a social media caption for this topic. Separate each variation strictly with '|||'.`;
+  const systemPrompt = `You are an expert social media manager. Generate engaging social media captions based on the user's topic. IMPORTANT: Write ALL content in ${language} language only. Do NOT wrap the response in markdown blocks. Output exactly the requested number of variations separated by '|||'. Example: variation 1 ||| variation 2`;
+  const userPrompt = `Topic: ${topic}\nLanguage: ${language}\nPlease generate ${variantCount} different variations of a social media caption for this topic in ${language}. Separate each variation strictly with '|||'.`;
 
   try {
     let textContent = "";
