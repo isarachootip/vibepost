@@ -67,13 +67,13 @@ const colorMap = {
 
 export function PostTypePicker({ onSelect }: Props) {
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="text-center mb-10">
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">เลือกประเภท Post</h2>
-        <p className="text-slate-500 text-sm">เลือกรูปแบบที่ต้องการสร้างเนื้อหา</p>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 py-6">
+      <div className="text-center mb-12">
+        <h2 className="text-3xl md:text-4xl font-extrabold text-slate-800 mb-3 tracking-tight">เลือกประเภท Post</h2>
+        <p className="text-slate-500 text-base md:text-lg">เลือกรูปแบบที่ต้องการสร้างเนื้อหาเพื่อเริ่มต้น</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
         {POST_TYPES.map((type) => {
           const colors = colorMap[type.color as keyof typeof colorMap];
           return (
@@ -82,44 +82,47 @@ export function PostTypePicker({ onSelect }: Props) {
               onClick={() => type.available && onSelect(type.id)}
               disabled={!type.available}
               className={`
-                relative text-left p-6 rounded-2xl border-2 transition-all duration-200 group
-                ${type.available ? `${colors.border} cursor-pointer hover:shadow-lg hover:scale-[1.02] bg-white` : "border-slate-200 bg-slate-50 opacity-70 cursor-not-allowed"}
+                relative text-left p-8 rounded-3xl border-2 transition-all duration-300 group
+                flex flex-col justify-between min-h-[420px]
+                ${type.available ? `${colors.border} cursor-pointer hover:shadow-xl hover:scale-[1.03] bg-white` : "border-slate-200 bg-slate-50 opacity-70 cursor-not-allowed"}
               `}
             >
-              {/* Coming Soon Badge */}
-              {!type.available && (
-                <span className="absolute top-4 right-4 text-xs font-bold bg-slate-200 text-slate-500 px-2 py-1 rounded-full">
-                  เร็วๆ นี้
-                </span>
-              )}
+              <div>
+                {/* Coming Soon Badge */}
+                {!type.available && (
+                  <span className="absolute top-5 right-5 text-xs font-extrabold bg-slate-200 text-slate-500 px-3 py-1.5 rounded-full">
+                    เร็วๆ นี้
+                  </span>
+                )}
 
-              {/* Icon */}
-              <div className={`w-14 h-14 ${colors.icon} rounded-2xl flex items-center justify-center mb-4 text-3xl transition-transform group-hover:scale-110`}>
-                {type.icon}
-              </div>
+                {/* Icon */}
+                <div className={`w-20 h-20 ${colors.icon} rounded-2xl flex items-center justify-center mb-6 text-5xl transition-transform group-hover:scale-110 shadow-sm`}>
+                  {type.icon}
+                </div>
 
-              {/* Title */}
-              <div className="mb-1">
-                <h3 className="text-lg font-bold text-slate-800">{type.title}</h3>
-                <p className="text-sm text-slate-400 font-medium">{type.titleTh}</p>
-              </div>
+                {/* Title */}
+                <div className="mb-3">
+                  <h3 className="text-2xl font-black text-slate-800 tracking-tight">{type.title}</h3>
+                  <p className={`text-base font-semibold mt-0.5 ${type.available ? "text-slate-500" : "text-slate-400"}`}>{type.titleTh}</p>
+                </div>
 
-              {/* Description */}
-              <p className="text-sm text-slate-500 mt-2 mb-4 leading-relaxed">{type.desc}</p>
+                {/* Description */}
+                <p className="text-base text-slate-600 mt-3 mb-6 leading-relaxed">{type.desc}</p>
 
-              {/* Features */}
-              <div className="space-y-1.5">
-                {type.features.map((f, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs">
-                    <span className={`w-1.5 h-1.5 rounded-full ${type.available ? "bg-green-400" : "bg-slate-300"}`} />
-                    <span className={type.available ? "text-slate-600" : "text-slate-400"}>{f}</span>
-                  </div>
-                ))}
+                {/* Features */}
+                <div className="space-y-2.5">
+                  {type.features.map((f, i) => (
+                    <div key={i} className="flex items-center gap-3 text-sm font-medium">
+                      <span className={`w-2 h-2 rounded-full ${type.available ? "bg-green-500" : "bg-slate-300"}`} />
+                      <span className={type.available ? "text-slate-700" : "text-slate-400"}>{f}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* CTA */}
               {type.available && (
-                <div className={`mt-5 w-full py-2.5 rounded-xl text-white text-sm font-bold text-center ${colors.btn} transition-colors`}>
+                <div className={`mt-8 w-full py-3.5 rounded-2xl text-white text-base font-black text-center ${colors.btn} transition-colors shadow-md group-hover:shadow-lg`}>
                   เลือก {type.title} →
                 </div>
               )}
