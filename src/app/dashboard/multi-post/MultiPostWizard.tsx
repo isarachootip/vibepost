@@ -26,7 +26,11 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
   // Step 1 State
   const [topic, setTopic] = useState("");
   const [variantCount, setVariantCount] = useState("3");
-  const [imageUrl, setImageUrl] = useState("https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=400&auto=format&fit=crop");
+  // imageUrl now stores the server-uploaded public URL (not blob/base64)
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   
   // Step 2 & 3 State
   const [isGenerating, setIsGenerating] = useState(false);
@@ -45,43 +49,39 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
     );
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target?.result as string;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1080;
-        const MAX_HEIGHT = 1080;
-        let width = img.width;
-        let height = img.height;
+    // Show preview immediately (local blob for display only)
+    const localPreview = URL.createObjectURL(file);
+    setImagePreview(localPreview);
+    setImageUrl(null);
+    setUploadError("");
+    setIsUploading(true);
 
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
+    try {
+      // Upload to server to get a real public URL
+      const formData = new FormData();
+      formData.append("file", file);
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-        
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        setImageUrl(dataUrl);
-      };
-    };
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Upload failed");
+      }
+
+      setImageUrl(data.url); // This is the public server URL Facebook can access
+    } catch (err: any) {
+      setUploadError(`Upload failed: ${err.message}`);
+      setImagePreview(null);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleGenerate = async () => {
@@ -125,7 +125,7 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
       content: selectedContent,
       scheduledTime: publishDate,
       targetConnectionIds: selectedChannels,
-      imageUrl: imageUrl
+      imageUrl: imageUrl || undefined, // Only pass URL if image was successfully uploaded to server
     });
 
     setIsPublishing(false);
@@ -214,20 +214,44 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
 
               <div>
                 <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">3. Attach Media</h3>
-                <label className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-slate-300 transition-colors h-32 flex flex-col items-center justify-center bg-slate-50 cursor-pointer block">
+                <label className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors h-32 flex flex-col items-center justify-center bg-slate-50 cursor-pointer block ${isUploading ? 'border-blue-300 bg-blue-50' : imageUrl ? 'border-green-300 bg-green-50' : 'border-slate-200 hover:border-slate-300'}`}>
                   <input 
                     type="file" 
                     accept="image/*" 
                     className="hidden" 
-                    onChange={handleImageUpload} 
+                    onChange={handleImageUpload}
+                    disabled={isUploading}
                   />
-                  <ImageIcon className="w-8 h-8 text-slate-400 mb-2" />
-                  <p className="text-sm font-medium text-slate-600">Click to upload image/video</p>
-                  <p className="text-xs text-slate-400 mt-1">(Select a file from your computer)</p>
+                  {isUploading ? (
+                    <>
+                      <div className="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mb-2" />
+                      <p className="text-sm font-medium text-blue-600">Uploading to server...</p>
+                    </>
+                  ) : imageUrl ? (
+                    <>
+                      <ImageIcon className="w-8 h-8 text-green-500 mb-2" />
+                      <p className="text-sm font-medium text-green-600">✅ Image uploaded successfully!</p>
+                      <p className="text-xs text-slate-400 mt-1">Click to change image</p>
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-8 h-8 text-slate-400 mb-2" />
+                      <p className="text-sm font-medium text-slate-600">Click to upload image/video</p>
+                      <p className="text-xs text-slate-400 mt-1">(Select a file from your computer)</p>
+                    </>
+                  )}
                 </label>
-                {imageUrl && (
+                {uploadError && (
+                  <p className="mt-2 text-sm text-red-500">{uploadError}</p>
+                )}
+                {imagePreview && (
                   <div className="mt-4 relative w-full h-24 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
-                    <img src={imageUrl} alt="Attached" className="w-full h-full object-cover" />
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+                        <div className="w-6 h-6 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
