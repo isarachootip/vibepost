@@ -81,11 +81,43 @@ export async function getPublishedPostsForLanding(): Promise<{
 }
 
 import { getActiveWorkspaceContext } from "./workspace";
+import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
+
+/**
+ * Returns the user's role in the given workspace.
+ * Super Admin (User.role=ADMIN) is treated as workspace ADMIN.
+ * Returns null if not a member.
+ */
+async function getUserWorkspaceRole(workspaceId: string): Promise<"ADMIN" | "MEMBER" | "VIEWER" | null> {
+  const session = await auth();
+  if (!session?.user?.email) return null;
+
+  const dbUser = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    select: { id: true, role: true },
+  });
+  if (!dbUser) return null;
+
+  if (dbUser.role === "ADMIN") return "ADMIN"; // Super Admin
+
+  const member = await prisma.workspaceMember.findUnique({
+    where: { userId_workspaceId: { userId: dbUser.id, workspaceId } },
+    select: { role: true },
+  });
+
+  return (member?.role as "ADMIN" | "MEMBER" | "VIEWER") ?? null;
+}
 
 export async function generateAIPost(topic: string, variantCount: number, language: string = "Thai") {
   const workspace = await getActiveWorkspaceContext();
   if (!workspace) throw new Error("Workspace not found");
+
+  // 🔒 VIEWER cannot generate posts
+  const role = await getUserWorkspaceRole(workspace.id);
+  if (role === "VIEWER") {
+    return { success: false, error: "สิทธิ์ไม่เพียงพอ — Viewer ไม่สามารถสร้าง Post ได้", variants: [] };
+  }
 
   const promptConfig = await prisma.promptConfig.findFirst({
     where: { workspaceId: workspace.id, isActive: true },
@@ -187,6 +219,12 @@ export async function createScheduledPost(data: {
 }) {
   const workspace = await getActiveWorkspaceContext();
   if (!workspace) throw new Error("Workspace not found");
+
+  // 🔒 VIEWER cannot create or schedule posts
+  const role = await getUserWorkspaceRole(workspace.id);
+  if (role === "VIEWER") {
+    return { success: false, error: "สิทธิ์ไม่เพียงพอ — Viewer ไม่สามารถสร้าง Post ได้" };
+  }
 
   if (data.targetConnectionIds.length === 0) {
     return { success: false, error: "Please select at least one social channel." };
