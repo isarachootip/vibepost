@@ -215,7 +215,8 @@ export async function createScheduledPost(data: {
   content: string;
   scheduledTime: Date | null;
   targetConnectionIds: string[];
-  imageUrl?: string;
+  imageUrls?: string[];     // multiple images (multi-photo) — replaces imageUrl
+  imageUrl?: string;         // legacy single-image compat
 }) {
   const workspace = await getActiveWorkspaceContext();
   if (!workspace) throw new Error("Workspace not found");
@@ -229,6 +230,12 @@ export async function createScheduledPost(data: {
   if (data.targetConnectionIds.length === 0) {
     return { success: false, error: "Please select at least one social channel." };
   }
+
+  // Merge imageUrls and legacy imageUrl into one array
+  const allImageUrls: string[] = [
+    ...(data.imageUrls ?? []),
+    ...(data.imageUrl ? [data.imageUrl] : []),
+  ].filter(Boolean);
 
   try {
     const isPostNow = !data.scheduledTime || new Date(data.scheduledTime) <= new Date();
@@ -249,24 +256,21 @@ export async function createScheduledPost(data: {
       },
     });
 
-    if (data.imageUrl) {
-      // In a real app, you'd upload this file. Here we just create an asset record with the URL.
-      const asset = await prisma.mediaAsset.create({
-        data: {
-          workspaceId: workspace.id,
-          fileName: "uploaded_image.jpg",
-          fileUrl: data.imageUrl,
-          fileType: "IMAGE",
-          status: "APPROVED",
-        }
-      });
-
-      await prisma.postMedia.create({
-        data: {
-          postId: newPost.id,
-          mediaAssetId: asset.id,
-        }
-      });
+    if (allImageUrls.length > 0) {
+      for (const url of allImageUrls) {
+        const asset = await prisma.mediaAsset.create({
+          data: {
+            workspaceId: workspace.id,
+            fileName: url.split("/").pop() || "image.jpg",
+            fileUrl: url,
+            fileType: "IMAGE",
+            status: "APPROVED",
+          },
+        });
+        await prisma.postMedia.create({
+          data: { postId: newPost.id, mediaAssetId: asset.id },
+        });
+      }
     }
 
     revalidatePath("/dashboard/multi-post");

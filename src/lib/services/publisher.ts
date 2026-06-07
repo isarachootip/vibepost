@@ -65,52 +65,91 @@ export async function executeAutoPost() {
             const pageId = target.socialConnection.accountId;
             const accessToken = target.socialConnection.accessToken;
             const message = post.content;
-            
-            // Validate imageUrl - must be a public http/https URL accessible by Facebook
-            // Local blob: URLs, localhost, or non-http URLs are not valid for Facebook API
-            const isValidPublicUrl = imageUrl && 
-              (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) &&
-              !imageUrl.includes("localhost") &&
-              !imageUrl.includes("127.0.0.1") &&
-              !imageUrl.startsWith("blob:") &&
-              imageUrl.length > 10;
 
-            // Facebook Graph API Endpoint
-            // Use /photos if we have a valid public image URL, otherwise /feed for text post
-            const endpoint = isValidPublicUrl
-              ? `https://graph.facebook.com/v19.0/${pageId}/photos`
-              : `https://graph.facebook.com/v19.0/${pageId}/feed`;
+            // Collect all valid public image URLs
+            const validImages = post.media
+              .filter(m => m.mediaAsset.fileType === "IMAGE")
+              .map(m => m.mediaAsset.fileUrl)
+              .filter(url =>
+                url &&
+                (url.startsWith("http://") || url.startsWith("https://")) &&
+                !url.includes("localhost") &&
+                !url.includes("127.0.0.1") &&
+                !url.startsWith("blob:") &&
+                url.length > 10
+              );
 
-            const payload: any = {
-              message: message,
-              access_token: accessToken,
-            };
+            let externalPostId: string;
 
-            if (isValidPublicUrl) {
-              payload.url = imageUrl;
+            if (validImages.length === 0) {
+              // ── Text-only post ──
+              console.log("[Publisher] Posting text-only to Facebook...");
+              const res = await fetch(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message, access_token: accessToken }),
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error?.message || "Facebook API Error");
+              externalPostId = data.id;
+
+            } else if (validImages.length === 1) {
+              // ── Single photo post ──
+              console.log("[Publisher] Posting single photo to Facebook...");
+              const res = await fetch(`https://graph.facebook.com/v19.0/${pageId}/photos`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message, url: validImages[0], access_token: accessToken }),
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error?.message || "Facebook API Error");
+              externalPostId = data.id || data.post_id;
+
+            } else {
+              // ── Multi-photo post (Album) ──
+              console.log(`[Publisher] Uploading ${validImages.length} photos as unpublished...`);
+              const photoIds: string[] = [];
+
+              for (const imgUrl of validImages) {
+                const uploadRes = await fetch(`https://graph.facebook.com/v19.0/${pageId}/photos`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    url: imgUrl,
+                    published: false,
+                    access_token: accessToken,
+                  }),
+                });
+                const uploadData = await uploadRes.json();
+                if (!uploadRes.ok) throw new Error(uploadData.error?.message || `Photo upload failed: ${imgUrl}`);
+                photoIds.push(uploadData.id);
+                console.log(`[Publisher] Uploaded photo → ID: ${uploadData.id}`);
+              }
+
+              // Create the multi-photo post
+              console.log("[Publisher] Creating multi-photo post with attached_media...");
+              const feedRes = await fetch(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  message,
+                  attached_media: photoIds.map(id => ({ media_fbid: id })),
+                  access_token: accessToken,
+                }),
+              });
+              const feedData = await feedRes.json();
+              if (!feedRes.ok) throw new Error(feedData.error?.message || "Facebook multi-photo post failed");
+              externalPostId = feedData.id;
             }
 
-            console.log(`[Publisher] Posting to Facebook (${isValidPublicUrl ? "with image" : "text only"})...`);
-            const response = await fetch(endpoint, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-              throw new Error(data.error?.message || "Unknown Facebook API Error");
-            }
-
-            console.log(`[Publisher] Success! FB Post ID: ${data.id || data.post_id}`);
+            console.log(`[Publisher] Success! FB Post ID: ${externalPostId}`);
 
             // Update PostTarget as SUCCESS
             await prisma.postTarget.update({
               where: { id: target.id },
               data: {
                 status: "PUBLISHED",
-                externalPostId: data.id || data.post_id,
+                externalPostId: externalPostId,
               },
             });
 
