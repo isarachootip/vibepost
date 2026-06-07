@@ -99,27 +99,48 @@ export async function generateAIPost(topic: string, variantCount: number) {
   const userPrompt = `Topic: ${topic}\nPlease generate ${variantCount} different variations of a social media caption for this topic. Separate each variation strictly with '|||'.`;
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${promptConfig.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-3.5-turbo", // You can customize this
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ]
-      })
-    });
+    let textContent = "";
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error?.message || "Failed to call OpenRouter API");
+    if (promptConfig.provider === "GEMINI") {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${promptConfig.apiKey}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [{
+            role: "user",
+            parts: [{ text: systemPrompt + "\n\n" + userPrompt }]
+          }]
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error?.message || "Failed to call Gemini API");
+      }
+      textContent = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    } else {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${promptConfig.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ]
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error?.message || "Failed to call OpenRouter API");
+      }
+      textContent = data.choices[0].message.content;
     }
 
-    const textContent = data.choices[0].message.content;
     const variants = textContent.split("|||").map((s: string) => s.trim()).filter((s: string) => s.length > 0);
     
     return { success: true, variants };
