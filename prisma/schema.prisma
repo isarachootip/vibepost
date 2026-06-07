@@ -133,6 +133,7 @@ model Post {
   workspace      Workspace @relation(fields: [workspaceId], references: [id])
   media          PostMedia[]
   targets        PostTarget[]
+  isDeleted      Boolean   @default(false)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
