@@ -102,7 +102,7 @@ export async function generateAIPost(topic: string, variantCount: number) {
     let textContent = "";
 
     if (promptConfig.provider === "GEMINI") {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${promptConfig.apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${promptConfig.apiKey}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
