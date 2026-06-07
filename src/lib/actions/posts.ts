@@ -102,23 +102,52 @@ export async function generateAIPost(topic: string, variantCount: number) {
     let textContent = "";
 
     if (promptConfig.provider === "GEMINI") {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${promptConfig.apiKey}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [{
-            role: "user",
-            parts: [{ text: systemPrompt + "\n\n" + userPrompt }]
-          }]
-        })
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error?.message || "Failed to call Gemini API");
+      // Try models in priority order - gemini-2.0-flash is the current default
+      const geminiModels = [
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-1.0-pro",
+      ];
+
+      let geminiSuccess = false;
+      let lastError = "";
+
+      for (const modelName of geminiModels) {
+        try {
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${promptConfig.apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{
+                  parts: [{ text: systemPrompt + "\n\n" + userPrompt }]
+                }]
+              }),
+            }
+          );
+          const data = await response.json();
+          if (!response.ok) {
+            lastError = data.error?.message || `Model ${modelName} failed`;
+            continue; // Try next model
+          }
+          const candidate = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (candidate) {
+            textContent = candidate;
+            geminiSuccess = true;
+            console.log(`Gemini: successfully used model ${modelName}`);
+            break;
+          }
+        } catch (e: any) {
+          lastError = e.message;
+          continue;
+        }
       }
-      textContent = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+      if (!geminiSuccess) {
+        throw new Error(`All Gemini models failed. Last error: ${lastError}`);
+      }
     } else {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
