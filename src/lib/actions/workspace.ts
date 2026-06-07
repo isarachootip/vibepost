@@ -113,7 +113,6 @@ export async function getActiveWorkspaceContext() {
 
   return member?.workspace || null
 }
-}
 
 export async function createDefaultWorkspace(userId: string) {
   if (!userId) throw new Error("No user ID provided")
