@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getActiveWorkspaceContext } from "@/lib/actions/workspace";
 
+export const dynamic = "force-dynamic"; // v2 - force rebuild
+
 export async function GET() {
   try {
     const workspace = await getActiveWorkspaceContext();
