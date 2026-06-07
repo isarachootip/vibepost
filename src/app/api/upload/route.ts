@@ -5,7 +5,8 @@ import { existsSync } from "fs";
 
 export const dynamic = "force-dynamic";
 
-// Storage directory — mount this as a Coolify volume for persistence
+// /app/uploads directory is created with nextjs:nodejs ownership via Dockerfile RUN command
+// To make uploads persistent across deploys, mount a Coolify volume at /app/uploads
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "/app/uploads";
 const PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://vibepost.online";
 
