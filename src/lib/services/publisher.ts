@@ -66,8 +66,18 @@ export async function executeAutoPost() {
             const accessToken = target.socialConnection.accessToken;
             const message = post.content;
             
+            // Validate imageUrl - must be a public http/https URL accessible by Facebook
+            // Local blob: URLs, localhost, or non-http URLs are not valid for Facebook API
+            const isValidPublicUrl = imageUrl && 
+              (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) &&
+              !imageUrl.includes("localhost") &&
+              !imageUrl.includes("127.0.0.1") &&
+              !imageUrl.startsWith("blob:") &&
+              imageUrl.length > 10;
+
             // Facebook Graph API Endpoint
-            const endpoint = imageUrl 
+            // Use /photos if we have a valid public image URL, otherwise /feed for text post
+            const endpoint = isValidPublicUrl
               ? `https://graph.facebook.com/v19.0/${pageId}/photos`
               : `https://graph.facebook.com/v19.0/${pageId}/feed`;
 
@@ -76,11 +86,11 @@ export async function executeAutoPost() {
               access_token: accessToken,
             };
 
-            if (imageUrl) {
+            if (isValidPublicUrl) {
               payload.url = imageUrl;
             }
 
-            console.log(`[Publisher] Sending payload to Facebook...`);
+            console.log(`[Publisher] Posting to Facebook (${isValidPublicUrl ? "with image" : "text only"})...`);
             const response = await fetch(endpoint, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
