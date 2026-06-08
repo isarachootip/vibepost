@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useTransition } from "react";
 import { getMonitorData, MonitorChannel, MonitorPost } from "@/lib/actions/monitor";
+import { syncPostInsights } from "@/lib/actions/insights";
 
 const PLATFORMS: Record<string, { label: string; icon: string; color: string }> = {
   FACEBOOK: { label: "Facebook", icon: "📸", color: "text-blue-600 bg-blue-50 border-blue-200" },
@@ -32,8 +33,9 @@ function formatDate(date: Date | null | string) {
   }).format(new Date(date));
 }
 
-export function MonitorTimeline() {
-  const [viewMode, setViewMode] = useState<"week" | "day">("week");
+export function MonitorTimeline({ initialWorkspaceId, workspaces }: { initialWorkspaceId?: string, workspaces?: {id: string, name: string}[] } = {}) {
+  const [viewMode, setViewMode] = useState<"month" | "week" | "day">("week");
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | undefined>(initialWorkspaceId);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [channels, setChannels] = useState<MonitorChannel[]>([]);
   const [posts, setPosts] = useState<MonitorPost[]>([]);
@@ -42,11 +44,18 @@ export function MonitorTimeline() {
   const [isPending, startTransition] = useTransition();
 
   // Helper to compute date range based on viewMode
-  const getRange = (date: Date, mode: "week" | "day") => {
+  const getRange = (date: Date, mode: "month" | "week" | "day") => {
     const start = new Date(date);
     const end = new Date(date);
     
-    if (mode === "week") {
+    if (mode === "month") {
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      
+      end.setMonth(end.getMonth() + 1);
+      end.setDate(0);
+      end.setHours(23, 59, 59, 999);
+    } else if (mode === "week") {
       // Find Monday
       const day = start.getDay();
       const diff = start.getDate() - day + (day === 0 ? -6 : 1); 
@@ -66,18 +75,19 @@ export function MonitorTimeline() {
 
   useEffect(() => {
     startTransition(async () => {
-      const res = await getMonitorData(startDate.toISOString(), endDate.toISOString());
+      const res = await getMonitorData(startDate.toISOString(), endDate.toISOString(), selectedWorkspaceId);
       if (res.success) {
         setChannels(res.channels || []);
         setPosts(res.posts || []);
       }
     });
-  }, [currentDate, viewMode]);
+  }, [currentDate, viewMode, selectedWorkspaceId]);
 
-  // Navigate dates
   const handlePrev = () => {
     const newDate = new Date(currentDate);
-    if (viewMode === "week") {
+    if (viewMode === "month") {
+      newDate.setMonth(currentDate.getMonth() - 1);
+    } else if (viewMode === "week") {
       newDate.setDate(currentDate.getDate() - 7);
     } else {
       newDate.setDate(currentDate.getDate() - 1);
@@ -87,7 +97,9 @@ export function MonitorTimeline() {
 
   const handleNext = () => {
     const newDate = new Date(currentDate);
-    if (viewMode === "week") {
+    if (viewMode === "month") {
+      newDate.setMonth(currentDate.getMonth() + 1);
+    } else if (viewMode === "week") {
       newDate.setDate(currentDate.getDate() + 7);
     } else {
       newDate.setDate(currentDate.getDate() + 1);
@@ -99,9 +111,46 @@ export function MonitorTimeline() {
     setCurrentDate(new Date());
   };
 
+  const [isSyncing, setIsSyncing] = useState<string | null>(null);
+
+  const handleSyncInsights = async (targetId: string) => {
+    setIsSyncing(targetId);
+    try {
+      const res = await syncPostInsights(targetId);
+      if (res.success) {
+        // Refetch to update UI
+        const dataRes = await getMonitorData(startDate.toISOString(), endDate.toISOString(), selectedWorkspaceId);
+        if (dataRes.success) {
+          setPosts(dataRes.posts || []);
+          if (selectedPost) {
+            const updated = dataRes.posts?.find((p: any) => p.id === selectedPost.id);
+            if (updated) setSelectedPost(updated);
+          }
+        }
+      } else {
+        alert("เกิดข้อผิดพลาดในการดึงสถิติ: " + res.error);
+      }
+    } catch (e: any) {
+      alert("Error: " + e.message);
+    } finally {
+      setIsSyncing(null);
+    }
+  };
+
   // Generate columns based on view mode
   const columns: { label: string; subLabel: string; date: Date }[] = [];
-  if (viewMode === "week") {
+  if (viewMode === "month") {
+    const daysInMonth = endDate.getDate();
+    for (let i = 1; i <= daysInMonth; i++) {
+      const temp = new Date(startDate);
+      temp.setDate(i);
+      columns.push({
+        label: i.toString(),
+        subLabel: temp.toLocaleDateString("th-TH", { weekday: "short" }),
+        date: new Date(temp),
+      });
+    }
+  } else if (viewMode === "week") {
     const temp = new Date(startDate);
     const dayNames = ["จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา."];
     for (let i = 0; i < 7; i++) {
@@ -136,7 +185,7 @@ export function MonitorTimeline() {
       const pDate = post.scheduledTime ? new Date(post.scheduledTime) : post.publishedTime ? new Date(post.publishedTime) : null;
       if (!pDate) return false;
 
-      if (viewMode === "week") {
+      if (viewMode === "month" || viewMode === "week") {
         return (
           pDate.getDate() === colDate.getDate() &&
           pDate.getMonth() === colDate.getMonth() &&
@@ -165,7 +214,9 @@ export function MonitorTimeline() {
             </svg>
           </button>
           <span className="text-sm font-black text-slate-800 tracking-tight min-w-[160px] text-center">
-            {viewMode === "week" ? (
+            {viewMode === "month" ? (
+              currentDate.toLocaleDateString("th-TH", { month: "long", year: "numeric" })
+            ) : viewMode === "week" ? (
               <>
                 {startDate.getDate()} {startDate.toLocaleDateString("th-TH", { month: "short", year: "numeric" })} - {endDate.getDate()} {endDate.toLocaleDateString("th-TH", { month: "short", year: "numeric" })}
               </>
@@ -190,6 +241,29 @@ export function MonitorTimeline() {
         </div>
 
         <div className="flex items-center gap-2">
+          {workspaces && workspaces.length > 0 && (
+            <select
+              value={selectedWorkspaceId || ""}
+              onChange={(e) => setSelectedWorkspaceId(e.target.value)}
+              className="px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent mr-2"
+            >
+              <option value="" disabled>เลือก Workspace</option>
+              {workspaces.map(ws => (
+                <option key={ws.id} value={ws.id}>{ws.name}</option>
+              ))}
+            </select>
+          )}
+
+          <button
+            onClick={() => setViewMode("month")}
+            className={`px-4 py-2 text-xs font-bold rounded-xl border transition-all ${
+              viewMode === "month"
+                ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                : "border-slate-200 text-slate-500 hover:bg-slate-50"
+            }`}
+          >
+            รายเดือน
+          </button>
           <button
             onClick={() => setViewMode("week")}
             className={`px-4 py-2 text-xs font-bold rounded-xl border transition-all ${
@@ -235,7 +309,7 @@ export function MonitorTimeline() {
       ) : (
         <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <div className="min-w-[800px]">
+            <div style={{ minWidth: `${Math.max(800, columns.length * 160 + 256)}px` }}>
               {/* Header Row */}
               <div className="flex border-b border-slate-200 bg-slate-50/50">
                 <div className="w-64 p-4 font-black text-slate-800 text-xs uppercase tracking-wider border-r border-slate-200 shrink-0">
@@ -245,7 +319,7 @@ export function MonitorTimeline() {
                   {columns.map((col, idx) => (
                     <div
                       key={idx}
-                      className="flex-1 p-3 text-center border-r border-slate-200/60 last:border-r-0 shrink-0"
+                      className="flex-1 min-w-[160px] p-3 text-center border-r border-slate-200/60 last:border-r-0 shrink-0"
                     >
                       <span className="block text-slate-800 text-xs font-black">{col.label}</span>
                       {col.subLabel && (
@@ -280,7 +354,7 @@ export function MonitorTimeline() {
                           return (
                             <div
                               key={idx}
-                              className="flex-1 p-2 border-r border-slate-200/60 last:border-r-0 min-h-[100px] flex flex-col gap-2 bg-white hover:bg-slate-50/20 transition-colors shrink-0"
+                              className="flex-1 min-w-[160px] p-2 border-r border-slate-200/60 last:border-r-0 min-h-[100px] flex flex-col gap-2 bg-white hover:bg-slate-50/20 transition-colors shrink-0"
                             >
                               {slotPosts.map((post) => {
                                 const status = STATUS_MAP[post.status] || { label: post.status, bg: "bg-slate-100 text-slate-700", dot: "bg-slate-400" };
@@ -391,26 +465,101 @@ export function MonitorTimeline() {
                     const chan = channels.find((c) => c.id === t.socialConnectionId);
                     const plat = chan ? PLATFORMS[chan.platform] : null;
                     return (
-                      <div key={idx} className="p-4 flex items-center justify-between bg-white">
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-base">{plat?.icon || "🔗"}</span>
-                          <div>
-                            <p className="text-sm font-black text-slate-800">{chan?.accountName || "Unknown Channel"}</p>
-                            <p className="text-xs text-slate-400 font-semibold">{plat?.label || "Social"}</p>
+                      <div key={idx} className="p-4 flex flex-col gap-3 bg-white">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-base">{plat?.icon || "🔗"}</span>
+                            <div>
+                              <p className="text-sm font-black text-slate-800">{chan?.accountName || "Unknown Channel"}</p>
+                              <p className="text-xs text-slate-400 font-semibold">{plat?.label || "Social"}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-end gap-1.5">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${status.bg}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                              {status.label}
+                            </span>
+                            {t.errorMessage && (
+                              <span className="text-[10px] text-red-500 font-medium max-w-[200px] truncate" title={t.errorMessage}>
+                                {t.errorMessage}
+                              </span>
+                            )}
                           </div>
                         </div>
 
-                        <div className="flex flex-col items-end gap-1.5">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${status.bg}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
-                            {status.label}
-                          </span>
-                          {t.errorMessage && (
-                            <span className="text-[10px] text-red-500 font-medium max-w-[200px] truncate" title={t.errorMessage}>
-                              {t.errorMessage}
-                            </span>
-                          )}
-                        </div>
+                        {/* Insights Stats */}
+                        {t.status === "PUBLISHED" && (
+                          <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200 mt-2 shadow-sm">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                                </div>
+                                <span className="text-sm font-black text-slate-800 tracking-tight">ประสิทธิภาพ (Insights)</span>
+                              </div>
+                              {["Facebook", "Instagram", "TikTok"].includes(plat?.label || "") && (
+                                <button 
+                                  onClick={() => handleSyncInsights(t.id)}
+                                  disabled={isSyncing === t.id}
+                                  className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 text-slate-600 transition-all disabled:opacity-50 shadow-sm"
+                                >
+                                  {isSyncing === t.id ? (
+                                    <>
+                                      <div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                                      กำลังซิงค์...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></svg>
+                                      ซิงค์สถิติ
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                            
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+                                  <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Reach</span>
+                                </div>
+                                <span className="block text-xl font-black text-slate-900 tracking-tight">{(t.reach || 0).toLocaleString()}</span>
+                              </div>
+                              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
+                                  <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Engagement</span>
+                                </div>
+                                <span className="block text-xl font-black text-slate-900 tracking-tight">{(t.engagement || 0).toLocaleString()}</span>
+                              </div>
+                              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
+                                  <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Impressions</span>
+                                </div>
+                                <span className="block text-xl font-black text-slate-900 tracking-tight">{(t.impressions || 0).toLocaleString()}</span>
+                              </div>
+                              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                                  <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Clicks</span>
+                                </div>
+                                <span className="block text-xl font-black text-slate-900 tracking-tight">{(t.clicks || 0).toLocaleString()}</span>
+                              </div>
+                            </div>
+                            
+                            {t.insightsSyncedAt && (
+                              <div className="flex items-center justify-end gap-1.5 mt-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                <p className="text-[10px] text-slate-400 font-semibold">
+                                  อัปเดตล่าสุด: {new Date(t.insightsSyncedAt).toLocaleString('th-TH')}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}

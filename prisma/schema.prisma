@@ -165,6 +165,14 @@ model PostTarget {
   externalPostId     String?          // The ID from the social platform if successful
   status             PostStatus       @default(DRAFT)
   errorMessage       String?
+  
+  // Insights & Analytics
+  reach              Int              @default(0)
+  engagement         Int              @default(0)
+  impressions        Int              @default(0)
+  clicks             Int              @default(0)
+  insightsSyncedAt   DateTime?
+
   post               Post             @relation(fields: [postId], references: [id])
   socialConnection   SocialConnection @relation(fields: [socialConnectionId], references: [id])
 

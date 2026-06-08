@@ -16,10 +16,10 @@ export async function Sidebar({ session }: { session: Session | null }) {
       <Link href="/" className="p-6 flex items-center gap-3 pb-6 hover:opacity-80 transition-opacity cursor-pointer text-left block w-full outline-none">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center relative shrink-0 shadow-md">
-            <span className="text-white font-bold text-xl">C</span>
+            <span className="text-white font-bold text-xl">V</span>
           </div>
           <div className="flex flex-col">
-            <span className="font-sans font-bold text-lg text-white tracking-wide leading-tight">Copallyt</span>
+            <span className="font-sans font-bold text-lg text-white tracking-wide leading-tight">Vibe Post</span>
             <span className="font-sans text-[0.65rem] text-slate-400 uppercase tracking-widest mt-0.5">Management Hub</span>
           </div>
         </div>

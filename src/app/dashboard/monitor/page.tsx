@@ -1,5 +1,5 @@
 import React from "react";
-import { getActiveWorkspaceContext } from "@/lib/actions/workspace";
+import { getActiveWorkspaceContext, getUserWorkspaces } from "@/lib/actions/workspace";
 import { MonitorTimeline } from "./MonitorTimeline";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +11,7 @@ export const metadata = {
 
 export default async function MonitorPage() {
   const workspace = await getActiveWorkspaceContext();
+  const workspaces = await getUserWorkspaces();
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out pb-12">
@@ -39,7 +40,10 @@ export default async function MonitorPage() {
       </div>
 
       {/* ── Timeline ── */}
-      <MonitorTimeline />
+      <MonitorTimeline
+        initialWorkspaceId={workspace?.id}
+        workspaces={workspaces.map(w => ({ id: w.id, name: w.name }))}
+      />
     </div>
   );
 }
