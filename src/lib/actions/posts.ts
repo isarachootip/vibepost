@@ -67,6 +67,7 @@ export async function getPublishedPostsForLanding(): Promise<{
         platform: t.socialConnection.platform,
         accountName: t.socialConnection.accountName,
         status: t.status,
+        externalPostId: t.externalPostId,
       })),
     }));
 

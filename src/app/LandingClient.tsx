@@ -84,6 +84,18 @@ function formatDate(date: Date | null, lang: string): string {
   }).format(new Date(date));
 }
 
+function getPostUrl(platform: string, externalId: string | null | undefined): string | null {
+  if (!externalId) return null;
+  if (platform === "FACEBOOK") {
+    if (externalId.includes("_")) {
+      const parts = externalId.split("_");
+      return `https://facebook.com/${parts[0]}/posts/${parts[1]}`;
+    }
+    return `https://facebook.com/${externalId}`;
+  }
+  return null;
+}
+
 const TRANSLATIONS = {
   th: {
     gallery: "ผลงานการโพสต์อัตโนมัติทุก Channel",
@@ -615,16 +627,34 @@ export default function LandingClient({ dbPosts, initialTotal, initialChannels }
                           {post.channels.map((ch: any, i: number) => {
                             const cfg = PLATFORM_CONFIG[ch.platform];
                             if (!cfg) return null;
-                            return (
+                            const postUrl = getPostUrl(ch.platform, ch.externalPostId);
+                            
+                            const badgeContent = (
                               <span
-                                key={i}
                                 className="lp-platform-badge"
-                                style={{ background: cfg.bg }}
+                                style={{ background: cfg.bg, cursor: postUrl ? 'pointer' : 'default' }}
                                 title={ch.accountName}
                               >
                                 {cfg.icon}
-                                {cfg.label}
+                                <span style={{ marginLeft: "2px" }}>{ch.accountName}</span>
+                                {postUrl && (
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "2px", opacity: 0.8 }}>
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>
+                                  </svg>
+                                )}
                               </span>
+                            );
+
+                            return (
+                              <React.Fragment key={i}>
+                                {postUrl ? (
+                                  <a href={postUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                                    {badgeContent}
+                                  </a>
+                                ) : (
+                                  badgeContent
+                                )}
+                              </React.Fragment>
                             );
                           })}
                         </div>
