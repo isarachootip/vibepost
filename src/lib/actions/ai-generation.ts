@@ -180,87 +180,119 @@ export async function generateAIImageAction(
 
     let generatedImageUrl = "";
     let finalProvider = provider;
+    let config = null;
 
-    // Fetch keys if specific provider requested
-    if (provider !== "FREE") {
-      const config = await prisma.promptConfig.findFirst({
+    // Check if there is an active GEMINI key in this workspace
+    const activeGeminiConfig = await prisma.promptConfig.findFirst({
+      where: { workspaceId: workspace.id, provider: "GEMINI", isActive: true },
+    });
+
+    if (provider === "FREE" && activeGeminiConfig) {
+      // Auto-upgrade FREE tier requests to GEMINI if an active key is found in the workspace
+      finalProvider = "GEMINI";
+      config = activeGeminiConfig;
+    } else if (provider !== "FREE") {
+      config = await prisma.promptConfig.findFirst({
         where: { workspaceId: workspace.id, provider: provider, isActive: true },
       });
-
       if (!config) {
         // Fallback to FREE if no key is configured
         finalProvider = "FREE";
-      } else {
-        if (provider === "GEMINI") {
-          try {
-            // Imagen 3 via Google Gemini API
-            const response = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:generateImages?key=${config.apiKey}`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  numberOfImages: 1,
-                  outputMimeType: "image/jpeg",
-                  prompt: { text: enhancedPrompt },
-                  aspectRatio: "1:1"
-                })
-              }
-            );
-            const data = await response.json();
-            if (!response.ok || !data.generatedImages?.[0]?.image?.imageBytes) {
-              throw new Error(data.error?.message || "Gemini Imagen API error");
-            }
-            // Gemini returns base64 image bytes
-            const base64Bytes = data.generatedImages[0].image.imageBytes;
-            
-            // Write to disk directly from base64
-            if (!existsSync(UPLOAD_DIR)) {
-              await mkdir(UPLOAD_DIR, { recursive: true });
-            }
-            const uniqueName = `ai-img-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.jpg`;
-            const filePath = path.join(UPLOAD_DIR, uniqueName);
-            await writeFile(filePath, Buffer.from(base64Bytes, "base64"));
-            generatedImageUrl = `${PUBLIC_BASE_URL}/api/files/${uniqueName}`;
-          } catch (e: any) {
-            console.error("Gemini Imagen failed, falling back to Pollinations:", e.message);
-            finalProvider = "FREE"; // fallback
-          }
-        } else if (provider === "OPENAI") {
-          try {
-            // DALL-E 3
-            const response = await fetch("https://api.openai.com/v1/images/generations", {
+      }
+    }
+
+    // Execute provider logic
+    if (finalProvider !== "FREE" && config) {
+      if (finalProvider === "GEMINI") {
+        try {
+          // Imagen 4.0 Fast via Google Gemini API
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${config.apiKey}`,
+            {
               method: "POST",
-              headers: {
-                "Authorization": `Bearer ${config.apiKey}`,
-                "Content-Type": "application/json"
-              },
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                model: "dall-e-3",
-                prompt: enhancedPrompt,
-                n: 1,
-                size: "1024x1024"
+                instances: [
+                  { prompt: enhancedPrompt }
+                ],
+                parameters: {
+                  sampleCount: 1,
+                  aspectRatio: "1:1",
+                  outputMimeType: "image/jpeg"
+                }
               })
-            });
-            const data = await response.json();
-            if (!response.ok || !data.data?.[0]?.url) {
-              throw new Error(data.error?.message || "DALL-E API error");
             }
-            generatedImageUrl = await downloadAndSaveFile(data.data[0].url, "jpg");
-          } catch (e: any) {
-            console.error("DALL-E failed, falling back to Pollinations:", e.message);
-            finalProvider = "FREE"; // fallback
+          );
+          const data = await response.json();
+          if (!response.ok || !data.predictions?.[0]?.bytesBase64Encoded) {
+            throw new Error(data.error?.message || "Gemini Imagen 4.0 API error");
           }
+          // Gemini returns base64 image bytes
+          const base64Bytes = data.predictions[0].bytesBase64Encoded;
+          
+          // Write to disk directly from base64
+          if (!existsSync(UPLOAD_DIR)) {
+            await mkdir(UPLOAD_DIR, { recursive: true });
+          }
+          const uniqueName = `ai-img-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.jpg`;
+          const filePath = path.join(UPLOAD_DIR, uniqueName);
+          await writeFile(filePath, Buffer.from(base64Bytes, "base64"));
+          generatedImageUrl = `${PUBLIC_BASE_URL}/api/files/${uniqueName}`;
+        } catch (e: any) {
+          console.error("Gemini Imagen failed, falling back to Pollinations/LoremFlickr:", e.message);
+          finalProvider = "FREE"; // fallback
+        }
+      } else if (finalProvider === "OPENAI") {
+        try {
+          // DALL-E 3
+          const response = await fetch("https://api.openai.com/v1/images/generations", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${config.apiKey}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              model: "dall-e-3",
+              prompt: enhancedPrompt,
+              n: 1,
+              size: "1024x1024"
+            })
+          });
+          const data = await response.json();
+          if (!response.ok || !data.data?.[0]?.url) {
+            throw new Error(data.error?.message || "DALL-E API error");
+          }
+          generatedImageUrl = await downloadAndSaveFile(data.data[0].url, "jpg");
+        } catch (e: any) {
+          console.error("DALL-E failed, falling back to Pollinations/LoremFlickr:", e.message);
+          finalProvider = "FREE"; // fallback
         }
       }
     }
 
-    // Free stable diffusion fallback (Pollinations.ai)
+    // Free stable diffusion fallback (Pollinations.ai / LoremFlickr)
     if (finalProvider === "FREE" || !generatedImageUrl) {
-      const randomSeed = Math.floor(Math.random() * 1000000);
-      const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=1024&height=1024&seed=${randomSeed}&nologo=true&private=true`;
-      
-      generatedImageUrl = await downloadAndSaveFile(pollinationsUrl, "jpg");
+      try {
+        const randomSeed = Math.floor(Math.random() * 1000000);
+        const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=1024&height=1024&seed=${randomSeed}&nologo=true&private=true`;
+        
+        generatedImageUrl = await downloadAndSaveFile(pollinationsUrl, "jpg");
+      } catch (e: any) {
+        console.error("Pollinations.ai failed (likely rate-limited), falling back to LoremFlickr:", e.message);
+        
+        // Clean prompt for loremflickr tags (comma-separated keywords)
+        const tags = prompt
+          .toLowerCase()
+          .replace(/[^a-z0-9\s,]/g, "") // Keep only letters, numbers, spaces, and commas
+          .split(/[\s,]+/) // Split by spaces or commas
+          .filter(tag => tag.length > 2 && !["and", "the", "with", "for", "beautiful", "high", "resolution", "style", "photo", "cinematic", "stunning", "details"].includes(tag))
+          .slice(0, 3) // Take up to 3 tags
+          .join(",");
+        
+        const fallbackUrl = `https://loremflickr.com/1024/1024/${tags || "business,marketing"}`;
+        console.log("Downloading fallback image from LoremFlickr URL:", fallbackUrl);
+        generatedImageUrl = await downloadAndSaveFile(fallbackUrl, "jpg");
+      }
     }
 
     // Save image to database MediaAsset
