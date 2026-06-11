@@ -7,6 +7,7 @@ import { writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 import { revalidatePath } from "next/cache";
+import crypto from "crypto";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "/app/uploads";
 const PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://vibepost.online";
@@ -383,6 +384,40 @@ export async function generateAIImageAction(
 }
 
 /**
+ * Helper to generate a JWT for Kling AI API using native crypto module.
+ */
+function generateKlingJWT(ak: string, sk: string): string {
+  const header = { alg: "HS256", typ: "JWT" };
+  const payload = {
+    iss: ak,
+    exp: Math.floor(Date.now() / 1000) + 1800, // Token expires in 30 minutes
+    nbf: Math.floor(Date.now() / 1000) - 5
+  };
+  
+  const base64UrlEncode = (str: string) => {
+    return Buffer.from(str)
+      .toString("base64")
+      .replace(/=/g, "")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_");
+  };
+  
+  const tokenHeader = base64UrlEncode(JSON.stringify(header));
+  const tokenPayload = base64UrlEncode(JSON.stringify(payload));
+  const signatureInput = `${tokenHeader}.${tokenPayload}`;
+  
+  const signature = crypto
+    .createHmac("sha256", sk)
+    .update(signatureInput)
+    .digest("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+    
+  return `${signatureInput}.${signature}`;
+}
+
+/**
  * Server Action: Fetches / generates a video based on keywords
  * and downloads it to local server storage.
  */
@@ -400,32 +435,175 @@ export async function generateAIVideoAction(prompt: string, category: string = "
       return { success: false, error: "โปรดระบุรายละเอียดวิดีโอหรือคีย์เวิร์ด" };
     }
 
-    // ── Clean & match keywords ──
-    const searchTerms = prompt.toLowerCase();
-    
-    // Find the best match in our curated videos
-    let matchedVideos = CURATED_VIDEOS.filter(video => {
-      // Check category
-      if (searchTerms.includes(video.category)) return true;
-      // Check tags
-      return video.tags.some(tag => searchTerms.includes(tag));
+    // ── Check if there is an active KLING or LUMA API config ──
+    const activeLumaConfig = await prisma.promptConfig.findFirst({
+      where: { workspaceId: workspace.id, provider: "LUMA", isActive: true },
+    });
+    const activeKlingConfig = await prisma.promptConfig.findFirst({
+      where: { workspaceId: workspace.id, provider: "KLING", isActive: true },
     });
 
-    // Fallback to category filter or trending selection
-    if (matchedVideos.length === 0) {
-      const categoryMatch = CURATED_VIDEOS.filter(v => v.category === category.toLowerCase());
-      if (categoryMatch.length > 0) {
-        matchedVideos = categoryMatch;
-      } else {
-        matchedVideos = CURATED_VIDEOS; // All videos fallback
+    let generatedVideoUrl = "";
+    let finalProvider = "FREE";
+    let finalModel = "pexels-stock-video";
+    let estimatedCost = 0.0;
+
+    // 1. Try Luma Dream Machine if active
+    if (activeLumaConfig && activeLumaConfig.apiKey) {
+      try {
+        console.log("Creating Luma Dream Machine video task...");
+        const response = await fetch("https://api.lumalabs.ai/dream-machine/v1/generations", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${activeLumaConfig.apiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            prompt: prompt,
+            aspect_ratio: "1:1"
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.id) {
+          throw new Error(data.error || "Luma API creation request failed");
+        }
+
+        const taskId = data.id;
+        console.log(`Luma Task created: ${taskId}. Starting status polling...`);
+
+        // Poll Luma status
+        let completed = false;
+        let attempts = 0;
+        while (!completed && attempts < 24) {
+          // Wait 5 seconds
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          attempts++;
+
+          const statusRes = await fetch(`https://api.lumalabs.ai/dream-machine/v1/generations/${taskId}`, {
+            headers: { "Authorization": `Bearer ${activeLumaConfig.apiKey}` }
+          });
+          const statusData = await statusRes.json();
+          if (!statusRes.ok) continue;
+
+          console.log(`Luma task state (Attempt ${attempts}): ${statusData.state}`);
+
+          if (statusData.state === "completed" && statusData.assets?.video) {
+            generatedVideoUrl = statusData.assets.video;
+            completed = true;
+          } else if (statusData.state === "failed") {
+            throw new Error(`Luma generation failed: ${statusData.failure_reason || "unknown error"}`);
+          }
+        }
+
+        if (!generatedVideoUrl) {
+          throw new Error("Luma video generation timed out");
+        }
+
+        finalProvider = "LUMA";
+        finalModel = "dream-machine-v1";
+        estimatedCost = 0.15; // Estimated cost in USD
+      } catch (err: any) {
+        console.error("Luma Video Generation failed, falling back to stock:", err.message);
       }
     }
 
-    // Pick a random matching video
-    const selectedVideo = matchedVideos[Math.floor(Math.random() * matchedVideos.length)];
-    
-    // Download the video file to our server uploads directory so Facebook Page API can access it
-    const localVideoUrl = await downloadAndSaveFile(selectedVideo.videoUrl, "mp4");
+    // 2. Try Kling AI if active (and Luma was not used or failed)
+    if (!generatedVideoUrl && activeKlingConfig && activeKlingConfig.apiKey) {
+      try {
+        console.log("Creating Kling AI video task...");
+        const [ak, sk] = activeKlingConfig.apiKey.split(":");
+        if (!ak || !sk) {
+          throw new Error("Invalid Kling API key format. Expected AccessKey:SecretKey");
+        }
+
+        const token = generateKlingJWT(ak, sk);
+        const response = await fetch("https://api-singapore.klingai.com/v1/videos/text2video", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model_name: "kling-v2-6",
+            prompt: prompt,
+            duration: "5"
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.data?.task_id) {
+          throw new Error(data.message || "Kling API creation request failed");
+        }
+
+        const taskId = data.data.task_id;
+        console.log(`Kling Task created: ${taskId}. Starting status polling...`);
+
+        // Poll Kling status
+        let completed = false;
+        let attempts = 0;
+        while (!completed && attempts < 24) {
+          // Wait 5 seconds
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          attempts++;
+
+          const statusRes = await fetch(`https://api-singapore.klingai.com/v1/videos/text2video/${taskId}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const statusData = await statusRes.json();
+          if (!statusRes.ok) continue;
+
+          const task = statusData.data;
+          console.log(`Kling task status (Attempt ${attempts}): ${task?.task_status}`);
+
+          if (task?.task_status === "succeed") {
+            generatedVideoUrl = task.video_result?.videos?.[0]?.url || "";
+            completed = true;
+          } else if (task?.task_status === "failed") {
+            throw new Error(`Kling generation failed: ${task.task_status_msg || "unknown error"}`);
+          }
+        }
+
+        if (!generatedVideoUrl) {
+          throw new Error("Kling video generation timed out");
+        }
+
+        finalProvider = "KLING";
+        finalModel = "kling-v2-6";
+        estimatedCost = 0.12; // Estimated cost in USD
+      } catch (err: any) {
+        console.error("Kling Video Generation failed, falling back to stock:", err.message);
+      }
+    }
+
+    // 3. Fallback to Curated stock videos from Pexels if no AI succeeded
+    if (!generatedVideoUrl) {
+      console.log("No AI Video configuration active or generation failed. Falling back to Stock Video.");
+      const searchTerms = prompt.toLowerCase();
+      
+      let matchedVideos = CURATED_VIDEOS.filter(video => {
+        if (searchTerms.includes(video.category)) return true;
+        return video.tags.some(tag => searchTerms.includes(tag));
+      });
+
+      if (matchedVideos.length === 0) {
+        const categoryMatch = CURATED_VIDEOS.filter(v => v.category === category.toLowerCase());
+        if (categoryMatch.length > 0) {
+          matchedVideos = categoryMatch;
+        } else {
+          matchedVideos = CURATED_VIDEOS;
+        }
+      }
+
+      const selectedVideo = matchedVideos[Math.floor(Math.random() * matchedVideos.length)];
+      generatedVideoUrl = selectedVideo.videoUrl;
+      finalProvider = "FREE";
+      finalModel = "pexels-stock-video";
+      estimatedCost = 0.0;
+    }
+
+    // Download the video file to local upload directory
+    const localVideoUrl = await downloadAndSaveFile(generatedVideoUrl, "mp4");
 
     // Save video to database MediaAsset
     const asset = await prisma.mediaAsset.create({
@@ -438,8 +616,8 @@ export async function generateAIVideoAction(prompt: string, category: string = "
       }
     });
 
-    // Log video usage ($0.00 cost)
-    await recordAIUsage(workspace.id, "VIDEO", "FREE", "pexels-stock-video", 0, 0, 0, 0.00);
+    // Log video usage in billing logs
+    await recordAIUsage(workspace.id, "VIDEO", finalProvider, finalModel, 0, 0, 0, estimatedCost);
 
     revalidatePath("/dashboard/multi-post");
     return { success: true, asset };
@@ -508,7 +686,41 @@ Do NOT wrap the entire response in markdown block tags like \`\`\``;
 
     let textContent = "";
 
-    if (promptConfig.provider === "GEMINI") {
+    if (promptConfig.provider === "KIMI") {
+      try {
+        const response = await fetch("https://api.moonshot.cn/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${promptConfig.apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "moonshot-v1-8k",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt }
+            ]
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error?.message || "Kimi API request failed");
+        }
+        textContent = data.choices[0].message.content;
+
+        // Record token usage & cost
+        const usage = data.usage;
+        const promptTokens = usage?.prompt_tokens || 0;
+        const completionTokens = usage?.completion_tokens || 0;
+        const totalTokens = usage?.total_tokens || 0;
+        const cost = (promptTokens * 1.65 + completionTokens * 1.65) / 1000000;
+        
+        await recordAIUsage(workspace.id, "ARTICLE", "KIMI", "moonshot-v1-8k", promptTokens, completionTokens, totalTokens, cost);
+      } catch (e: any) {
+        console.error("Kimi API failed:", e.message);
+        throw e;
+      }
+    } else if (promptConfig.provider === "GEMINI") {
       const geminiModels = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"];
       let success = false;
       let lastError = "";

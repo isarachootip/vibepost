@@ -121,6 +121,9 @@ enum AIProvider {
   OPENAI
   CLAUDE
   GEMINI
+  KIMI
+  KLING
+  LUMA
 }
 
 model Post {

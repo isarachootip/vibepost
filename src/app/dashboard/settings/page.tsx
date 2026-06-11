@@ -5,10 +5,13 @@ import { prisma } from "@/lib/prisma";
 import { APIKeyRow } from "./APIKeyRow";
 
 const AI_PROVIDERS = [
-  { id: "GEMINI", name: "Google Gemini", description: "Gemini 2.5 Flash / Pro — แนะนำสำหรับภาษาไทย", icon: "🤖" },
-  { id: "OPENAI", name: "OpenAI / ChatGPT", description: "GPT-4o, GPT-4 Turbo — ผลลัพธ์สูง", icon: "⚡" },
-  { id: "CLAUDE", name: "Anthropic Claude", description: "Claude 3.5 Sonnet — เขียนได้ดีมาก", icon: "🧠" },
-  { id: "OPENROUTER", name: "OpenRouter AI", description: "รวมหลาย model ผ่าน API เดียว", icon: "🔀" },
+  { id: "GEMINI", name: "Google Gemini", description: "Gemini 2.5 Flash / Pro — แนะนำสำหรับภาษาไทย", icon: "🤖", category: "text" },
+  { id: "OPENAI", name: "OpenAI / ChatGPT", description: "GPT-4o, GPT-4 Turbo — ผลลัพธ์สูง", icon: "⚡", category: "text" },
+  { id: "CLAUDE", name: "Anthropic Claude", description: "Claude 3.5 Sonnet — เขียนได้ดีมาก", icon: "🧠", category: "text" },
+  { id: "OPENROUTER", name: "OpenRouter AI", description: "รวมหลาย model ผ่าน API เดียว", icon: "🔀", category: "text" },
+  { id: "KIMI", name: "Moonshot / Kimi AI", description: "Kimi Moonshot-v1 — เขียนภาษาไทยและจีนยอดเยี่ยม", icon: "🌙", category: "text" },
+  { id: "KLING", name: "Kling AI Video", description: "Kling API Key ในรูปแบบ AccessKey:SecretKey (เช่น AK_xxx:SK_xxx)", icon: "🎬", category: "media" },
+  { id: "LUMA", name: "Luma Dream Machine", description: "Luma AI Dream Machine Video Bearer Token", icon: "🎥", category: "media" },
 ];
 
 async function getUserWorkspaceRole(workspaceId: string) {
@@ -52,12 +55,26 @@ export default async function SettingsPage() {
     VIEWER: "👁️ Viewer",
   };
 
+  const configs = workspace.promptConfigs || [];
+  
+  // Calculate current workspace engine status
+  const activeTextProvider = AI_PROVIDERS.find(p => p.category === "text" && configs.some(c => c.provider === p.id && c.isActive));
+  const activeVideoProvider = AI_PROVIDERS.find(p => p.category === "media" && configs.some(c => c.provider === p.id && c.isActive));
+  
+  const hasGeminiKey = configs.some(c => c.provider === "GEMINI" && c.isActive);
+  const hasOpenAIKey = configs.some(c => c.provider === "OPENAI" && c.isActive);
+  const activeImageEngine = hasGeminiKey 
+    ? "Google Imagen 4.0 Fast (Auto-upgrade)"
+    : hasOpenAIKey
+    ? "OpenAI DALL-E 3 (Auto-upgrade)"
+    : "Free Stable Diffusion (Default)";
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto pb-12">
       <header className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-1">⚙️ Settings — {workspace.name}</h1>
-          <p className="text-slate-500 text-sm">ตั้งค่า AI Provider สำหรับ Workspace นี้</p>
+          <p className="text-slate-500 text-sm">ตั้งค่า AI Provider และเครื่องมือสำหรับ Workspace นี้</p>
         </div>
         {userInfo && (
           <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${roleColors[userInfo.role as string] || roleColors.MEMBER}`}>
@@ -77,16 +94,79 @@ export default async function SettingsPage() {
         </div>
       )}
 
-      {/* AI Config */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
-          <span>🤖</span> AI API Keys
-          <span className="text-xs font-normal text-slate-400 ml-1">— เฉพาะ Workspace นี้เท่านั้น</span>
-        </h2>
+      {/* 🚀 Workspace Configuration Summary Card */}
+      <div className="rounded-2xl border border-indigo-150 bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/50 p-6 shadow-xs space-y-4">
+        <div>
+          <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <span>✨</span> Workspace Configuration Summary
+          </h3>
+          <p className="text-xs text-slate-400 mt-0.5">สรุปสถานะการประมวลผลของสมองกล AI ในพื้นที่ทำงานนี้</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 bg-white border border-slate-100 rounded-xl space-y-1.5 shadow-xs">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">✍️ การเขียนบทความ (Text)</span>
+            <span className={`text-xs font-black px-2 py-0.5 rounded-md inline-block ${activeTextProvider ? "bg-indigo-50 text-indigo-700 border border-indigo-100" : "bg-slate-100 text-slate-500"}`}>
+              {activeTextProvider ? `${activeTextProvider.icon} ${activeTextProvider.name}` : "⚠️ ยังไม่ได้ตั้งค่า (Not Configured)"}
+            </span>
+          </div>
+
+          <div className="p-4 bg-white border border-slate-100 rounded-xl space-y-1.5 shadow-xs">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">🎨 การสร้างรูปภาพ (Image)</span>
+            <span className="text-xs font-black px-2 py-0.5 rounded-md inline-block bg-purple-50 text-purple-700 border border-purple-100">
+              🖼️ {activeImageEngine}
+            </span>
+          </div>
+
+          <div className="p-4 bg-white border border-slate-100 rounded-xl space-y-1.5 shadow-xs">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">🎬 การสร้างวิดีโอ (Video)</span>
+            <span className={`text-xs font-black px-2 py-0.5 rounded-md inline-block ${activeVideoProvider ? "bg-rose-50 text-rose-700 border border-rose-100" : "bg-slate-100 text-slate-500"}`}>
+              {activeVideoProvider ? `${activeVideoProvider.icon} ${activeVideoProvider.name}` : "📼 Curated Stock Video (Pexels)"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Group 1: Text Content Config */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+        <div>
+          <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+            <span>✍️</span> 1. เครื่องมือเขียนบทความ (Text Content Generators)
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">กำหนดค่าคีย์ API สำหรับการสร้างสรรค์ข้อความ แคปชัน และแคมเปญโฆษณา</p>
+        </div>
 
         <div className="space-y-4">
-          {AI_PROVIDERS.map((provider) => {
-            const config = workspace.promptConfigs.find(c => c.provider === provider.id);
+          {AI_PROVIDERS.filter(p => p.category === "text").map((provider) => {
+            const config = configs.find(c => c.provider === provider.id);
+            const isConfigured = !!config && config.isActive;
+
+            return (
+              <APIKeyRow
+                key={provider.id}
+                providerId={provider.id as any}
+                name={`${provider.icon} ${provider.name}`}
+                description={provider.description}
+                isConfigured={isConfigured}
+                isReadOnly={!isAdmin}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Group 2: Media Config */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+        <div>
+          <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+            <span>🎬</span> 2. เครื่องมือสร้างวิดีโอสตูดิโอ (Visuals & Video Generators)
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">กำหนดค่าคีย์ API สำหรับการเจเนอเรตวิดีโอแบบ AI Text-to-Video อัจฉริยะ</p>
+        </div>
+
+        <div className="space-y-4">
+          {AI_PROVIDERS.filter(p => p.category === "media").map((provider) => {
+            const config = configs.find(c => c.provider === provider.id);
             const isConfigured = !!config && config.isActive;
 
             return (
