@@ -21,6 +21,7 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSelectVideo: (url: string) => void;
+  initialPrompt?: string;
 };
 
 type VideoItem = {
@@ -42,11 +43,28 @@ const CATEGORIES = [
   { id: "travel", label: "✈️ ท่องเที่ยว/ทะเล" },
 ];
 
-export function AIVideoStudioModal({ isOpen, onClose, onSelectVideo }: Props) {
+export function AIVideoStudioModal({ isOpen, onClose, onSelectVideo, initialPrompt }: Props) {
   const [prompt, setPrompt] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("trending");
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loadingList, setLoadingList] = useState(true);
+
+  // Copy initialPrompt and trigger custom search when modal opens
+  useEffect(() => {
+    if (isOpen && initialPrompt) {
+      // Clean up the prompt to use only 2-3 words (since search works better with short tags)
+      const cleanPrompt = initialPrompt
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, "")
+        .split(/\s+/)
+        .filter(w => w.length > 2 && !["and", "the", "with", "for", "beautiful", "high", "resolution"].includes(w))
+        .slice(0, 2)
+        .join(" ");
+      
+      setPrompt(cleanPrompt || initialPrompt.substring(0, 20));
+      setSelectedCategory("custom");
+    }
+  }, [isOpen, initialPrompt]);
   
   // Generating (downloading and registering) states
   const [generating, setGenerating] = useState(false);

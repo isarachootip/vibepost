@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { generateAIImageAction } from "@/lib/actions/ai-generation";
 import { Sparkles, Loader2, Image as ImageIcon, Check } from "lucide-react";
 
@@ -18,6 +19,7 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSelectImage: (url: string) => void;
+  initialPrompt?: string;
 };
 
 const STYLES = [
@@ -34,13 +36,36 @@ const PROVIDERS = [
   { id: "OPENAI" as const, label: "🧠 OpenAI DALL-E 3 (ใช้คีย์สเปซ)", desc: "เข้าใจคำสั่งละเอียด ตอบสนองได้ดีเยี่ยม" },
 ];
 
-export function AIImageCreatorModal({ isOpen, onClose, onSelectImage }: Props) {
+export function AIImageCreatorModal({ isOpen, onClose, onSelectImage, initialPrompt }: Props) {
   const [prompt, setPrompt] = useState("");
   const [selectedStyle, setSelectedStyle] = useState("photo");
   const [selectedProvider, setSelectedProvider] = useState<"FREE" | "GEMINI" | "OPENAI">("FREE");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Prompt Engineering Builder States
+  const [promptMode, setPromptMode] = useState<"direct" | "builder">("direct");
+  const [subject, setSubject] = useState("");
+  const [setting, setSetting] = useState("");
+  const [style, setStyle] = useState("");
+  const [camera, setCamera] = useState("");
+
+  // Copy initialPrompt when modal opens
+  useEffect(() => {
+    if (isOpen && initialPrompt) {
+      setPrompt(initialPrompt);
+      setPromptMode("direct"); // Default to direct editing for pre-populated article text
+    }
+  }, [isOpen, initialPrompt]);
+
+  // Combine builder fields into prompt state in real-time
+  useEffect(() => {
+    if (promptMode === "builder") {
+      const combined = [subject, setting, style, camera].filter(Boolean).join(", ");
+      setPrompt(combined);
+    }
+  }, [promptMode, subject, setting, style, camera]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -72,6 +97,10 @@ export function AIImageCreatorModal({ isOpen, onClose, onSelectImage }: Props) {
       onClose();
       // Reset state
       setPrompt("");
+      setSubject("");
+      setSetting("");
+      setStyle("");
+      setCamera("");
       setPreviewUrl(null);
     }
   };
@@ -101,33 +130,108 @@ export function AIImageCreatorModal({ isOpen, onClose, onSelectImage }: Props) {
             <div className="space-y-5">
               <div>
                 <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
-                  1. คำอธิบายรูปภาพ (Prompt)
+                  1. การสร้างคำสั่งภาพ (Prompt Editor)
                 </Label>
-                <Textarea
-                  placeholder="เช่น ถ้วยกาแฟสกัดเย็น วางอยู่บนโต๊ะไม้ที่มีแสงแดดส่องผ่านหน้าต่าง สไตล์อบอุ่น..."
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  className="bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400 h-28 focus-visible:ring-purple-500 rounded-xl text-sm resize-none leading-relaxed"
-                />
+                
+                {/* Mode Selector Toggle */}
+                <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mb-3 border border-slate-200/50">
+                  <button
+                    type="button"
+                    onClick={() => setPromptMode("direct")}
+                    className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${
+                      promptMode === "direct"
+                        ? "bg-white text-purple-900 shadow-sm border border-slate-200"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    ✍️ คีย์คำสั่งหลัก (Direct)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPromptMode("builder")}
+                    className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${
+                      promptMode === "builder"
+                        ? "bg-white text-purple-900 shadow-sm border border-slate-200"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    🤖 สร้างคำสั่งแยกส่วน (Builder)
+                  </button>
+                </div>
+
+                {promptMode === "direct" ? (
+                  <Textarea
+                    placeholder="เช่น ถ้วยกาแฟสกัดเย็น วางอยู่บนโต๊ะไม้ที่มีแสงแดดส่องผ่านหน้าต่าง สไตล์อบอุ่น..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    className="bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400 h-44 focus-visible:ring-purple-500 rounded-xl text-sm resize-none leading-relaxed"
+                  />
+                ) : (
+                  <div className="space-y-2.5 p-3 border border-slate-200 bg-slate-50 rounded-xl">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">วัตถุหลัก (Subject)</span>
+                      <Input
+                        placeholder="เช่น แก้วกาแฟเอสเปรสโซ่ร้อน, แมวส้มแสนน่ารัก"
+                        value={subject}
+                        onChange={(e) => setSubject(e.target.value)}
+                        className="bg-white border-slate-200 text-slate-800 text-xs rounded-xl focus-visible:ring-purple-500 h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">ฉากหลัง/สถานที่ (Setting)</span>
+                      <Input
+                        placeholder="เช่น วางบนโต๊ะไม้ริมหน้าต่างในคาเฟ่ยามเช้า"
+                        value={setting}
+                        onChange={(e) => setSetting(e.target.value)}
+                        className="bg-white border-slate-200 text-slate-800 text-xs rounded-xl focus-visible:ring-purple-500 h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">สไตล์และแสง (Style & Lighting)</span>
+                      <Input
+                        placeholder="เช่น ภาพถ่ายสไตล์สมจริง แสงแดดอุ่นส่องเฉียง"
+                        value={style}
+                        onChange={(e) => setStyle(e.target.value)}
+                        className="bg-white border-slate-200 text-slate-800 text-xs rounded-xl focus-visible:ring-purple-500 h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">มุมกล้องและเลนส์ (Camera/Lens)</span>
+                      <Input
+                        placeholder="เช่น ภาพโคลสอัพ หน้าชัดหลังเบลอ (Close-up)"
+                        value={camera}
+                        onChange={(e) => setCamera(e.target.value)}
+                        className="bg-white border-slate-200 text-slate-800 text-xs rounded-xl focus-visible:ring-purple-500 h-9"
+                      />
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200/50">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Preview Prompt ผลรวม</span>
+                      <div className="p-2 bg-purple-50/50 border border-purple-100 rounded-lg text-[10px] text-purple-950 font-mono max-h-16 overflow-y-auto select-all leading-relaxed break-words">
+                        {prompt || "กรอกข้อมูลด้านบนเพื่อรวบรวม..."}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
                 <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
                   2. เลือกสไตล์ภาพ (Style)
                 </Label>
-                <div className="grid grid-cols-1 gap-2">
+                <div className="grid grid-cols-1 gap-1.5">
                   {STYLES.map((style) => (
                     <button
                       key={style.id}
                       onClick={() => setSelectedStyle(style.id)}
-                      className={`p-3 text-left rounded-xl border text-sm transition-all duration-200 flex flex-col ${
+                      className={`p-2.5 text-left rounded-xl border text-xs transition-all duration-200 flex flex-col ${
                         selectedStyle === style.id
                           ? "border-purple-600 bg-purple-50/50 text-purple-900 shadow-sm"
                           : "border-slate-200 hover:border-slate-300 bg-white"
                       }`}
                     >
                       <span className="font-bold">{style.label}</span>
-                      <span className="text-xs text-slate-400 mt-0.5">{style.desc}</span>
+                      <span className="text-[10px] text-slate-400 mt-0.5">{style.desc}</span>
                     </button>
                   ))}
                 </div>
@@ -137,19 +241,19 @@ export function AIImageCreatorModal({ isOpen, onClose, onSelectImage }: Props) {
                 <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
                   3. เลือกผู้ให้บริการ AI (AI engine)
                 </Label>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {PROVIDERS.map((provider) => (
                     <button
                       key={provider.id}
                       onClick={() => setSelectedProvider(provider.id)}
-                      className={`w-full p-3 text-left rounded-xl border text-sm transition-all duration-200 flex flex-col ${
+                      className={`w-full p-2.5 text-left rounded-xl border text-xs transition-all duration-200 flex flex-col ${
                         selectedProvider === provider.id
                           ? "border-purple-600 bg-purple-50/50 text-purple-900 shadow-sm"
                           : "border-slate-200 hover:border-slate-300 bg-white"
                       }`}
                     >
                       <span className="font-bold">{provider.label}</span>
-                      <span className="text-xs text-slate-400 mt-0.5">{provider.desc}</span>
+                      <span className="text-[10px] text-slate-400 mt-0.5">{provider.desc}</span>
                     </button>
                   ))}
                 </div>

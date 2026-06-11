@@ -11,6 +11,62 @@ import { revalidatePath } from "next/cache";
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "/app/uploads";
 const PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://vibepost.online";
 
+/**
+ * Helper to record AI usage log.
+ */
+async function recordAIUsage(
+  workspaceId: string,
+  actionType: "ARTICLE" | "IMAGE" | "VIDEO",
+  provider: string,
+  modelName: string | null,
+  promptTokens: number,
+  completionTokens: number,
+  totalTokens: number,
+  estimatedCost: number
+) {
+  try {
+    await prisma.aIUsageLog.create({
+      data: {
+        workspaceId,
+        actionType,
+        provider,
+        modelName,
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        estimatedCost
+      }
+    });
+  } catch (err) {
+    console.error("Failed to record AI usage log:", err);
+  }
+}
+
+/**
+ * Helper to calculate article cost based on model name and tokens.
+ */
+function calculateArticleCost(modelName: string, promptTokens: number, completionTokens: number): number {
+  let cost = 0;
+  const model = modelName.toLowerCase();
+  
+  if (model.includes("gemini-2.5-pro")) {
+    // Input: $1.25 / 1M, Output: $5.00 / 1M
+    cost = (promptTokens * 1.25 + completionTokens * 5.00) / 1000000;
+  } else if (model.includes("gemini-2.5-flash") || model.includes("gemini-2.0-flash") || model.includes("gemini-3") || model.includes("gemini-2")) {
+    // Input: $0.075 / 1M, Output: $0.30 / 1M
+    cost = (promptTokens * 0.075 + completionTokens * 0.30) / 1000000;
+  } else if (model.includes("gpt-3.5") || model.includes("openai")) {
+    // Input: $0.50 / 1M, Output: $1.50 / 1M
+    cost = (promptTokens * 0.50 + completionTokens * 1.50) / 1000000;
+  } else {
+    // Default low rate
+    cost = (promptTokens * 0.10 + completionTokens * 0.40) / 1000000;
+  }
+  
+  return cost;
+}
+
+
 // Curated stunning high-definition stock video database
 const CURATED_VIDEOS = [
   {
@@ -238,6 +294,9 @@ export async function generateAIImageAction(
           const filePath = path.join(UPLOAD_DIR, uniqueName);
           await writeFile(filePath, Buffer.from(base64Bytes, "base64"));
           generatedImageUrl = `${PUBLIC_BASE_URL}/api/files/${uniqueName}`;
+
+          // Log Gemini Imagen Usage ($0.03 estimated cost)
+          await recordAIUsage(workspace.id, "IMAGE", "GEMINI", "imagen-4.0-fast-generate-001", 0, 0, 0, 0.03);
         } catch (e: any) {
           console.error("Gemini Imagen failed, falling back to Pollinations/LoremFlickr:", e.message);
           finalProvider = "FREE"; // fallback
@@ -263,6 +322,9 @@ export async function generateAIImageAction(
             throw new Error(data.error?.message || "DALL-E API error");
           }
           generatedImageUrl = await downloadAndSaveFile(data.data[0].url, "jpg");
+
+          // Log OpenAI DALL-E 3 Usage ($0.04 estimated cost)
+          await recordAIUsage(workspace.id, "IMAGE", "OPENAI", "dall-e-3", 0, 0, 0, 0.04);
         } catch (e: any) {
           console.error("DALL-E failed, falling back to Pollinations/LoremFlickr:", e.message);
           finalProvider = "FREE"; // fallback
@@ -277,6 +339,9 @@ export async function generateAIImageAction(
         const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=1024&height=1024&seed=${randomSeed}&nologo=true&private=true`;
         
         generatedImageUrl = await downloadAndSaveFile(pollinationsUrl, "jpg");
+
+        // Log Pollinations Usage ($0.00 cost)
+        await recordAIUsage(workspace.id, "IMAGE", "FREE", "pollinations.ai", 0, 0, 0, 0.00);
       } catch (e: any) {
         console.error("Pollinations.ai failed (likely rate-limited), falling back to LoremFlickr:", e.message);
         
@@ -292,6 +357,9 @@ export async function generateAIImageAction(
         const fallbackUrl = `https://loremflickr.com/1024/1024/${tags || "business,marketing"}`;
         console.log("Downloading fallback image from LoremFlickr URL:", fallbackUrl);
         generatedImageUrl = await downloadAndSaveFile(fallbackUrl, "jpg");
+
+        // Log LoremFlickr Usage ($0.00 cost)
+        await recordAIUsage(workspace.id, "IMAGE", "FREE", "loremflickr", 0, 0, 0, 0.00);
       }
     }
 
@@ -370,6 +438,9 @@ export async function generateAIVideoAction(prompt: string, category: string = "
       }
     });
 
+    // Log video usage ($0.00 cost)
+    await recordAIUsage(workspace.id, "VIDEO", "FREE", "pexels-stock-video", 0, 0, 0, 0.00);
+
     revalidatePath("/dashboard/multi-post");
     return { success: true, asset };
   } catch (error: any) {
@@ -379,7 +450,7 @@ export async function generateAIVideoAction(prompt: string, category: string = "
 }
 
 /**
- * Server Action: Generates a highly-structured article based on topic, tone, language.
+ * Server Action: Generates 3 highly-structured content formats based on topic, tone, language.
  */
 export async function generateAIArticleAction(
   topic: string,
@@ -412,23 +483,28 @@ export async function generateAIArticleAction(
     }
 
     // Set up the article writing prompt
-    const systemPrompt = `You are a professional article writer and copywriter.
-Generate a structured, highly-engaging long-form article based on the topic.
-Format the article clearly with:
-1. A catchy headline
-2. An engaging introduction paragraph
-3. Two or three main body paragraphs, each separated by a subheading
-4. A concluding paragraph with a clear Call to Action (CTA)
-5. 5-7 targeted hashtags at the bottom
+    const systemPrompt = `You are an expert copywriter. Generate 3 distinct formats of content based on the topic.
+Write strictly in ${language} language.
+Use tone of voice: ${tone}.
+Target length/depth for the content: ${length}.
 
-IMPORTANT RULES:
-- Write strictly in ${language} language.
-- Use paragraph breaks (double newlines) for readability.
-- Do NOT wrap the entire response in markdown block tags like \`\`\`markdown.
-- Tone of voice: ${tone} (e.g. professional, informative, sales/hard-sell, casual/fun, storytelling).
-- Target length: ${length} (e.g. short: ~200 words, medium: ~450 words, long: ~800 words).`;
+Format 1: Long-form Article (บทความยาวเป็นทางการ)
+Format 2: Social Media Caption (แคปชันโซเชียลสั้น มี Emojis & เว้นวรรคน่าอ่าน)
+Format 3: Marketing Copy / AIDA Structure (เนื้อหาเชิงโฆษณาตามหลัก AIDA: Attention, Interest, Desire, Action)
 
-    const userPrompt = `Topic: "${topic}"\nTone: ${tone}\nLength: ${length}\nLanguage: ${language}\n\nWrite the article now:`;
+You MUST separate the 3 formats using exactly these delimiters:
+=== FORMAT 1: LONG_FORM ===
+[insert Content for Format 1 here]
+
+=== FORMAT 2: SOCIAL_POST ===
+[insert Content for Format 2 here]
+
+=== FORMAT 3: MARKETING_AIDA ===
+[insert Content for Format 3 here]
+
+Do NOT wrap the entire response in markdown block tags like \`\`\``;
+
+    const userPrompt = `Topic: "${topic}"\nTone: ${tone}\nLength: ${length}\nLanguage: ${language}\n\nWrite the 3 formats now:`;
 
     let textContent = "";
 
@@ -457,6 +533,16 @@ IMPORTANT RULES:
           const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (text) {
             textContent = text;
+            
+            // Record token usage & cost
+            const usage = data.usageMetadata;
+            const promptTokens = usage?.promptTokenCount || 0;
+            const completionTokens = usage?.candidatesTokenCount || 0;
+            const totalTokens = usage?.totalTokenCount || 0;
+            const cost = calculateArticleCost(model, promptTokens, completionTokens);
+            
+            await recordAIUsage(workspace.id, "ARTICLE", "GEMINI", model, promptTokens, completionTokens, totalTokens, cost);
+            
             success = true;
             break;
           }
@@ -490,11 +576,86 @@ IMPORTANT RULES:
         throw new Error(data.error?.message || "API request failed");
       }
       textContent = data.choices[0].message.content;
+
+      // Record token usage & cost
+      const usage = data.usage;
+      const promptTokens = usage?.prompt_tokens || 0;
+      const completionTokens = usage?.completion_tokens || 0;
+      const totalTokens = usage?.total_tokens || 0;
+      const cost = calculateArticleCost("openai/gpt-3.5-turbo", promptTokens, completionTokens);
+      
+      await recordAIUsage(workspace.id, "ARTICLE", "OPENAI", "openai/gpt-3.5-turbo", promptTokens, completionTokens, totalTokens, cost);
     }
 
-    return { success: true, article: textContent.trim() };
+    // Parsing helper
+    let longFormText = "";
+    let socialPostText = "";
+    let marketingAidaText = "";
+
+    const cleanText = textContent.trim();
+    if (cleanText.includes("=== FORMAT 1: LONG_FORM ===")) {
+      const parts = cleanText.split(/=== FORMAT \d: [A-Z_]+ ===/);
+      longFormText = parts[1]?.trim() || "";
+      socialPostText = parts[2]?.trim() || "";
+      marketingAidaText = parts[3]?.trim() || "";
+    }
+
+    // Fallback if delimiters were missing
+    if (!longFormText) {
+      longFormText = cleanText;
+      socialPostText = cleanText.substring(0, Math.min(300, cleanText.length)) + "...";
+      marketingAidaText = `Attention: ${topic}\nInterest: Interested in ${topic}?\nDesire: Want to know more about ${topic}?\nAction: Contact us!`;
+    }
+
+    return { 
+      success: true, 
+      article: longFormText, 
+      formats: { 
+        longForm: longFormText, 
+        socialPost: socialPostText, 
+        marketingAida: marketingAidaText 
+      } 
+    };
   } catch (error: any) {
     console.error("Generate AI Article Error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Server Action: Fetches AI Usage statistics for the active workspace.
+ */
+export async function getAIUsageStatsAction() {
+  try {
+    const workspace = await getActiveWorkspaceContext();
+    if (!workspace) return { success: false, error: "Workspace not found" };
+
+    const logs = await prisma.aIUsageLog.findMany({
+      where: { workspaceId: workspace.id },
+      orderBy: { createdAt: "desc" }
+    });
+
+    const totalCost = logs.reduce((sum, log) => sum + log.estimatedCost, 0);
+    const totalTokens = logs.reduce((sum, log) => sum + log.totalTokens, 0);
+
+    const articleLogs = logs.filter(l => l.actionType === "ARTICLE");
+    const imageLogs = logs.filter(l => l.actionType === "IMAGE");
+    const videoLogs = logs.filter(l => l.actionType === "VIDEO");
+
+    return {
+      success: true,
+      stats: {
+        totalCost,
+        totalTokens,
+        totalCalls: logs.length,
+        articleCalls: articleLogs.length,
+        imageCalls: imageLogs.length,
+        videoCalls: videoLogs.length,
+        logs: logs.slice(0, 15) // Return latest 15 logs
+      }
+    };
+  } catch (error: any) {
+    console.error("Get AI Usage Stats Error:", error);
     return { success: false, error: error.message };
   }
 }
