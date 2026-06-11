@@ -259,12 +259,15 @@ export async function createScheduledPost(data: {
 
     if (allImageUrls.length > 0) {
       for (const url of allImageUrls) {
+        const ext = url.split(".").pop()?.toLowerCase() || "";
+        const isVideo = ["mp4", "webm", "mov", "quicktime"].includes(ext);
+        
         const asset = await prisma.mediaAsset.create({
           data: {
             workspaceId: workspace.id,
-            fileName: url.split("/").pop() || "image.jpg",
+            fileName: url.split("/").pop() || (isVideo ? "video.mp4" : "image.jpg"),
             fileUrl: url,
-            fileType: "IMAGE",
+            fileType: isVideo ? "VIDEO" : "IMAGE",
             status: "APPROVED",
           },
         });

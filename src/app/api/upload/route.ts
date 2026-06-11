@@ -20,17 +20,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file type
-    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "video/mp4",
+      "video/webm",
+      "video/quicktime",
+    ];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: "Invalid file type. Only JPEG, PNG, GIF, WEBP allowed." },
+        { error: "Invalid file type. Only JPEG, PNG, GIF, WEBP and MP4/WEBM/MOV videos are allowed." },
         { status: 400 }
       );
     }
 
-    // Max 10MB
-    if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: "File too large. Max 10MB." }, { status: 400 });
+    // Max 50MB
+    if (file.size > 50 * 1024 * 1024) {
+      return NextResponse.json({ error: "File too large. Max 50MB." }, { status: 400 });
     }
 
     // Ensure upload directory exists

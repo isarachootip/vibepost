@@ -68,13 +68,19 @@ export function PublisherShell({ connections }: { connections: Connection[] }) {
       )}
 
       {selectedType === "video" && (
-        <div className="flex flex-col items-center justify-center py-20 animate-in fade-in">
-          <div className="text-6xl mb-4">🎬</div>
-          <h3 className="text-xl font-bold text-slate-800 mb-2">Video Post</h3>
-          <p className="text-slate-500 text-sm mb-6">ฟีเจอร์นี้กำลังพัฒนาอยู่ครับ เร็วๆ นี้!</p>
-          <button onClick={handleBack} className="px-6 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium text-sm transition-colors">
-            ← กลับ
-          </button>
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="mb-4">
+            <button onClick={handleBack} className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1.5 transition-colors">
+              ← เปลี่ยนประเภท Post
+            </button>
+          </div>
+          {connections.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
+              <p className="text-slate-500">No social connections found. Please add them in Integrations.</p>
+            </div>
+          ) : (
+            <SinglePostWizard connections={connections} defaultMediaType="video" />
+          )}
         </div>
       )}
     </div>

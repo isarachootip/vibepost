@@ -10,8 +10,12 @@ import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import {
   CalendarIcon, Sparkles, Send, CheckCircle2, RefreshCcw,
-  Upload, X, Clock, LayoutTemplate, ArrowLeft
+  Upload, X, Clock, LayoutTemplate, ArrowLeft, PenTool
 } from "lucide-react";
+
+// Modals
+import { AIImageCreatorModal } from "./AIImageCreatorModal";
+import { AIArticleWriterModal } from "./AIArticleWriterModal";
 
 type Connection = { id: string; platform: string; accountName: string; isActive: boolean };
 
@@ -43,6 +47,11 @@ export function MultiImageWizard({
   const [language, setLanguage] = useState("Thai");
   const [layoutCount, setLayoutCount] = useState(4);
   const [slots, setSlots] = useState<ImageSlot[]>(Array.from({ length: 4 }, emptySlot));
+
+  // Modals state
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [isArticleModalOpen, setIsArticleModalOpen] = useState(false);
+  const [aiActiveSlotIndex, setAiActiveSlotIndex] = useState<number | null>(null);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [variants, setVariants] = useState<string[]>([]);
@@ -234,13 +243,26 @@ export function MultiImageWizard({
                         </button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => fileRefs.current[idx]?.click()}
-                        className="w-full h-full rounded-xl border-2 border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50 flex flex-col items-center justify-center gap-1 transition-all"
-                      >
-                        <Upload className="w-5 h-5 text-slate-400" />
-                        <span className="text-xs text-slate-400">{idx + 1}</span>
-                      </button>
+                      <div className="w-full h-full rounded-xl border-2 border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50/35 flex flex-col items-center justify-center gap-2 p-2 transition-all relative">
+                        <span className="absolute top-1.5 left-2 text-[10px] font-black text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Slot {idx + 1}</span>
+                        <div className="flex flex-col gap-1.5 w-full mt-2">
+                          <button
+                            onClick={() => fileRefs.current[idx]?.click()}
+                            className="flex items-center justify-center gap-1 py-1 px-2 text-[10px] font-bold bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-600 transition-all shadow-xs"
+                          >
+                            <Upload className="w-3 h-3 text-slate-505" /> อัปโหลด
+                          </button>
+                          <button
+                            onClick={() => {
+                              setAiActiveSlotIndex(idx);
+                              setIsImageModalOpen(true);
+                            }}
+                            className="flex items-center justify-center gap-1 py-1 px-2 text-[10px] font-bold bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg text-purple-700 transition-all shadow-xs"
+                          >
+                            <Sparkles className="w-3 h-3 text-purple-500 animate-pulse" /> สร้างรูป AI
+                          </button>
+                        </div>
+                      </div>
                     )}
                     <input
                       ref={el => { fileRefs.current[idx] = el; }}
@@ -280,7 +302,17 @@ export function MultiImageWizard({
             {/* Topic + Language */}
             <div className="grid md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
-                <label className="text-sm font-bold text-slate-700 mb-2 block">✏️ Topic / หัวข้อ</label>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-sm font-bold text-slate-700">✏️ Topic / หัวข้อ</label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsArticleModalOpen(true)}
+                    className="border-purple-200 text-purple-700 hover:bg-purple-50 text-[10px] font-black flex items-center gap-1 py-1 h-6 rounded-lg transition-all"
+                  >
+                    <PenTool className="w-3 h-3" /> ✍️ AI Article Writer
+                  </Button>
+                </div>
                 <Textarea
                   value={topic}
                   onChange={e => setTopic(e.target.value)}
@@ -478,6 +510,38 @@ export function MultiImageWizard({
           </div>
         )}
       </div>
+
+      {/* AI Modals */}
+      <AIImageCreatorModal
+        isOpen={isImageModalOpen}
+        onClose={() => {
+          setIsImageModalOpen(false);
+          setAiActiveSlotIndex(null);
+        }}
+        onSelectImage={(url) => {
+          if (aiActiveSlotIndex !== null) {
+            setSlots(prev => {
+              const next = [...prev];
+              next[aiActiveSlotIndex] = {
+                file: null,
+                preview: url,
+                url: url,
+                uploading: false,
+                error: ""
+              };
+              return next;
+            });
+          }
+        }}
+      />
+
+      <AIArticleWriterModal
+        isOpen={isArticleModalOpen}
+        onClose={() => setIsArticleModalOpen(false)}
+        onUseArticle={(article) => {
+          setTopic(article); // Insert generated article directly into post editor topic
+        }}
+      />
     </div>
   );
 }

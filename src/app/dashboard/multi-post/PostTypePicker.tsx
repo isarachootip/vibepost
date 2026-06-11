@@ -35,9 +35,9 @@ const POST_TYPES = [
     title: "Video",
     titleTh: "วิดีโอ",
     desc: "โพสต์วิดีโอพร้อมข้อความบรรยาย",
-    features: ["MP4 / MOV", "AI สร้างข้อความ", "Coming Soon"],
+    features: ["MP4 / MOV / WEBM", "AI ค้นหา/สร้างวิดีโอ", "กำหนดเวลาได้"],
     color: "purple",
-    available: false,
+    available: true,
   },
 ];
 
@@ -57,11 +57,11 @@ const colorMap = {
     ring: "ring-blue-500",
   },
   purple: {
-    border: "border-slate-200",
-    icon: "bg-slate-50",
-    badge: "bg-slate-100 text-slate-500",
-    btn: "bg-slate-400 cursor-not-allowed",
-    ring: "ring-slate-300",
+    border: "border-purple-200 hover:border-purple-400",
+    icon: "bg-purple-50",
+    badge: "bg-purple-100 text-purple-700",
+    btn: "bg-purple-600 hover:bg-purple-700",
+    ring: "ring-purple-500",
   },
 };
 

@@ -10,8 +10,13 @@ import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { 
   CalendarIcon, Sparkles, Send, CheckCircle2, RefreshCcw, 
-  Image as ImageIcon, Bot, LayoutTemplate, Clock
+  Image as ImageIcon, Bot, LayoutTemplate, Clock, Film, PenTool
 } from "lucide-react";
+
+// Modals
+import { AIImageCreatorModal } from "./AIImageCreatorModal";
+import { AIVideoStudioModal } from "./AIVideoStudioModal";
+import { AIArticleWriterModal } from "./AIArticleWriterModal";
 
 type Connection = {
   id: string;
@@ -20,7 +25,13 @@ type Connection = {
   isActive: boolean;
 };
 
-export function SinglePostWizard({ connections }: { connections: Connection[] }) {
+export function SinglePostWizard({ 
+  connections, 
+  defaultMediaType = "image" 
+}: { 
+  connections: Connection[]; 
+  defaultMediaType?: "image" | "video";
+}) {
   const [step, setStep] = useState(1);
   const [selectedChannels, setถูกเลือกแล้วChannels] = useState<string[]>([]);
   
@@ -28,11 +39,18 @@ export function SinglePostWizard({ connections }: { connections: Connection[] })
   const [topic, setTopic] = useState("");
   const [variantCount, setVariantCount] = useState("3");
   const [language, setLanguage] = useState("Thai");
-  // imageUrl now stores the server-uploaded public URL (not blob/base64)
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  // Unified media state
+  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<"image" | "video">(defaultMediaType);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+
+  // Modal Open states
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isArticleModalOpen, setIsArticleModalOpen] = useState(false);
   
   // Step 2 & 3 State
   const [isGenerating, setIsGenerating] = useState(false);
@@ -54,14 +72,18 @@ export function SinglePostWizard({ connections }: { connections: Connection[] })
     );
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Detect media type
+    const isVideoFile = file.type.startsWith("video/");
+    setMediaType(isVideoFile ? "video" : "image");
+
     // Show preview immediately (local blob for display only)
     const localPreview = URL.createObjectURL(file);
-    setImagePreview(localPreview);
-    setImageUrl(null);
+    setMediaPreview(localPreview);
+    setMediaUrl(null);
     setUploadError("");
     setIsUploading(true);
 
@@ -80,10 +102,10 @@ export function SinglePostWizard({ connections }: { connections: Connection[] })
         throw new Error(data.error || "Upload failed");
       }
 
-      setImageUrl(data.url); // This is the public server URL Facebook can access
+      setMediaUrl(data.url); // This is the public server URL Facebook can access
     } catch (err: any) {
       setUploadError(`Upload failed: ${err.message}`);
-      setImagePreview(null);
+      setMediaPreview(null);
     } finally {
       setIsUploading(false);
     }
@@ -137,7 +159,7 @@ export function SinglePostWizard({ connections }: { connections: Connection[] })
       content: selectedContent,
       scheduledTime: publishDate,
       targetConnectionIds: selectedChannels,
-      imageUrl: imageUrl || undefined, // Only pass URL if image was successfully uploaded to server
+      imageUrl: mediaUrl || undefined, // Pass mediaUrl (supports both image and video urls)
     });
 
     setIsPublishing(false);
@@ -203,7 +225,17 @@ export function SinglePostWizard({ connections }: { connections: Connection[] })
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">2. Topic & Instructions</h3>
+                <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
+                  <h3 className="text-lg font-bold text-slate-800">2. Topic & Instructions</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsArticleModalOpen(true)}
+                    className="border-purple-200 text-purple-700 hover:bg-purple-50 text-xs font-bold flex items-center gap-1 py-1 h-7 rounded-lg transition-all"
+                  >
+                    <PenTool className="w-3.5 h-3.5" /> ✍️ AI Article Writer
+                  </Button>
+                </div>
                 <Textarea 
                   placeholder="e.g. โปรโมชั่นหน้าร้อน ซื้อ 1 แถม 1..." 
                   value={topic}
@@ -247,13 +279,13 @@ export function SinglePostWizard({ connections }: { connections: Connection[] })
               </div>
 
               <div>
-                <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">3. Attach Media</h3>
-                <label className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors h-32 flex flex-col items-center justify-center bg-slate-50 cursor-pointer block ${isUploading ? 'border-blue-300 bg-blue-50' : imageUrl ? 'border-green-300 bg-green-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">3. Attach Media (รูปภาพ หรือ วิดีโอ)</h3>
+                <label className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors h-32 flex flex-col items-center justify-center bg-slate-50 cursor-pointer block ${isUploading ? 'border-blue-300 bg-blue-50' : mediaUrl ? 'border-green-300 bg-green-50' : 'border-slate-200 hover:border-slate-300'}`}>
                   <input 
                     type="file" 
-                    accept="image/*" 
+                    accept="image/*,video/*" 
                     className="hidden" 
-                    onChange={handleImageUpload}
+                    onChange={handleMediaUpload}
                     disabled={isUploading}
                   />
                   {isUploading ? (
@@ -261,26 +293,34 @@ export function SinglePostWizard({ connections }: { connections: Connection[] })
                       <div className="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mb-2" />
                       <p className="text-sm font-medium text-blue-600">Uploading to server...</p>
                     </>
-                  ) : imageUrl ? (
+                  ) : mediaUrl ? (
                     <>
-                      <ImageIcon className="w-8 h-8 text-green-500 mb-2" />
-                      <p className="text-sm font-medium text-green-600">✅ Image uploaded successfully!</p>
-                      <p className="text-xs text-slate-400 mt-1">Click to change image</p>
+                      {mediaType === "video" ? (
+                        <Film className="w-8 h-8 text-green-500 mb-2" />
+                      ) : (
+                        <ImageIcon className="w-8 h-8 text-green-500 mb-2" />
+                      )}
+                      <p className="text-sm font-medium text-green-600">✅ {mediaType === "video" ? "วิดีโอ" : "รูปภาพ"} แนบสำเร็จแล้ว!</p>
+                      <p className="text-xs text-slate-400 mt-1">คลิกเพื่อเปลี่ยนไฟล์</p>
                     </>
                   ) : (
                     <>
                       <ImageIcon className="w-8 h-8 text-slate-400 mb-2" />
-                      <p className="text-sm font-medium text-slate-600">Click to upload image/video</p>
-                      <p className="text-xs text-slate-400 mt-1">(Select a file from your computer)</p>
+                      <p className="text-sm font-medium text-slate-600">คลิกเพื่ออัปโหลด รูป หรือ วิดีโอ</p>
+                      <p className="text-xs text-slate-400 mt-1">(รองรับ MP4, WEBM, JPG, PNG)</p>
                     </>
                   )}
                 </label>
                 {uploadError && (
                   <p className="mt-2 text-sm text-red-500">{uploadError}</p>
                 )}
-                {imagePreview && (
-                  <div className="mt-4 relative w-full h-24 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
-                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                {mediaPreview && (
+                  <div className="mt-4 relative w-full h-32 rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-black">
+                    {mediaType === "video" ? (
+                      <video src={mediaPreview} controls className="w-full h-full object-contain" />
+                    ) : (
+                      <img src={mediaPreview} alt="Preview" className="w-full h-full object-cover" />
+                    )}
                     {isUploading && (
                       <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
                         <div className="w-6 h-6 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
@@ -288,6 +328,26 @@ export function SinglePostWizard({ connections }: { connections: Connection[] })
                     )}
                   </div>
                 )}
+
+                {/* AI Creation Buttons */}
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsImageModalOpen(true)}
+                    className="border-purple-200 text-purple-700 hover:bg-purple-50 font-bold h-11 rounded-xl transition-all text-xs flex items-center justify-center gap-1.5"
+                  >
+                    <Sparkles className="w-4 h-4 text-purple-500" /> 🎨 AI Image Creator
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsVideoModalOpen(true)}
+                    className="border-purple-200 text-purple-700 hover:bg-purple-50 font-bold h-11 rounded-xl transition-all text-xs flex items-center justify-center gap-1.5"
+                  >
+                    <Film className="w-4 h-4 text-purple-500" /> 🎬 AI Video Studio
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -472,8 +532,8 @@ export function SinglePostWizard({ connections }: { connections: Connection[] })
                 setPublishSuccess(false);
                 setTopic("");
                 setถูกเลือกแล้วContent("");
-                setImageUrl(null);
-                setImagePreview(null);
+                setMediaUrl(null);
+                setMediaPreview(null);
                 setScheduledDateTime(null);
               }}>
                 Create Another Post
@@ -483,6 +543,36 @@ export function SinglePostWizard({ connections }: { connections: Connection[] })
         )}
 
       </div>
+
+      {/* AI Modals */}
+      <AIImageCreatorModal
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
+        onSelectImage={(url) => {
+          setMediaUrl(url);
+          setMediaPreview(url);
+          setMediaType("image");
+        }}
+      />
+
+      <AIVideoStudioModal
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        onSelectVideo={(url) => {
+          setMediaUrl(url);
+          setMediaPreview(url);
+          setMediaType("video");
+        }}
+      />
+
+      <AIArticleWriterModal
+        isOpen={isArticleModalOpen}
+        onClose={() => setIsArticleModalOpen(false)}
+        onUseArticle={(article) => {
+          setTopic(article); // Insert generated article directly into post editor topic
+        }}
+      />
+
     </div>
   );
 }

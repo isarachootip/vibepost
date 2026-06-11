@@ -67,6 +67,19 @@ export async function executeAutoPost() {
             const accessToken = target.socialConnection.accessToken;
             const message = post.content;
 
+            // Collect all valid public video URLs
+            const validVideos = post.media
+              .filter(m => m.mediaAsset.fileType === "VIDEO")
+              .map(m => m.mediaAsset.fileUrl)
+              .filter(url =>
+                url &&
+                (url.startsWith("http://") || url.startsWith("https://")) &&
+                !url.includes("localhost") &&
+                !url.includes("127.0.0.1") &&
+                !url.startsWith("blob:") &&
+                url.length > 10
+              );
+
             // Collect all valid public image URLs
             const validImages = post.media
               .filter(m => m.mediaAsset.fileType === "IMAGE")
@@ -82,7 +95,23 @@ export async function executeAutoPost() {
 
             let externalPostId: string;
 
-            if (validImages.length === 0) {
+            if (validVideos.length > 0) {
+              // ── Video post ──
+              console.log("[Publisher] Posting video to Facebook...");
+              const res = await fetch(`https://graph.facebook.com/v19.0/${pageId}/videos`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  description: message,
+                  file_url: validVideos[0],
+                  access_token: accessToken,
+                }),
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error?.message || "Facebook Video API Error");
+              externalPostId = data.id;
+
+            } else if (validImages.length === 0) {
               // ── Text-only post ──
               console.log("[Publisher] Posting text-only to Facebook...");
               const res = await fetch(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
