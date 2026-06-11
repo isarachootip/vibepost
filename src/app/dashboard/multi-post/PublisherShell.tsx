@@ -1,16 +1,32 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { PostTypePicker } from "./PostTypePicker";
 import { SinglePostWizard } from "./SinglePostWizard";
 import { MultiImageWizard } from "./MultiImageWizard";
-import { Send } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 
 type PostType = "single" | "multi" | "video";
 type Connection = { id: string; platform: string; accountName: string; isActive: boolean };
 
-export function PublisherShell({ connections }: { connections: Connection[] }) {
+function PublisherShellInner({ connections }: { connections: Connection[] }) {
   const [selectedType, setSelectedType] = useState<PostType | null>(null);
+  const searchParams = useSearchParams();
+
+  // Auto-select type when redirected from AI Studio with preset params
+  useEffect(() => {
+    const preset = searchParams.get("preset");
+    if (preset === "studio") {
+      const mode = searchParams.get("mode");
+      const type = searchParams.get("type");
+      if (mode === "video" || type === "video") {
+        setSelectedType("video");
+      } else {
+        setSelectedType("single");
+      }
+    }
+  }, [searchParams]);
 
   const handleBack = () => setSelectedType(null);
 
@@ -28,6 +44,8 @@ export function PublisherShell({ connections }: { connections: Connection[] }) {
               ? "เลือกประเภท Post ที่ต้องการสร้าง"
               : selectedType === "single"
               ? "📸 Single Photo Post"
+              : selectedType === "video"
+              ? "🎬 Video Clip Post"
               : "🖼️ Multi-Photo Album Post"}
           </p>
         </div>
@@ -57,6 +75,11 @@ export function PublisherShell({ connections }: { connections: Connection[] }) {
 
       {selectedType === "multi" && (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="mb-4">
+            <button onClick={handleBack} className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1.5 transition-colors">
+              ← เปลี่ยนประเภท Post
+            </button>
+          </div>
           {connections.length === 0 ? (
             <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
               <p className="text-slate-500">No social connections found. Please add them in Integrations.</p>
@@ -86,3 +109,12 @@ export function PublisherShell({ connections }: { connections: Connection[] }) {
     </div>
   );
 }
+
+export function PublisherShell(props: any) {
+  return (
+    <Suspense fallback={<div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-slate-400" /></div>}>
+      <PublisherShellInner {...props} />
+    </Suspense>
+  );
+}
+
