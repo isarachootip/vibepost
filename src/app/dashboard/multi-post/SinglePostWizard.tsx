@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { generateAIPost, createScheduledPost } from "@/lib/actions/posts";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +11,7 @@ import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { 
   CalendarIcon, Sparkles, Send, CheckCircle2, RefreshCcw, 
-  Image as ImageIcon, Bot, LayoutTemplate, Clock, Film, PenTool
+  Image as ImageIcon, Bot, LayoutTemplate, Clock, Film, PenTool, Loader2
 } from "lucide-react";
 
 // Modals
@@ -25,13 +26,14 @@ type Connection = {
   isActive: boolean;
 };
 
-export function SinglePostWizard({ 
+function SinglePostWizardInner({ 
   connections, 
   defaultMediaType = "image" 
 }: { 
   connections: Connection[]; 
   defaultMediaType?: "image" | "video";
 }) {
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [selectedChannels, setถูกเลือกแล้วChannels] = useState<string[]>([]);
   
@@ -65,6 +67,40 @@ export function SinglePostWizard({
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [scheduledDateTime, setScheduledDateTime] = useState<Date | null>(null);
   const [error, setError] = useState("");
+
+  // Auto-select channels on mount if they are active
+  useEffect(() => {
+    if (selectedChannels.length === 0 && connections.length > 0) {
+      setถูกเลือกแล้วChannels(connections.filter(c => c.isActive).map(c => c.id));
+    }
+  }, [connections]);
+
+  // Load preset parameters from AI Studio
+  useEffect(() => {
+    const preset = searchParams.get("preset");
+    if (preset === "studio") {
+      const text = searchParams.get("text");
+      const media = searchParams.get("media");
+      const type = searchParams.get("type");
+      const mode = searchParams.get("mode");
+
+      if (text) {
+        const decodedText = decodeURIComponent(text);
+        setถูกเลือกแล้วContent(decodedText);
+        setTopic(decodedText); // backup in topic
+        setStep(3); // Jump directly to selection & schedule step
+      }
+
+      if (media) {
+        const decodedMedia = decodeURIComponent(media);
+        setMediaUrl(decodedMedia);
+        setMediaPreview(decodedMedia);
+        setMediaType(type === "video" ? "video" : "image");
+      } else if (mode === "video") {
+        setMediaType("video");
+      }
+    }
+  }, [searchParams]);
 
   const toggleChannel = (id: string) => {
     setถูกเลือกแล้วChannels(prev => 
@@ -387,121 +423,122 @@ export function SinglePostWizard({
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {variants.map((variant, idx) => (
-                <div 
-                  key={idx}
-                  onClick={() => setถูกเลือกแล้วContent(variant)}
-                  className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
-                    selectedContent === variant 
-                      ? 'border-red-600 bg-red-50 shadow-md ring-4 ring-red-600/10' 
-                      : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
-                  }`}
-                >
-                  <div className="text-xs font-bold text-red-600 mb-3 uppercase tracking-wider flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" /> Option {idx + 1}
+            {/* If there are AI generated variants, display them */}
+            {variants.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {variants.map((variant, idx) => (
+                  <div 
+                    key={idx}
+                    onClick={() => setถูกเลือกแล้วContent(variant)}
+                    className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
+                      selectedContent === variant 
+                        ? 'border-red-600 bg-red-50 shadow-md ring-4 ring-red-600/10' 
+                        : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="text-xs font-bold text-red-600 mb-3 uppercase tracking-wider flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" /> Option {idx + 1}
+                    </div>
+                    <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{variant}</p>
                   </div>
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{variant}</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
-            {selectedContent && (
-              <div className="mt-8 animate-in fade-in slide-in-from-bottom-4">
-                <h4 className="text-sm font-bold text-slate-800 mb-3 uppercase tracking-wider border-b border-slate-100 pb-2">Fine-tune your selected content:</h4>
-                <Textarea 
-                  value={selectedContent}
-                  onChange={(e) => setถูกเลือกแล้วContent(e.target.value)}
-                  className="bg-white border-slate-200 text-slate-800 h-40 resize-none text-lg leading-relaxed focus-visible:ring-red-600 shadow-inner"
-                />
-                
-                <div className="mt-8 p-6 rounded-2xl bg-slate-50 border border-slate-200">
-                  <h4 className="text-base font-bold text-slate-800 mb-4">📅 กำหนดเวลาเผยแพร่</h4>
-                  <div className="flex flex-col gap-4">
-                    {/* Date + Time Row */}
-                    <div className="flex flex-col md:flex-row gap-3">
-                      {/* Date Picker */}
-                      <div className="flex-1">
-                        <label className="text-xs font-bold text-slate-500 mb-1.5 block uppercase tracking-wide">📆 วันที่</label>
-                        <Popover>
-                          <PopoverTrigger 
-                            className={`w-full justify-start text-left font-semibold bg-white border-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 inline-flex items-center rounded-xl transition-colors h-12 px-4 py-2 ${!date && "text-slate-400"}`}
-                          >
-                            <CalendarIcon className="mr-3 h-5 w-5 text-slate-400" />
-                            {date ? format(date, "d MMM yyyy", { locale: th }) : <span>เลือกวันที่</span>}
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-white border-slate-200 text-slate-800 shadow-xl rounded-xl">
-                            <Calendar
-                              mode="single"
-                              selected={date}
-                              onSelect={setDate}
-                              disabled={{ before: new Date() }}
-                              className="bg-white text-slate-800 rounded-xl"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-
-                      {/* Time Picker */}
-                      <div className="md:w-52">
-                        <label className="text-xs font-bold text-slate-500 mb-1.5 block uppercase tracking-wide">🕐 เวลา</label>
-                        <div className="flex items-center gap-2 bg-white border-2 border-slate-200 rounded-xl px-4 h-12">
-                          <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                          <select
-                            value={scheduleHour}
-                            onChange={(e) => setScheduleHour(e.target.value)}
-                            className="bg-transparent text-slate-700 font-semibold text-sm focus:outline-none flex-1"
-                          >
-                            {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map(h => (
-                              <option key={h} value={h}>{h}</option>
-                            ))}
-                          </select>
-                          <span className="text-slate-400 font-bold">:</span>
-                          <select
-                            value={scheduleMinute}
-                            onChange={(e) => setScheduleMinute(e.target.value)}
-                            className="bg-transparent text-slate-700 font-semibold text-sm focus:outline-none flex-1"
-                          >
-                            {["00", "15", "30", "45"].map(m => (
-                              <option key={m} value={m}>{m}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
+            <div className="mt-8 animate-in fade-in slide-in-from-bottom-4">
+              <h4 className="text-sm font-bold text-slate-800 mb-3 uppercase tracking-wider border-b border-slate-100 pb-2">Fine-tune your selected content:</h4>
+              <Textarea 
+                value={selectedContent}
+                onChange={(e) => setถูกเลือกแล้วContent(e.target.value)}
+                className="bg-white border-slate-200 text-slate-800 h-40 resize-none text-lg leading-relaxed focus-visible:ring-red-600 shadow-inner"
+              />
+              
+              <div className="mt-8 p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                <h4 className="text-base font-bold text-slate-800 mb-4">📅 กำหนดเวลาเผยแพร่</h4>
+                <div className="flex flex-col gap-4">
+                  {/* Date + Time Row */}
+                  <div className="flex flex-col md:flex-row gap-3">
+                    {/* Date Picker */}
+                    <div className="flex-1">
+                      <label className="text-xs font-bold text-slate-500 mb-1.5 block uppercase tracking-wide">📆 วันที่</label>
+                      <Popover>
+                        <PopoverTrigger 
+                          className={`w-full justify-start text-left font-semibold bg-white border-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 inline-flex items-center rounded-xl transition-colors h-12 px-4 py-2 ${!date && "text-slate-400"}`}
+                        >
+                          <CalendarIcon className="mr-3 h-5 w-5 text-slate-400" />
+                          {date ? format(date, "d MMM yyyy", { locale: th }) : <span>เลือกวันที่</span>}
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 bg-white border-slate-200 text-slate-800 shadow-xl rounded-xl">
+                          <Calendar
+                            mode="single"
+                            selected={date}
+                            onSelect={setDate}
+                            disabled={{ before: new Date() }}
+                            className="bg-white text-slate-800 rounded-xl"
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
 
-                    {/* Preview of scheduled time */}
-                    {date && (
-                      <div className="text-xs text-slate-500 bg-white border border-slate-100 rounded-lg px-3 py-2">
-                        📌 จะโพสต์วันที่ <span className="font-bold text-slate-700">
-                          {format(date, "EEEE d MMMM yyyy", { locale: th })}
-                        </span> เวลา <span className="font-bold text-red-600">{scheduleHour}:{scheduleMinute} น.</span>
+                    {/* Time Picker */}
+                    <div className="md:w-52">
+                      <label className="text-xs font-bold text-slate-500 mb-1.5 block uppercase tracking-wide">🕐 เวลา</label>
+                      <div className="flex items-center gap-2 bg-white border-2 border-slate-200 rounded-xl px-4 h-12">
+                        <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+                        <select
+                          value={scheduleHour}
+                          onChange={(e) => setScheduleHour(e.target.value)}
+                          className="bg-transparent text-slate-700 font-semibold text-sm focus:outline-none flex-1"
+                        >
+                          {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map(h => (
+                            <option key={h} value={h}>{h}</option>
+                          ))}
+                        </select>
+                        <span className="text-slate-400 font-bold">:</span>
+                        <select
+                          value={scheduleMinute}
+                          onChange={(e) => setScheduleMinute(e.target.value)}
+                          className="bg-transparent text-slate-700 font-semibold text-sm focus:outline-none flex-1"
+                        >
+                          {["00", "15", "30", "45"].map(m => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </select>
                       </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-3 pt-2">
-                      <Button 
-                        disabled={isPublishing}
-                        onClick={() => handlePublish(false)}
-                        className="flex-1 h-12 bg-white hover:bg-slate-50 text-slate-700 border-2 border-slate-200 font-bold px-6 rounded-xl"
-                      >
-                        {isPublishing ? <RefreshCcw className="w-5 h-5 animate-spin mr-2" /> : <CalendarIcon className="w-5 h-5 mr-2 text-slate-400" />}
-                        Schedule
-                      </Button>
-                      <Button 
-                        disabled={isPublishing}
-                        onClick={() => handlePublish(true)}
-                        className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold px-8 rounded-xl shadow-md"
-                      >
-                        {isPublishing ? <RefreshCcw className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
-                        Post Now
-                      </Button>
                     </div>
+                  </div>
+
+                  {/* Preview of scheduled time */}
+                  {date && (
+                    <div className="text-xs text-slate-500 bg-white border border-slate-100 rounded-lg px-3 py-2">
+                      📌 จะโพสต์วันที่ <span className="font-bold text-slate-700">
+                        {format(date, "EEEE d MMMM yyyy", { locale: th })}
+                      </span> เวลา <span className="font-bold text-red-600">{scheduleHour}:{scheduleMinute} น.</span>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-2">
+                    <Button 
+                      disabled={isPublishing}
+                      onClick={() => handlePublish(false)}
+                      className="flex-1 h-12 bg-white hover:bg-slate-50 text-slate-700 border-2 border-slate-200 font-bold px-6 rounded-xl"
+                    >
+                      {isPublishing ? <RefreshCcw className="w-5 h-5 animate-spin mr-2" /> : <CalendarIcon className="w-5 h-5 mr-2 text-slate-400" />}
+                      Schedule
+                    </Button>
+                    <Button 
+                      disabled={isPublishing}
+                      onClick={() => handlePublish(true)}
+                      className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold px-8 rounded-xl shadow-md"
+                    >
+                      {isPublishing ? <RefreshCcw className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
+                      Post Now
+                    </Button>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         )}
 
@@ -574,5 +611,13 @@ export function SinglePostWizard({
       />
 
     </div>
+  );
+}
+
+export function SinglePostWizard(props: any) {
+  return (
+    <Suspense fallback={<div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-slate-400" /></div>}>
+      <SinglePostWizardInner {...props} />
+    </Suspense>
   );
 }
