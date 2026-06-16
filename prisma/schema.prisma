@@ -80,6 +80,7 @@ enum Platform {
   LINKEDIN
   LINE
   TIKTOK
+  YOUTUBE
 }
 
 model MediaAsset {

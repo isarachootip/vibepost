@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { connectSocialPlatform, disconnectSocialPlatform } from "@/lib/actions/social";
 
 interface ConnectSocialModalProps {
-  platformId: "FACEBOOK" | "INSTAGRAM" | "TWITTER" | "LINKEDIN" | "LINE" | "TIKTOK";
+  platformId: "FACEBOOK" | "INSTAGRAM" | "TWITTER" | "LINKEDIN" | "LINE" | "TIKTOK" | "YOUTUBE";
   platformName: string;
   buttonClass: string;
 }

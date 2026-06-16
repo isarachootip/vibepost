@@ -183,8 +183,242 @@ export async function executeAutoPost() {
               },
             });
 
+          } else if (target.socialConnection.platform === "INSTAGRAM") {
+            const igAccountId = target.socialConnection.accountId;
+            const accessToken = target.socialConnection.accessToken;
+            const message = post.content;
+
+            const validImages = post.media
+              .filter(m => m.mediaAsset.fileType === "IMAGE")
+              .map(m => m.mediaAsset.fileUrl)
+              .filter(url => url && url.startsWith("http"));
+
+            const validVideos = post.media
+              .filter(m => m.mediaAsset.fileType === "VIDEO")
+              .map(m => m.mediaAsset.fileUrl)
+              .filter(url => url && url.startsWith("http"));
+
+            let containerId: string;
+            let externalPostId: string;
+
+            if (validVideos.length > 0) {
+              console.log("[Publisher] Initializing Instagram Video/Reels upload container...");
+              const res = await fetch(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  media_type: "REELS",
+                  video_url: validVideos[0],
+                  caption: message,
+                  access_token: accessToken,
+                }),
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error?.message || "Instagram Video Container Init Failed");
+              containerId = data.id;
+
+              let finished = false;
+              let attempts = 0;
+              while (!finished && attempts < 15) {
+                console.log(`[Publisher] Checking Instagram Video Container status... Attempt: ${attempts}`);
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                const pollRes = await fetch(`https://graph.facebook.com/v19.0/${containerId}?fields=status_code&access_token=${accessToken}`);
+                const pollData = await pollRes.json();
+                if (pollData.status_code === "FINISHED") {
+                  finished = true;
+                } else if (pollData.status_code === "ERROR") {
+                  throw new Error("Instagram Video Container Processing Error");
+                }
+                attempts++;
+              }
+              if (!finished) throw new Error("Instagram Video Container Processing Timeout");
+            } else if (validImages.length > 0) {
+              console.log("[Publisher] Initializing Instagram Photo upload container...");
+              const res = await fetch(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  image_url: validImages[0],
+                  caption: message,
+                  access_token: accessToken,
+                }),
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error?.message || "Instagram Image Container Init Failed");
+              containerId = data.id;
+            } else {
+              throw new Error("Instagram posts require at least one image or video.");
+            }
+
+            console.log("[Publisher] Publishing Instagram container...");
+            const pubRes = await fetch(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                creation_id: containerId,
+                access_token: accessToken,
+              }),
+            });
+            const pubData = await pubRes.json();
+            if (!pubRes.ok) throw new Error(pubData.error?.message || "Instagram Media Publish Failed");
+            externalPostId = pubData.id;
+
+            console.log(`[Publisher] Success! IG Media ID: ${externalPostId}`);
+            await prisma.postTarget.update({
+              where: { id: target.id },
+              data: {
+                status: "PUBLISHED",
+                externalPostId: externalPostId,
+              },
+            });
+
+          } else if (target.socialConnection.platform === "TIKTOK") {
+            const accessToken = target.socialConnection.accessToken;
+            const message = post.content;
+
+            const validImages = post.media
+              .filter(m => m.mediaAsset.fileType === "IMAGE")
+              .map(m => m.mediaAsset.fileUrl)
+              .filter(url => url && url.startsWith("http"));
+
+            const validVideos = post.media
+              .filter(m => m.mediaAsset.fileType === "VIDEO")
+              .map(m => m.mediaAsset.fileUrl)
+              .filter(url => url && url.startsWith("http"));
+
+            let publishId: string;
+
+            if (validVideos.length > 0) {
+              console.log("[Publisher] Initializing TikTok Video post via Pull URL...");
+              const res = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${accessToken}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  post_info: {
+                    title: message,
+                    privacy_level: "PUBLIC_TO_EVERYONE"
+                  },
+                  source_info: {
+                    source: "PULL_FROM_URL",
+                    video_url: validVideos[0]
+                  }
+                })
+              });
+              const data = await res.json();
+              if (data.error?.code !== "ok") throw new Error(data.error?.message || "TikTok Video Init Failed");
+              publishId = data.data.publish_id;
+            } else if (validImages.length > 0) {
+              console.log("[Publisher] Initializing TikTok Photo/Content post via Pull URL...");
+              const res = await fetch("https://open.tiktokapis.com/v2/post/publish/content/init/", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${accessToken}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  post_info: {
+                    title: message,
+                    privacy_level: "PUBLIC_TO_EVERYONE"
+                  },
+                  source_info: {
+                    source: "PULL_FROM_URL",
+                    photo_cover_index: 0,
+                    photo_images: validImages
+                  },
+                  post_mode: "MEDIA_POST"
+                })
+              });
+              const data = await res.json();
+              if (data.error?.code !== "ok") throw new Error(data.error?.message || "TikTok Content Init Failed");
+              publishId = data.data.publish_id;
+            } else {
+              throw new Error("TikTok posts require at least one image or video.");
+            }
+
+            console.log(`[Publisher] Success! TikTok Publish ID: ${publishId}`);
+            await prisma.postTarget.update({
+              where: { id: target.id },
+              data: {
+                status: "PUBLISHED",
+                externalPostId: publishId,
+              },
+            });
+
+          } else if (target.socialConnection.platform === "YOUTUBE") {
+            const accessToken = target.socialConnection.accessToken;
+            const message = post.content;
+
+            const validVideos = post.media
+              .filter(m => m.mediaAsset.fileType === "VIDEO")
+              .map(m => m.mediaAsset.fileUrl)
+              .filter(url => url && url.startsWith("http"));
+
+            if (validVideos.length === 0) {
+              throw new Error("YouTube posts require at least one video.");
+            }
+
+            console.log("[Publisher] Initializing YouTube resumable upload session...");
+            const initRes = await fetch("https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status", {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json; charset=UTF-8",
+                "X-Upload-Content-Type": "video/*"
+              },
+              body: JSON.stringify({
+                snippet: {
+                  title: message.substring(0, 100) || "Auto Uploaded Video",
+                  description: message
+                },
+                status: {
+                  privacyStatus: "public",
+                  selfDeclaredMadeForKids: false
+                }
+              })
+            });
+
+            if (!initRes.ok) {
+              const initErr = await initRes.json();
+              throw new Error(initErr.error?.message || "YouTube Resumable Init Failed");
+            }
+
+            const uploadUrl = initRes.headers.get("Location");
+            if (!uploadUrl) throw new Error("YouTube upload URL location header missing");
+
+            console.log("[Publisher] Downloading video stream from media asset URL...");
+            const videoFetch = await fetch(validVideos[0]);
+            if (!videoFetch.ok) throw new Error("Failed to download video asset for YouTube upload");
+            const videoBuffer = await videoFetch.arrayBuffer();
+
+            console.log("[Publisher] Streaming video to YouTube...");
+            const uploadRes = await fetch(uploadUrl, {
+              method: "PUT",
+              headers: {
+                "Content-Length": videoBuffer.byteLength.toString(),
+                "Content-Type": "video/*"
+              },
+              body: Buffer.from(videoBuffer)
+            });
+
+            const uploadData = await uploadRes.json();
+            if (!uploadRes.ok) throw new Error(uploadData.error?.message || "YouTube Video Upload PUT Failed");
+            
+            const youtubeId = uploadData.id;
+            console.log(`[Publisher] Success! YouTube Video ID: ${youtubeId}`);
+
+            await prisma.postTarget.update({
+              where: { id: target.id },
+              data: {
+                status: "PUBLISHED",
+                externalPostId: youtubeId,
+              },
+            });
+
           } else {
-             // Handle other platforms (INSTAGRAM, TWITTER, LINKEDIN) later
+             // Handle other platforms (TWITTER, LINKEDIN) later
              throw new Error(`Platform ${target.socialConnection.platform} not yet implemented.`);
           }
 

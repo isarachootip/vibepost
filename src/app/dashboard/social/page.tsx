@@ -9,7 +9,8 @@ const PLATFORMS = [
   { id: "TWITTER", name: "X (Twitter)", color: "bg-neutral-800", icon: "X" },
   { id: "LINKEDIN", name: "LinkedIn", color: "bg-blue-700", icon: "in" },
   { id: "LINE", name: "LINE OA", color: "bg-green-500", icon: "L" },
-  { id: "TIKTOK", name: "TikTok", color: "bg-black", icon: "t" }
+  { id: "TIKTOK", name: "TikTok", color: "bg-black", icon: "t" },
+  { id: "YOUTUBE", name: "YouTube", color: "bg-red-600", icon: "Y" }
 ] as const;
 
 export default async function SocialAccountsPage() {

@@ -5,7 +5,7 @@ import { getActiveWorkspaceContext } from "@/lib/actions/workspace";
 import { revalidatePath } from "next/cache";
 
 export async function connectSocialPlatform(data: {
-  platform: "FACEBOOK" | "INSTAGRAM" | "TWITTER" | "LINKEDIN" | "LINE" | "TIKTOK";
+  platform: "FACEBOOK" | "INSTAGRAM" | "TWITTER" | "LINKEDIN" | "LINE" | "TIKTOK" | "YOUTUBE";
   accountName: string;
   accountId: string;
   accessToken: string;
