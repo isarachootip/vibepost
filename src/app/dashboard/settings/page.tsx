@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { APIKeyRow } from "./APIKeyRow";
 
 const AI_PROVIDERS = [
-  { id: "GEMINI", name: "Google Gemini", description: "Gemini 2.5 Flash / Pro — แนะนำสำหรับภาษาไทย", icon: "🤖", category: "text" },
+  { id: "GEMINI", name: "Google Gemini", description: "Gemini 2.5 Flash / Pro และโมเดลสร้างวิดีโอ Google Veo", icon: "🤖", category: "text" },
   { id: "OPENAI", name: "OpenAI / ChatGPT", description: "GPT-4o, GPT-4 Turbo — ผลลัพธ์สูง", icon: "⚡", category: "text" },
   { id: "CLAUDE", name: "Anthropic Claude", description: "Claude 3.5 Sonnet — เขียนได้ดีมาก", icon: "🧠", category: "text" },
   { id: "OPENROUTER", name: "OpenRouter AI", description: "รวมหลาย model ผ่าน API เดียว", icon: "🔀", category: "text" },

@@ -435,7 +435,10 @@ export async function generateAIVideoAction(prompt: string, category: string = "
       return { success: false, error: "โปรดระบุรายละเอียดวิดีโอหรือคีย์เวิร์ด" };
     }
 
-    // ── Check if there is an active KLING or LUMA API config ──
+    // ── Check if there is an active GEMINI, KLING, or LUMA API config ──
+    const activeGeminiConfig = await prisma.promptConfig.findFirst({
+      where: { workspaceId: workspace.id, provider: "GEMINI", isActive: true },
+    });
     const activeLumaConfig = await prisma.promptConfig.findFirst({
       where: { workspaceId: workspace.id, provider: "LUMA", isActive: true },
     });
@@ -448,8 +451,87 @@ export async function generateAIVideoAction(prompt: string, category: string = "
     let finalModel = "pexels-stock-video";
     let estimatedCost = 0.0;
 
-    // 1. Try Luma Dream Machine if active
-    if (activeLumaConfig && activeLumaConfig.apiKey) {
+    // 1. Try Google Veo (Gemini API) if active
+    if (!generatedVideoUrl && activeGeminiConfig && activeGeminiConfig.apiKey) {
+      try {
+        console.log("Creating Google Veo video task...");
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/veo-2.0-generate-video:predictLongRunning?key=${activeGeminiConfig.apiKey}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              instances: [
+                {
+                  prompt: prompt
+                }
+              ],
+              parameters: {
+                aspectRatio: "1:1",
+                sampleCount: 1
+              }
+            })
+          }
+        );
+
+        const data = await response.json();
+        if (!response.ok || !data.name) {
+          throw new Error(data.error?.message || "Google Veo API request failed");
+        }
+
+        const operationName = data.name;
+        console.log(`Google Veo Operation created: ${operationName}. Starting polling...`);
+
+        // Poll operation status
+        let completed = false;
+        let attempts = 0;
+        while (!completed && attempts < 30) {
+          // Wait 8 seconds
+          await new Promise(resolve => setTimeout(resolve, 8000));
+          attempts++;
+
+          const statusRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/${operationName}?key=${activeGeminiConfig.apiKey}`,
+            { method: "GET" }
+          );
+          const statusData = await statusRes.json();
+          if (!statusRes.ok) continue;
+
+          console.log(`Google Veo operation state (Attempt ${attempts}): done = ${statusData.done}`);
+
+          if (statusData.done) {
+            if (statusData.error) {
+              throw new Error(`Google Veo generation failed: ${statusData.error.message}`);
+            }
+            
+            const generatedVideo = statusData.response?.generatedVideos?.[0];
+            const rawUri = generatedVideo?.video?.uri;
+            if (rawUri) {
+              const connector = rawUri.includes("?") ? "&" : "?";
+              generatedVideoUrl = rawUri.includes("key=") ? rawUri : `${rawUri}${connector}key=${activeGeminiConfig.apiKey}`;
+              completed = true;
+            } else {
+              throw new Error("No video URI in completed operation response");
+            }
+          }
+        }
+
+        if (!generatedVideoUrl) {
+          throw new Error("Google Veo video generation timed out");
+        }
+
+        finalProvider = "GEMINI";
+        finalModel = "veo-2.0-generate-video";
+        estimatedCost = 0.10; // Estimated cost in USD
+      } catch (err: any) {
+        console.error("Google Veo Video Generation failed, falling back:", err.message);
+      }
+    }
+
+    // 2. Try Luma Dream Machine if active (and Gemini was not used or failed)
+    if (!generatedVideoUrl && activeLumaConfig && activeLumaConfig.apiKey) {
       try {
         console.log("Creating Luma Dream Machine video task...");
         const response = await fetch("https://api.lumalabs.ai/dream-machine/v1/generations", {
@@ -508,7 +590,7 @@ export async function generateAIVideoAction(prompt: string, category: string = "
       }
     }
 
-    // 2. Try Kling AI if active (and Luma was not used or failed)
+    // 3. Try Kling AI if active (and Gemini / Luma were not used or failed)
     if (!generatedVideoUrl && activeKlingConfig && activeKlingConfig.apiKey) {
       try {
         console.log("Creating Kling AI video task...");

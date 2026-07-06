@@ -42,9 +42,10 @@
 * **Prompt Builder**: กล่องกรอกข้อมูลที่แยกองค์ประกอบภาพ 4 ส่วน (วัตถุหลัก, ฉากหลัง, แสง/สไตล์, มุมกล้อง) และรวมเข้าเป็น Prompt สมบูรณ์ตามหลัก Prompt Engineering
 
 ### 2.2 AI Video Studio (การเจเนอเรตวิดีโอ)
-* **Luma Dream Machine**: ยิงคำสั่งสร้างวิดีโอ (Text-to-Video) ไปยัง API ของ Luma และวนลูปตรวจสอบ (Polling) สถานะจนกระทั่งเป็น `completed` เพื่อนำลิงก์ไฟล์วิดีโอมารันต่อ
-* **Kling AI Video**: สร้าง JWT signature ด้วย `AccessKey` และ `SecretKey` ในฝั่งหลังบ้าน ยิงคำสั่งสร้างวิดีโอแบบ Asynchronous ไปยังเซิร์ฟเวอร์สิงคโปร์ของ Kling และ Polling ทุกๆ 5 วินาทีจนสำเร็จ
-* **Curated Stock Fallback**: หากไม่มีการใส่คีย์ Luma หรือ Kling หรือการเจนด้วย AI เกิดข้อผิดพลาด ระบบจะทำการดึงไฟล์วิดีโอสต็อกคุณภาพเยี่ยมจากฐานข้อมูล Pexels ที่เราคัดเลือกไว้ (Curated Videos) เพื่อเป็น UX สำรองให้ทันที
+* **Google Veo (ผ่าน Gemini API Key)**: เป็นโมเดลลำดับแรกที่จะทำงานหากมีการตั้งค่าคีย์ `GEMINI` ใน Workspace ระบบจะยิงคำสั่งไปที่ Google Generative Language API (`veo-2.0-generate-video:predictLongRunning`) และทำการ Polling ทุกๆ 8 วินาที (สูงสุด 30 ครั้ง) เพื่อคอยตรวจสอบสถานะความสำเร็จของ Long-Running Operation เมื่อสำเร็จจะดาวน์โหลดไฟล์วิดีโอผ่าน API key และสร้าง `MediaAsset` ทันที
+* **Luma Dream Machine**: ระบบสำรองลำดับถัดมา ยิงคำสั่งสร้างวิดีโอ (Text-to-Video) ไปยัง API ของ Luma และวนลูปตรวจสอบ (Polling) สถานะจนกระทั่งเป็น `completed` เพื่อนำลิงก์ไฟล์วิดีโอมารันต่อ
+* **Kling AI Video**: ระบบสำรองลำดับถัดมา สร้าง JWT signature ด้วย `AccessKey` และ `SecretKey` ในฝั่งหลังบ้าน ยิงคำสั่งสร้างวิดีโอแบบ Asynchronous ไปยังเซิร์ฟเวอร์สิงคโปร์ของ Kling และ Polling ทุกๆ 5 วินาทีจนสำเร็จ
+* **Curated Stock Fallback**: หากไม่มีการใส่คีย์ของค่ายใดๆ เลย หรือการเจนด้วย AI ทั้งหมดล้มเหลว ระบบจะทำการดึงไฟล์วิดีโอสต็อกคุณภาพเยี่ยมจากฐานข้อมูล Pexels ที่เราคัดเลือกไว้ (Curated Videos) เพื่อเป็น UX สำรองให้ทันที
 
 ---
 

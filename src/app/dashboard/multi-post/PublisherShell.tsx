@@ -5,9 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { PostTypePicker } from "./PostTypePicker";
 import { SinglePostWizard } from "./SinglePostWizard";
 import { MultiImageWizard } from "./MultiImageWizard";
+import { SequentialPostWizard } from "./SequentialPostWizard";
 import { Send, Loader2 } from "lucide-react";
 
-type PostType = "single" | "multi" | "video";
+type PostType = "single" | "multi" | "sequential" | "video";
 type Connection = { id: string; platform: string; accountName: string; isActive: boolean };
 
 function PublisherShellInner({ connections }: { connections: Connection[] }) {
@@ -46,6 +47,8 @@ function PublisherShellInner({ connections }: { connections: Connection[] }) {
               ? "📸 Single Photo Post"
               : selectedType === "video"
               ? "🎬 Video Clip Post"
+              : selectedType === "sequential"
+              ? "📋 Sequential Posts"
               : "🖼️ Multi-Photo Album Post"}
           </p>
         </div>
@@ -86,6 +89,23 @@ function PublisherShellInner({ connections }: { connections: Connection[] }) {
             </div>
           ) : (
             <MultiImageWizard connections={connections} onBack={handleBack} />
+          )}
+        </div>
+      )}
+
+      {selectedType === "sequential" && (
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="mb-4">
+            <button onClick={handleBack} className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1.5 transition-colors">
+              ← เปลี่ยนประเภท Post
+            </button>
+          </div>
+          {connections.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
+              <p className="text-slate-500">No social connections found. Please add them in Integrations.</p>
+            </div>
+          ) : (
+            <SequentialPostWizard connections={connections} onBack={handleBack} />
           )}
         </div>
       )}

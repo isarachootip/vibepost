@@ -2,7 +2,7 @@
 
 import React from "react";
 
-type PostType = "single" | "multi" | "video";
+type PostType = "single" | "multi" | "sequential" | "video";
 
 type Props = {
   onSelect: (type: PostType) => void;
@@ -22,11 +22,21 @@ const POST_TYPES = [
   {
     id: "multi" as PostType,
     icon: "🖼️",
-    title: "Multi-Photo",
-    titleTh: "หลายภาพ",
-    desc: "โพสต์แบบ Album เรียง 4, 6, 8 หรือ 10 รูปในโพสต์เดียว",
-    features: ["4 / 6 / 8 / 10 รูป", "AI สร้างข้อความ", "Facebook Album"],
+    title: "Album Post",
+    titleTh: "หลายภาพใน Post เดียว",
+    desc: "รูปหลายรูปรวมใน Post เดียว แบบ Facebook Album ลากเรียงลำดับได้",
+    features: ["1–10 รูป อิสระ", "Drag & Drop เรียงลำดับ", "Facebook Album"],
     color: "blue",
+    available: true,
+  },
+  {
+    id: "sequential" as PostType,
+    icon: "📋",
+    title: "Sequential Posts",
+    titleTh: "หลายโพสต์ต่อเนื่อง",
+    desc: "แต่ละรูปเป็น Post แยกกัน โพสต์ต่อเนื่องตามลำดับเวลา เหมือนภาพโฆษณาต่อเนื่องใน Facebook Feed",
+    features: ["รูปละ 1 Post แยกกัน", "ตั้ง Interval อัตโนมัติ", "Drag & Drop เรียงลำดับ"],
+    color: "orange",
     available: true,
   },
   {
@@ -56,6 +66,13 @@ const colorMap = {
     btn: "bg-blue-600 hover:bg-blue-700",
     ring: "ring-blue-500",
   },
+  orange: {
+    border: "border-orange-200 hover:border-orange-400",
+    icon: "bg-orange-50",
+    badge: "bg-orange-100 text-orange-700",
+    btn: "bg-orange-500 hover:bg-orange-600",
+    ring: "ring-orange-500",
+  },
   purple: {
     border: "border-purple-200 hover:border-purple-400",
     icon: "bg-purple-50",
@@ -73,7 +90,7 @@ export function PostTypePicker({ onSelect }: Props) {
         <p className="text-slate-500 text-base md:text-lg">เลือกรูปแบบที่ต้องการสร้างเนื้อหาเพื่อเริ่มต้น</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto px-4">
         {POST_TYPES.map((type) => {
           const colors = colorMap[type.color as keyof typeof colorMap];
           return (
