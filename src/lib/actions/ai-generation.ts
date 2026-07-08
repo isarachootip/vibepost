@@ -945,7 +945,17 @@ export async function getAIUsageStatsAction() {
         articleCalls: articleLogs.length,
         imageCalls: imageLogs.length,
         videoCalls: videoLogs.length,
-        logs: logs.slice(0, 15) // Return latest 15 logs
+        logs: logs.slice(0, 50).map(l => ({
+          id: l.id,
+          actionType: l.actionType,
+          provider: l.provider,
+          modelName: l.modelName,
+          promptTokens: l.promptTokens,
+          completionTokens: l.completionTokens,
+          totalTokens: l.totalTokens,
+          estimatedCost: l.estimatedCost,
+          createdAt: l.createdAt.toISOString(),
+        }))
       }
     };
   } catch (error: any) {
@@ -954,9 +964,226 @@ export async function getAIUsageStatsAction() {
   }
 }
 
+
 /**
  * Returns a list of curated videos for the UI preview
  */
 export async function getCuratedVideosListAction() {
   return { success: true, videos: CURATED_VIDEOS };
+}
+
+// Caption styles with emoji and prompts
+const CAPTION_STYLES = [
+  {
+    id: "playful",
+    label: "🎉 Playful",
+    desc: "สนุก เป็นกันเอง มีอารมณ์",
+    instruction: "Write a fun, playful, and energetic caption with emojis, relatable humor, and casual language. Use exclamation points and create excitement."
+  },
+  {
+    id: "emotional",
+    label: "💖 Emotional",
+    desc: "ลึกซึ้ง สัมผัสใจ",
+    instruction: "Write a heartfelt, emotional, and inspiring caption that creates a deep connection with the audience. Evoke feelings and tell a mini-story."
+  },
+  {
+    id: "promotional",
+    label: "🚀 Promotional",
+    desc: "โปรโมทสินค้า กระตุ้นยอดขาย",
+    instruction: "Write a persuasive, sales-driven caption that highlights benefits, creates urgency, and includes a clear call-to-action. Use power words."
+  },
+  {
+    id: "minimalist",
+    label: "✨ Minimalist",
+    desc: "กระชับ สั้น ทรงพลัง",
+    instruction: "Write an ultra-short, clean, and impactful caption with maximum 1-2 sentences. Every word must count. No fluff, pure impact."
+  },
+  {
+    id: "informative",
+    label: "💡 Informative",
+    desc: "ให้ข้อมูล ความรู้ ดีมีประโยชน์",
+    instruction: "Write an educational, informative caption that teaches the audience something valuable about the subject. Include facts, tips, or insights."
+  }
+];
+
+/**
+ * Server Action: Analyzes an uploaded image or video using Gemini multimodal API
+ * and generates 5 caption styles for social media.
+ */
+export async function generateAICaptionsFromMediaAction(
+  fileUrl: string,
+  fileType: "image" | "video",
+  context: string = "",
+  language: string = "Thai"
+) {
+  try {
+    const workspace = await getActiveWorkspaceContext();
+    if (!workspace) return { success: false, error: "Workspace not found" };
+
+    const role = await getUserWorkspaceRole(workspace.id);
+    if (role === "VIEWER") {
+      return { success: false, error: "สิทธิ์ไม่เพียงพอ — Viewer ไม่สามารถใช้งาน AI Caption ได้" };
+    }
+
+    // Require Gemini config for multimodal analysis
+    const geminiConfig = await prisma.promptConfig.findFirst({
+      where: { workspaceId: workspace.id, provider: "GEMINI", isActive: true },
+    });
+
+    if (!geminiConfig) {
+      return {
+        success: false,
+        error: "กรุณาตั้งค่า Gemini API Key ในหน้า Settings เพื่อใช้งาน AI Caption (ต้องการการวิเคราะห์ภาพ/วิดีโอ)"
+      };
+    }
+
+    // Extract filename from URL and construct the file path
+    const filename = fileUrl.split("/").pop();
+    if (!filename) return { success: false, error: "ไม่พบชื่อไฟล์" };
+
+    const filePath = path.join(UPLOAD_DIR, filename);
+
+    let mediaBase64: string | null = null;
+    let mimeType = "image/jpeg";
+
+    // Read file from disk and convert to base64
+    try {
+      const { readFile } = await import("fs/promises");
+      const fileBuffer = await readFile(filePath);
+      mediaBase64 = fileBuffer.toString("base64");
+
+      // Determine mime type from extension
+      const ext = filename.split(".").pop()?.toLowerCase() || "jpg";
+      const mimeMap: Record<string, string> = {
+        jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
+        gif: "image/gif", webp: "image/webp",
+        mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime"
+      };
+      mimeType = mimeMap[ext] || (fileType === "video" ? "video/mp4" : "image/jpeg");
+    } catch (readErr: any) {
+      console.warn("Could not read file for multimodal caption, using text-only fallback:", readErr.message);
+    }
+
+    const contextText = context.trim()
+      ? `\nAdditional context provided by the user: "${context.trim()}"`
+      : "";
+
+    const systemInstruction = `You are an expert social media copywriter. Generate 5 distinct captions for the provided ${fileType === "video" ? "video" : "image"}.${contextText}
+
+Write ALL captions strictly in ${language} language.
+
+You MUST output exactly 5 captions, each separated by exactly these delimiters (keep the delimiters exactly as shown):
+=== CAPTION_PLAYFUL ===
+[playful caption here]
+=== CAPTION_EMOTIONAL ===
+[emotional caption here]
+=== CAPTION_PROMOTIONAL ===
+[promotional caption here]
+=== CAPTION_MINIMALIST ===
+[minimalist caption here]
+=== CAPTION_INFORMATIVE ===
+[informative caption here]
+
+Style instructions:
+- PLAYFUL: ${CAPTION_STYLES[0].instruction}
+- EMOTIONAL: ${CAPTION_STYLES[1].instruction}
+- PROMOTIONAL: ${CAPTION_STYLES[2].instruction}
+- MINIMALIST: ${CAPTION_STYLES[3].instruction}
+- INFORMATIVE: ${CAPTION_STYLES[4].instruction}
+
+Do NOT add any text before the first delimiter or after the last caption.`;
+
+    let textContent = "";
+    const geminiModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+
+    for (const model of geminiModels) {
+      try {
+        // Build the request parts — multimodal if we have base64, text-only if not
+        let parts: any[];
+        if (mediaBase64) {
+          parts = [
+            { text: systemInstruction },
+            { inlineData: { mimeType, data: mediaBase64 } }
+          ];
+        } else {
+          // Text-only fallback (e.g. video files too large or unreadable)
+          parts = [{ text: systemInstruction + `\n\n[Media file could not be read. Generate captions based on the context provided by the user and the media type: ${fileType}]` }];
+        }
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiConfig.apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts }],
+              generationConfig: { temperature: 0.9, maxOutputTokens: 2048 }
+            }),
+          }
+        );
+
+        const data = await response.json();
+        if (!response.ok) {
+          console.warn(`Gemini ${model} failed for caption:`, data.error?.message);
+          continue;
+        }
+
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) {
+          textContent = text;
+
+          // Record token usage
+          const usage = data.usageMetadata;
+          const promptTokens = usage?.promptTokenCount || 0;
+          const completionTokens = usage?.candidatesTokenCount || 0;
+          const totalTokens = usage?.totalTokenCount || 0;
+          const cost = calculateArticleCost(model, promptTokens, completionTokens);
+          await recordAIUsage(workspace.id, "ARTICLE", "GEMINI", model, promptTokens, completionTokens, totalTokens, cost);
+          break;
+        }
+      } catch (e: any) {
+        console.warn(`Gemini ${model} error:`, e.message);
+        continue;
+      }
+    }
+
+    if (!textContent) {
+      return { success: false, error: "ไม่สามารถสร้างแคปชันได้ กรุณาลองใหม่หรือตรวจสอบ API Key" };
+    }
+
+    // Parse captions from delimited text
+    const captionIds = ["PLAYFUL", "EMOTIONAL", "PROMOTIONAL", "MINIMALIST", "INFORMATIVE"];
+    const captions: Record<string, string> = {};
+
+    for (let i = 0; i < captionIds.length; i++) {
+      const startDelim = `=== CAPTION_${captionIds[i]} ===`;
+      const endDelim = i < captionIds.length - 1
+        ? `=== CAPTION_${captionIds[i + 1]} ===`
+        : null;
+
+      const startIdx = textContent.indexOf(startDelim);
+      if (startIdx === -1) {
+        captions[captionIds[i].toLowerCase()] = "";
+        continue;
+      }
+
+      const contentStart = startIdx + startDelim.length;
+      const endIdx = endDelim ? textContent.indexOf(endDelim, contentStart) : textContent.length;
+      captions[captionIds[i].toLowerCase()] = textContent.slice(contentStart, endIdx !== -1 ? endIdx : undefined).trim();
+    }
+
+    return {
+      success: true,
+      captions: {
+        playful: captions["playful"] || "",
+        emotional: captions["emotional"] || "",
+        promotional: captions["promotional"] || "",
+        minimalist: captions["minimalist"] || "",
+        informative: captions["informative"] || "",
+      }
+    };
+  } catch (error: any) {
+    console.error("Generate AI Captions From Media Error:", error);
+    return { success: false, error: error.message };
+  }
 }
