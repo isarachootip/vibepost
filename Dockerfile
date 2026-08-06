@@ -6,7 +6,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json* ./
 # --ignore-scripts skips postinstall (prisma generate) which needs schema.prisma
-RUN npm install -g npm@latest && npm ci --legacy-peer-deps --ignore-scripts
+RUN npm ci --legacy-peer-deps --ignore-scripts
 
 # Rebuild the source code only when needed
 FROM base AS builder
