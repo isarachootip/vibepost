@@ -9,8 +9,10 @@ import {
   generateAIArticleAction,
   getAIUsageStatsAction,
 } from "@/lib/actions/ai-generation";
+import { createDraftPost } from "@/lib/actions/posts";
 import { AIImageCreatorModal } from "../multi-post/AIImageCreatorModal";
 import { AIVideoStudioModal } from "../multi-post/AIVideoStudioModal";
+import { StudioAutoPostModal } from "./StudioAutoPostModal";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +33,10 @@ import {
   Coins,
   History,
   TrendingUp,
+  Rocket,
+  Settings2,
+  BookmarkPlus,
+  Layers,
 } from "lucide-react";
 
 const TONES = [
@@ -54,7 +60,14 @@ const LANGUAGES = [
   { id: "Chinese (Simplified)", label: "🇨🇳 中文" },
 ];
 
-export function AIStudioClient() {
+type Connection = {
+  id: string;
+  platform: string;
+  accountName: string;
+  isActive: boolean;
+};
+
+export function AIStudioClient({ connections = [] }: { connections?: Connection[] }) {
   const router = useRouter();
   
   // Article State
@@ -81,6 +94,9 @@ export function AIStudioClient() {
   // Modals state
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isAutoPostModalOpen, setIsAutoPostModalOpen] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [isDraftSuccessOpen, setIsDraftSuccessOpen] = useState(false);
 
   // Copy Prompt Dialog state
   const [isConfirmCopyOpen, setIsConfirmCopyOpen] = useState(false);
@@ -189,13 +205,56 @@ export function AIStudioClient() {
     if (copyTargetType === "video") setIsVideoModalOpen(true);
   };
 
+  const handleSaveDraft = async () => {
+    const activeContent = formats[selectedFormat];
+    if (!activeContent.trim()) return;
+
+    setSavingDraft(true);
+    setError("");
+
+    try {
+      const res = await createDraftPost({
+        content: activeContent,
+        imageUrl: mediaUrl || undefined,
+      });
+
+      if (res.success) {
+        setIsDraftSuccessOpen(true);
+      } else {
+        setError(res.error || "ไม่สามารถบันทึกแบบร่างได้");
+      }
+    } catch (err: any) {
+      setError(err.message || "เกิดข้อผิดพลาดในการบันทึกแบบร่าง");
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
   const handleSendToPublisher = (mode: "single" | "video") => {
     const activeContent = formats[selectedFormat];
     if (!activeContent.trim()) return;
 
+    // Cache state in sessionStorage so large content/images never get truncated
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(
+          "vibepost_studio_preset",
+          JSON.stringify({
+            text: activeContent,
+            mediaUrl: mediaUrl || "",
+            mediaType: mediaType,
+            mode: mode,
+            timestamp: Date.now(),
+          })
+        );
+      } catch (e) {
+        console.error("Failed to cache studio preset in sessionStorage", e);
+      }
+    }
+
     // Send content and media parameters to AI Publisher page
-    const textParam = encodeURIComponent(activeContent);
-    const mediaParam = mediaUrl ? encodeURIComponent(mediaUrl) : "";
+    const textParam = encodeURIComponent(activeContent.substring(0, 300));
+    const mediaParam = mediaUrl && !mediaUrl.startsWith("data:") ? encodeURIComponent(mediaUrl) : "";
     const typeParam = mediaType;
     
     // Route directly to AI Publisher wizard with pre-loaded state
@@ -509,23 +568,62 @@ export function AIStudioClient() {
           {/* Export / Launch Zone */}
           {formats[selectedFormat].trim() && (
             <div className="pt-6 border-t border-slate-100 space-y-4 animate-in slide-in-from-bottom-3">
-              <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block">
-                3. ส่งออกเพื่อเผยแพร่ (Send to AI Publisher)
-              </Label>
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block">
+                  3. ส่งออกเพื่อเผยแพร่ (Publish & Auto-Post)
+                </Label>
+                <span className="text-[11px] font-bold text-green-600 bg-green-50 px-2.5 py-0.5 rounded-md border border-green-200">
+                  ✨ แคปชันและสื่อพร้อมแล้ว
+                </span>
+              </div>
+
+              {/* Main Action Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                {/* 1-Click Fast AutoPost Action */}
                 <Button
-                  onClick={() => handleSendToPublisher("single")}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold h-12 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-xs"
+                  onClick={() => setIsAutoPostModalOpen(true)}
+                  className="sm:col-span-7 bg-gradient-to-r from-purple-600 via-indigo-600 to-red-600 hover:from-purple-700 hover:to-red-700 text-white font-extrabold h-13 rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-xs group"
                 >
-                  <Send className="w-4 h-4" /> โพสต์รูปภาพเดี่ยว / รูปประกอบ
+                  <Rocket className="w-4 h-4 text-yellow-300 animate-bounce" />
+                  <span>🚀 เผยแพร่ทันที / ตั้งเวลา Auto-Post</span>
+                </Button>
+
+                {/* Save as Draft Button */}
+                <Button
+                  variant="outline"
+                  onClick={handleSaveDraft}
+                  disabled={savingDraft}
+                  className="sm:col-span-5 border-purple-200 bg-purple-50/50 hover:bg-purple-100/60 text-purple-800 font-black h-13 rounded-2xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all"
+                >
+                  {savingDraft ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-purple-600" /> กำลังบันทึก...
+                    </>
+                  ) : (
+                    <>
+                      <BookmarkPlus className="w-4 h-4 text-purple-600" /> 💾 บันทึกเป็นแบบร่าง (Draft)
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Advanced / Alternative Options */}
+              <div className="pt-1 flex flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => handleSendToPublisher("single")}
+                  className="flex-1 border-slate-200 hover:bg-slate-50 text-slate-700 font-bold h-10 rounded-xl text-xs flex items-center justify-center gap-1.5"
+                >
+                  <Settings2 className="w-3.5 h-3.5 text-slate-400" /> เปิดใน AI Publisher (ขั้นสูง)
                 </Button>
 
                 {mediaType === "video" && mediaUrl && (
                   <Button
+                    variant="outline"
                     onClick={() => handleSendToPublisher("video")}
-                    className="flex-1 bg-gradient-to-r from-indigo-600 to-red-600 hover:from-indigo-700 hover:to-red-700 text-white font-bold h-12 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-xs"
+                    className="flex-1 border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100/50 text-indigo-700 font-bold h-10 rounded-xl text-xs flex items-center justify-center gap-1.5"
                   >
-                    <Film className="w-4 h-4" /> โพสต์วิดีโอบรรยายคลิป
+                    <Film className="w-3.5 h-3.5 text-indigo-500" /> โพสต์วิดีโอบรรยายคลิป
                   </Button>
                 )}
               </div>
@@ -564,6 +662,54 @@ export function AIStudioClient() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Draft Success Dialog */}
+      <Dialog open={isDraftSuccessOpen} onOpenChange={setIsDraftSuccessOpen}>
+        <DialogContent className="sm:max-w-md bg-white border border-slate-200 text-slate-800 rounded-3xl p-6 shadow-2xl text-center">
+          <div className="py-4 flex flex-col items-center justify-center space-y-4">
+            <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center border-4 border-purple-100 shadow-inner">
+              <BookmarkPlus className="w-8 h-8 text-purple-600" />
+            </div>
+            <div className="space-y-1">
+              <DialogTitle className="text-xl font-black text-slate-900">
+                บันทึกเข้าคลังแบบร่างเรียบร้อย! 🎉
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+                คอนเทนต์ถูกเก็บไว้ใน <strong>"คลังแบบร่างรอโพสต์ (Drafts Queue)"</strong> คุณสามารถเปิดดูและคลิกสั่งโพสต์ได้ทุกเมื่อ
+              </DialogDescription>
+            </div>
+            <div className="flex gap-3 pt-3 w-full">
+              <Button
+                variant="outline"
+                onClick={() => setIsDraftSuccessOpen(false)}
+                className="flex-1 border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold rounded-xl h-11"
+              >
+                ✨ สร้างเนื้อหาต่อ
+              </Button>
+              <Button
+                onClick={() => router.push("/dashboard/history")}
+                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-black rounded-xl h-11 shadow-md flex items-center justify-center gap-1.5"
+              >
+                <Layers className="w-4 h-4" /> ไปดูคลังแบบร่าง
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Studio AutoPost Modal */}
+      <StudioAutoPostModal
+        isOpen={isAutoPostModalOpen}
+        onClose={() => setIsAutoPostModalOpen(false)}
+        content={formats[selectedFormat]}
+        mediaUrl={mediaUrl}
+        mediaType={mediaType}
+        connections={connections}
+        onOpenAdvancedWizard={() => {
+          setIsAutoPostModalOpen(false);
+          handleSendToPublisher(mediaType === "video" && mediaUrl ? "video" : "single");
+        }}
+      />
 
       {/* AI Modals */}
       <AIImageCreatorModal

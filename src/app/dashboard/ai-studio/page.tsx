@@ -46,5 +46,12 @@ export default async function AIStudioPage() {
     );
   }
 
-  return <AIStudioClient />;
+  const connections = workspace.socialConnections.map((c) => ({
+    id: c.id,
+    platform: c.platform,
+    accountName: c.accountName,
+    isActive: c.isActive,
+  }));
+
+  return <AIStudioClient connections={connections} />;
 }

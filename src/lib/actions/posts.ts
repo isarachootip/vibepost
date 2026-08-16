@@ -441,3 +441,179 @@ export async function getTrashPosts(): Promise<{
   }
 }
 
+export type DraftPostItem = {
+  id: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  media: {
+    url: string;
+    fileName: string;
+    fileType: "IMAGE" | "VIDEO";
+  }[];
+  targetConnectionIds: string[];
+};
+
+export async function createDraftPost(data: {
+  content: string;
+  targetConnectionIds?: string[];
+  imageUrl?: string;
+  imageUrls?: string[];
+}) {
+  const workspace = await getActiveWorkspaceContext();
+  if (!workspace) throw new Error("Workspace not found");
+
+  const role = await getUserWorkspaceRole(workspace.id);
+  if (role === "VIEWER") {
+    return { success: false, error: "สิทธิ์ไม่เพียงพอ — Viewer ไม่สามารถสร้างแบบร่างได้" };
+  }
+
+  const allImageUrls: string[] = [
+    ...(data.imageUrls ?? []),
+    ...(data.imageUrl ? [data.imageUrl] : []),
+  ].filter(Boolean);
+
+  try {
+    const newPost = await prisma.post.create({
+      data: {
+        workspaceId: workspace.id,
+        content: data.content,
+        status: "DRAFT",
+        scheduledTime: null,
+        targets: data.targetConnectionIds && data.targetConnectionIds.length > 0 ? {
+          create: data.targetConnectionIds.map((id) => ({
+            socialConnectionId: id,
+            status: "DRAFT",
+          })),
+        } : undefined,
+      },
+    });
+
+    if (allImageUrls.length > 0) {
+      for (const url of allImageUrls) {
+        const ext = url.split(".").pop()?.toLowerCase() || "";
+        const isVideo = ["mp4", "webm", "mov", "quicktime"].includes(ext);
+        
+        const asset = await prisma.mediaAsset.create({
+          data: {
+            workspaceId: workspace.id,
+            fileName: url.split("/").pop() || (isVideo ? "video.mp4" : "image.jpg"),
+            fileUrl: url,
+            fileType: isVideo ? "VIDEO" : "IMAGE",
+            status: "PENDING",
+          },
+        });
+        await prisma.postMedia.create({
+          data: { postId: newPost.id, mediaAssetId: asset.id },
+        });
+      }
+    }
+
+    revalidatePath("/dashboard/history");
+    revalidatePath("/dashboard/monitor");
+    revalidatePath("/dashboard/ai-studio");
+
+    return { success: true, postId: newPost.id };
+  } catch (error: any) {
+    console.error("Create Draft Error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getDraftPostsAction(): Promise<{
+  success: boolean;
+  drafts: DraftPostItem[];
+  error?: string;
+}> {
+  try {
+    const workspace = await getActiveWorkspaceContext();
+    if (!workspace) return { success: false, drafts: [], error: "Workspace not found" };
+
+    const posts = await prisma.post.findMany({
+      where: {
+        workspaceId: workspace.id,
+        status: "DRAFT",
+        isDeleted: false,
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        media: {
+          include: {
+            mediaAsset: true,
+          },
+        },
+        targets: true,
+      },
+    });
+
+    const drafts: DraftPostItem[] = posts.map((p) => ({
+      id: p.id,
+      content: p.content,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      media: p.media.map((m) => ({
+        url: m.mediaAsset.fileUrl,
+        fileName: m.mediaAsset.fileName,
+        fileType: m.mediaAsset.fileType as "IMAGE" | "VIDEO",
+      })),
+      targetConnectionIds: p.targets.map((t) => t.socialConnectionId),
+    }));
+
+    return { success: true, drafts };
+  } catch (err: any) {
+    return { success: false, drafts: [], error: err.message };
+  }
+}
+
+export async function publishDraftPostAction(data: {
+  postId: string;
+  content: string;
+  targetConnectionIds: string[];
+  scheduledTime: Date | null;
+}) {
+  const workspace = await getActiveWorkspaceContext();
+  if (!workspace) throw new Error("Workspace not found");
+
+  const role = await getUserWorkspaceRole(workspace.id);
+  if (role === "VIEWER") {
+    return { success: false, error: "สิทธิ์ไม่เพียงพอ" };
+  }
+
+  if (data.targetConnectionIds.length === 0) {
+    return { success: false, error: "กรุณาเลือกช่องทางโซเชียลมีเดียอย่างน้อย 1 ช่องทาง" };
+  }
+
+  try {
+    const isPostNow = !data.scheduledTime || new Date(data.scheduledTime) <= new Date();
+    const finalScheduledTime = isPostNow ? new Date() : new Date(data.scheduledTime!);
+
+    // Remove old targets and attach new
+    await prisma.postTarget.deleteMany({
+      where: { postId: data.postId },
+    });
+
+    await prisma.post.update({
+      where: { id: data.postId },
+      data: {
+        content: data.content,
+        status: "SCHEDULED",
+        scheduledTime: finalScheduledTime,
+        targets: {
+          create: data.targetConnectionIds.map((id) => ({
+            socialConnectionId: id,
+            status: "SCHEDULED",
+          })),
+        },
+      },
+    });
+
+    revalidatePath("/dashboard/history");
+    revalidatePath("/dashboard/monitor");
+
+    return { success: true, isPostNow, scheduledTime: finalScheduledTime };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+

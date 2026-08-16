@@ -5,11 +5,29 @@ import React, { useState } from "react";
 interface FAQItem {
   question: string;
   answer: string;
-  category: "all" | "video" | "image" | "text" | "security";
+  category: "all" | "video" | "image" | "text" | "security" | "workflow";
   keywords: string[];
 }
 
 const FAQ_DATA: FAQItem[] = [
+  {
+    category: "workflow",
+    question: "กระบวนการทำงานภาพรวม (End-to-End Process) จาก AI Studio สู่ Auto-Post ทำงานอย่างไร?",
+    answer: "ระบบออกแบบมาเพื่อรองรับ 2 โหมดการทำงานหลักตามสไตล์ครีเอเตอร์:\n\n1. **โหมด Fast-Track (ทำเสร็จปุ๊บ สั่งโพสต์ปั๊บ)**:\n   เมื่อคุณสร้างแคปชันและรูปภาพ/วิดีโอใน **AI Studio** เสร็จแล้ว สามารถกดปุ่ม **'🚀 เผยแพร่ทันที / ตั้งเวลา Auto-Post'** เพื่อเปิดหน้าต่างเลือกเพจ Facebook/Instagram และกำหนดวัน-เวลา แล้วกดยืนยันเพื่อนำเข้าคิว Auto-Post ได้ทันทีในคลิกเดียว\n\n2. **โหมด Batch Production (ทำตุนไว้ในสต็อก แล้วค่อยทยอยโพสต์)**:\n   เมื่อเจนคอนเทนต์เสร็จ ให้กดปุ่ม **'💾 บันทึกเป็นแบบร่าง (Draft)'** เพื่อเก็บเข้า **'คลังแบบร่างรอโพสต์ (Drafts Queue)'** จากนั้นสามารถเข้าไปที่หน้า **Post History -> คลังแบบร่างรอโพสต์** เพื่อดูรายการทั้งหมด แล้วคลิกปุ่ม **'🚀 ตั้งค่า & สั่งโพสต์'** ทีละโพสต์ตามแผนการตลาด",
+    keywords: ["workflow", "process", "autopost", "ขั้นตอน", "การทำงาน", "กระบวนการ", "สตูดิโอ", "ai studio", "draft", "คลังแบบร่าง"]
+  },
+  {
+    category: "workflow",
+    question: "ปุ่ม 'บันทึกเป็นแบบร่าง (Save Draft)' กับ 'เผยแพร่ทันที / ตั้งเวลา Auto-Post' ต่างกันอย่างไร?",
+    answer: "- **💾 บันทึกเป็นแบบร่าง (Save Draft)**: จัดเก็บข้อความแคปชันและไฟล์รูปภาพ/วิดีโอ AI ลงในฐานข้อมูลสถานะ `DRAFT` โดยยังไม่ผูกกับวันเวลาโพสต์ เหมาะสำหรับการผลิตคอนเทนต์ตุนไว้หลายๆ ชิ้นในคราวเดียว\n- **🚀 เผยแพร่ทันที / ตั้งเวลา Auto-Post (Instant Publisher)**: เชื่อมโยงคอนเทนต์เข้ากับเพจโซเชียลมีเดียที่เลือก พร้อมกำหนดเวลา (Schedule) หรือโพสต์ทันที (Post Now) และส่งเข้าสู่ระบบ Auto-Publisher Cron โดยตรง",
+    keywords: ["draft", "save", "บันทึก", "แบบร่าง", "ต่างกัน", "autopost", "instant", "เผยแพร่ทันที"]
+  },
+  {
+    category: "workflow",
+    question: "หน้ารวมคลังแบบร่างรอโพสต์ (Drafts Queue) อยู่ที่ไหน และใช้งานอย่างไร?",
+    answer: "คุณสามารถเข้าใช้งานได้ที่เมนู **Post History (ประวัติโพสต์ & คลังเนื้อหา)** -> เลือกแท็บ **'📝 คลังแบบร่างรอโพสต์ (Drafts Queue)'**:\n\n- แสดงการ์ดของทุกคอนเทนต์ที่ทำตุนไว้ พร้อม Thumbnail รูปภาพ/วิดีโอ และข้อความแคปชัน\n- กดปุ่ม **'🚀 ตั้งค่า & สั่งโพสต์'** บนการ์ดใดก็ได้ เพื่อเปิดหน้าต่างเลือกเพจและตั้งเวลาปล่อยโพสต์ได้ทันที\n- กดปุ่ม **'✏️ แก้ไข'** เพื่อเปิดปรับแต่งแบบละเอียดใน AI Content Publisher\n- กดปุ่ม **'🗑️ ลบ'** เพื่อย้ายแบบร่างที่ไม่ใช้งานลงถังขยะ",
+    keywords: ["คลังแบบร่าง", "drafts queue", "หน้ารวม", "รอโพสต์", "post history", "จัดการโพสต์"]
+  },
   {
     category: "video",
     question: "ระบบ BizNext จัดลำดับความสำคัญของค่าย AI ในการสร้างวิดีโออย่างไร?",
@@ -56,10 +74,11 @@ const FAQ_DATA: FAQItem[] = [
 
 const CATEGORIES = [
   { id: "all", label: "ทั้งหมด" },
-  { id: "video", label: "ระบบวิดีโอ (Video AI)" },
-  { id: "image", label: "ระบบรูปภาพ (Image AI)" },
-  { id: "text", label: "การเขียนบทความ (Text AI)" },
-  { id: "security", label: "ความปลอดภัย & คีย์" }
+  { id: "workflow", label: "🔄 กระบวนการโพสต์ (Workflow & Auto-Post)" },
+  { id: "text", label: "✍️ การเขียนบทความ (Text AI)" },
+  { id: "image", label: "🎨 ระบบรูปภาพ (Image AI)" },
+  { id: "video", label: "🎬 ระบบวิดีโอ (Video AI)" },
+  { id: "security", label: "🔒 ความปลอดภัย & คีย์" }
 ];
 
 export default function FAQPage() {

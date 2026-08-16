@@ -16,15 +16,19 @@
 * **Inline Editor & Switcher**: แสดงแถบสลับเนื้อหา (Tab selectors) ให้ผู้ใช้สามารถคลิกเลือกรูปแบบ และแก้ไขข้อความในกล่อง Textarea ได้โดยตรงและบันทึกแยกกันแบบอิสระ
 * **Ask-to-Copy Prompt**: เมื่อสร้างเนื้อหาเสร็จแล้ว กดปุ่มสร้างภาพ/วิดีโอ ระบบจะมี Dialog ถามเพื่อดึงสรุปใจความสำคัญไปตั้งเป็น Prompt เริ่มต้นทันที
 
-### 1.2 AI Content Publisher (ศูนย์จัดการและเผยแพร่)
-* **Single / Video / Multi-Post Wizards**: วิซาร์ดทีละขั้นตอน (Step-by-step) สำหรับการส่งโพสต์ไปยังเครือข่ายโซเชียล
-* **Schedule & Post Now**: ตั้งเวลาโพสต์ในอนาคต (โดยระบุวันที่ และเวลา ชั่วโมง:นาที) หรือสั่งโพสต์ทันที
-* **Social Connections**: ยิง Payload ตรงเข้า Facebook Page API หรือช่องทางอื่นๆ ที่เชื่อมต่อไว้ผ่านระบบ OAuth
+### 1.2 Instant Auto-Post Modal & Multi-Post Wizards (การเผยแพร่)
+* **Studio Instant Auto-Post Modal**: หน้าต่างป๊อปอัปสั่งโพสต์ด่วนทันทีในหน้า AI Studio พรีวิว Social Feed, เลือกบัญชีโซเชียล, และเลือก "⚡ โพสต์ทันที" หรือ "📅 ตั้งเวลา" จบในขั้นตอนเดียว
+* **Multi-Channel AI Publisher Wizard**: วิซาร์ด 4 ขั้นตอนสำหรับปรับแต่งและเผยแพร่คอนเทนต์อย่างละเอียด มี Session Storage Bridge (`vibepost_studio_preset`) ป้องกันข้อความ/รูปภาพตกหล่น
 
-### 1.3 Post Monitor & History (ระบบติดตามสถานะ)
+### 1.3 Staged Drafts Queue (คลังแบบร่างรอโพสต์)
+* **Batch Staging Mode**: ช่วยให้ผู้ใช้สามารถกด **"💾 บันทึกเป็นแบบร่าง"** จากหน้า AI Studio เพื่อเก็บสต็อกคอนเทนต์ไว้ในระบบสถานะ `DRAFT`
+* **Centralized Drafts Hub**: อยู่ในหน้า `/dashboard/history` มีปุ่ม **`[ 🚀 ตั้งค่า & สั่งโพสต์ ]`** เพื่อเปิด Auto-Post Modal สั่งกระจายโพสต์ทีละตัวได้ทุกเมื่อ
+
+### 1.4 Post Monitor & History (ระบบติดตามสถานะ)
 * ติดตามสถานะของโพสต์ในวงจรอายุโพสต์ (Post Lifecycle):
-  - `DRAFT` (ร่างเนื้อหา)
+  - `DRAFT` (ร่างเนื้อหา / อยู่ในคลังแบบร่าง)
   - `SCHEDULED` (รอคิวโพสต์อัตโนมัติ)
+  - `PUBLISHING` (กำลังยิงขึ้น API)
   - `PUBLISHED` (โพสต์สำเร็จแล้ว)
   - `FAILED` (โพสต์ไม่สำเร็จ พร้อมบันทึกข้อความ Error จาก API ปลายทาง)
 
