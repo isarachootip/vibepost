@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>VibePost System & User Manual</title>
+<style>
+    body {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    h1, h2, h3, h4 {
+        color: #1a365d;
+    }
+    h1 {
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 10px;
+    }
+    h2 {
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 5px;
+        margin-top: 30px;
+    }
+    table {
+        margin: 20px 0;
+    }
+    p {
+        margin-bottom: 1.2em;
+    }
+</style>
+</head>
+<body>
+<h1>📘 คู่มือระบบและคู่มือการใช้งาน VibePost (System &amp; User Manual)</h1>
+<h3>สำหรับ Project Manager (PM), System Analyst (SA) และ User Trainer</h3>
+
+<p>ยินดีต้อนรับสู่คู่มือการใช้งานระบบ <strong>VibePost (Content &amp; Social Media Auto-Pilot Engine)</strong> เอกสารฉบับนี้จัดทำขึ้นโดยบูรณาการเนื้อหาสำหรับทั้งเชิงเทคนิค (สำหรับ PM/SA) และเชิงปฏิบัติการ (สำหรับ Trainer) เพื่อเป็นเอกสารอ้างอิงในการพัฒนา ติดตั้งระบบ และนำไปใช้เทรนนิ่งผู้ใช้งานจริง</p>
+
+<p>---</p>
+
+<h2>📌 1. ภาพรวมระบบ (System Overview)</h2>
+
+<p><strong>VibePost</strong> คือระบบผู้ช่วยสร้างสรรค์เนื้อหา (Content Production) และวางแผนเผยแพร่บนโซเชียลมีเดียอัตโนมัติแบบครบวงจร (Auto-Pilot) ขับเคลื่อนด้วยขุมพลังปัญญาประดิษฐ์ (AI Studio) โดยระบบถูกออกแบบภายใต้โครงสร้าง <strong>Multi-Workspace Isolation</strong> ทำให้แต่ละแบรนด์หรือบริษัทสามารถแยกบริหารจัดการข้อมูล สมาชิก ทีมงาน ช่องทางโซเชียล และคีย์ตั้งค่า AI ได้อย่างเด็ดขาดและปลอดภัย</p>
+
+<h3>🔄 แผนภาพกระบวนการทำงานแบบ End-to-End</h3>
+
+<pre style="background-color: #f4f4f4; padding: 10px; border: 1px solid #ddd; font-family: monospace; overflow-x: auto; white-space: pre-wrap;">flowchart TD
+    subgraph Phase1["🎨 Phase 1: Content Production (AI Creator Studio)"]
+        A1["ป้อนหัวข้อ / บรีฟ"] --&gt; A2["AI เจนแคปชัน 3 รูปแบบ (Long-form / Social / AIDA)"]
+        A2 --&gt; A3["AI เจนรูปภาพ (Imagen 4 / DALL-E) หรือคลิปวิดีโอ"]
+    end
+
+    subgraph Phase2["🧭 Phase 2: Action Routes"]
+<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%; border: 1px solid #ccc;">
+  <tr>
+    <th style="background-color: #f2f2f2; font-weight: bold; border: 1px solid #ccc;">Route A: 1-Click Fast Track</th>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #ccc;">Route B: Batch Staging</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #ccc;">Route C: Advanced Wizard</td>
+  </tr>
+</table>
+    end
+
+    subgraph Phase3["🗂️ Phase 3: Staging &amp; Queue Hub"]
+        B2 --&gt; C1[("Post DB (Status: DRAFT)")]
+        C1 --&gt; C2["หน้ารวม 'คลังแบบร่างรอโพสต์ (Drafts Queue)'"]
+<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%; border: 1px solid #ccc;">
+  <tr>
+    <th style="background-color: #f2f2f2; font-weight: bold; border: 1px solid #ccc;">คลิกปุ่ม '🚀 ตั้งค่า &amp; สั่งโพสต์'</th>
+  </tr>
+</table>
+    end
+
+    subgraph Phase4["🚀 Phase 4: Auto-Publisher &amp; Execution"]
+        B1 --&gt; D1
+        B3 --&gt; D1
+        D1 --&gt; E1[("Post DB (Status: SCHEDULED)")]
+        E1 --&gt; E2["⏰ Auto-Publisher Cron (/api/cron/publisher)"]
+<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%; border: 1px solid #ccc;">
+  <tr>
+    <th style="background-color: #f2f2f2; font-weight: bold; border: 1px solid #ccc;">ส่งข้อมูลพร้อมสื่อ</th>
+  </tr>
+</table>
+        E3 --&gt; E4[("Post DB (Status: PUBLISHED)")]
+    end
+
+    subgraph Phase5["📊 Phase 5: Monitoring &amp; Analytics"]
+        E4 --&gt; F1["📅 Post Monitor (/dashboard/monitor)"]
+        E4 --&gt; F2["📈 Post History &amp; AI Token Logs (/dashboard/history)"]
+    end</pre>
+
+<p>---</p>
+
+<h2>🛠️ 2. สถาปัตยกรรมระบบสำหรับ SA (System Analyst Specifications)</h2>
+
+<p>ในหัวข้อนี้นักวิเคราะห์ระบบ (SA) สามารถใช้ศึกษาความเชื่อมโยงของระบบหลังบ้าน API และโมเดลการรันงานต่าง ๆ</p>
+
+<h3>2.1 โมดูล AI Studio &amp; Cascade Fallback (สมองกลสร้างรูปภาพและวิดีโอ)</h3>
+<p>เพื่อลดอัตราความล้มเหลว (Error Rate) ในการสร้างสื่อด้วย AI ระบบจึงมีลำดับการเลือกใช้เครื่องมือ (Cascade/Fallback System) ดังนี้:</p>
+
+<ul>
+<li><strong>การสร้างรูปภาพ (AI Image Creator)</strong>:</li>
+<li><strong>Gemini Imagen 3/4.0 Fast</strong>: จะถูกเลือกใช้เป็นอันดับแรกหากตรวจพบคีย์ Gemini ในระบบ</li>
+<li><strong>Fail-Safe Fallbacks</strong>: หากระบบสร้างรูปภายนอกมีปัญหา หรือขีดจำกัด IP ของ Hostinger VPS ชนลิมิต ระบบจะดึงคำสำคัญ (Tags) ของเนื้อหามาทำการดาวน์โหลดรูปภาพสต็อกที่เกี่ยวข้องและมีความสวยงามผ่าน <strong>LoremFlickr</strong> มาทดแทนให้ทันที</li>
+<li><strong>การสร้างวิดีโอ (AI Video Studio)</strong>:</li>
+<li><strong>Google Veo (ผ่าน Gemini API Key)</strong>: ยิงคำสั่งสร้าง Long-Running Operation (<code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">veo-2.0-generate-video</code>) และทำ Polling ทุก ๆ 8 วินาที (สูงสุด 30 ครั้ง) เพื่อตรวจสอบความสำเร็จ</li>
+<li><strong>Luma Dream Machine</strong>: ยิงคำสั่งสร้างแบบ Text-to-Video และ Polling สถานะจนกว่าจะ <code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">completed</code></li>
+<li><strong>Kling AI Video</strong>: เข้ารหัส JWT ด้วย <code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">AccessKey:SecretKey</code> และยิงไปรันเซิร์ฟเวอร์สิงคโปร์</li>
+<li><strong>Pexels Curated Fallback</strong>: หากไม่มีการใส่คีย์หรือการใช้ API ทั้งหมดเกิดข้อผิดพลาด ระบบจะสลับมาดึงวิดีโอคุณภาพสูงที่เราคัดสรรไว้ใน Pexels ทันที</li>
+</ul>
+
+<h3>2.2 วงจรอายุของโพสต์ (Post Lifecycle Status)</h3>
+<p>สถานะของตาราง <code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">Post</code> และ <code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">PostTarget</code> มีลักษณะการสลับค่าดังนี้:</p>
+<ul>
+<li><code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">DRAFT</code>: คอนเทนต์ถูกสร้างไว้ในคลังแบบร่าง ยังไม่มีการกำหนดเวลา</li>
+<li><code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">WAITING_APPROVAL</code>: รอยืนยันจากผู้บริหารผ่านระบบ Discord/Email Webhook</li>
+<li><code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">APPROVED</code>: ผ่านการตรวจสอบและรอเข้าคิว</li>
+<li><code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">SCHEDULED</code>: แนบเพจปลายทางและเวลาเรียบร้อยแล้ว รอ Cron ดึงไปเผยแพร่</li>
+<li><code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">PUBLISHING</code>: Cron กำลังนำส่งข้อมูลไปยัง Graph API (เพื่อป้องกันการโพสต์ซ้ำซ้อน)</li>
+<li><code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">PUBLISHED</code>: โพสต์บนโซเชียลมีเดียสำเร็จเรียบร้อย</li>
+<li><code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">FAILED</code>: โพสต์ล้มเหลว (พร้อมแสดง Error Message จาก API)</li>
+</ul>
+
+<p>---</p>
+
+<h2>🗄️ 3. โครงสร้างฐานข้อมูล (Prisma PostgreSQL ER-Summary)</h2>
+
+<p>ฐานข้อมูลทำงานอยู่บน PostgreSQL โดยใช้ Prisma ORM ในการเชื่อมต่อ ตารางที่สำคัญประกอบด้วย:</p>
+
+<pre style="background-color: #f4f4f4; padding: 10px; border: 1px solid #ddd; font-family: monospace; overflow-x: auto; white-space: pre-wrap;">// ตัวอย่างความสัมพันธ์ที่สำคัญ (สรุปเพื่อใช้ประกอบการเทรน)
+model Workspace {
+  id                String             @id @default(cuid())
+  name              String
+  members           WorkspaceMember[]
+  socialConnections SocialConnection[]
+  posts             Post[]
+  promptConfigs     PromptConfig[]
+}
+
+model SocialConnection {
+  id            String    @id @default(cuid())
+  platform      Platform  // FACEBOOK, INSTAGRAM, TWITTER, LINKEDIN, LINE, TIKTOK, YOUTUBE
+  accountId     String    // Page ID / Channel ID
+  accountName   String
+  accessToken   String
+  refreshToken  String?
+}
+
+model Post {
+  id             String      @id @default(cuid())
+  content        String      // ข้อความแคปชันหลัก
+  status         PostStatus  // DRAFT, WAITING_APPROVAL, APPROVED, SCHEDULED, PUBLISHED, FAILED
+  scheduledTime  DateTime?   // วันเวลาที่จะโพสต์อัตโนมัติ
+  errorMessage   String?     // รายละเอียดข้อผิดพลาดถ้าส่งโพสต์ไม่ผ่าน
+  media          PostMedia[]
+  targets        PostTarget[]
+}</pre>
+
+<p>---</p>
+
+<h2>🧑‍🏫 4. คู่มือการใช้งานระบบสำหรับ Trainer (User Guide / Training Guide)</h2>
+
+<p>หัวข้อนี้นำไปใช้เป็นคู่มือฝึกอบรมพนักงาน หรือผู้ดูแลระบบในการปฏิบัติงานจริง</p>
+
+<h3>🚀 ขั้นตอนการเริ่มทำงาน (Quick Start Workflow)</h3>
+
+<pre style="background-color: #f4f4f4; padding: 10px; border: 1px solid #ddd; font-family: monospace; overflow-x: auto; white-space: pre-wrap;">[ขั้นตอนที่ 1: ตั้งค่าเชื่อมต่อ] ➔ [ขั้นตอนที่ 2: สร้างคอนเทนต์] ➔ [ขั้นตอนที่ 3: เลือกเส้นทางการโพสต์]</pre>
+
+<h4>🔹 ขั้นตอนที่ 1: การตั้งค่าบัญชีและสมองกล (Setup Brand &amp; API Key)</h4>
+<p>ก่อนเริ่มต้นใช้งาน ผู้ดูแลระบบจะต้องกรอกการเชื่อมต่อช่องทางและระบุคีย์ AI:</p>
+<ol>
+<li>ไปที่เมนู <strong>Settings (ตั้งค่า)</strong></li>
+<li>ดูที่ <strong>Workspace Summary</strong> เพื่อตรวจสอบสถานะการเชื่อมต่อบริการ AI ด้านการเขียนภาพและวิดีโอ</li>
+<li><strong>การใส่คีย์ Kling AI</strong>: ให้ระบุในรูปแบบ <code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">AccessKey:SecretKey</code> (ใช้เครื่องหมายโคลอนคั่น เช่น <code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">ak_xyz123:sk_abc456</code>)</li>
+<li>ไปที่เมนู <strong>Social (จัดการช่องทาง)</strong> เพื่อล็อกอินและเชื่อมต่อเพจ Facebook, IG หรือช่องทางอื่น ๆ</li>
+</ol>
+
+<h4>🔹 ขั้นตอนที่ 2: การสร้างสรรค์เนื้อหาใน AI Studio (<code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">/dashboard/ai-studio</code>)</h4>
+<ol>
+<li>เข้าไปที่เมนู <strong>AI Studio</strong></li>
+<li>พิมพ์หัวข้อหรือบรีฟสั้น ๆ ที่ต้องการ เช่น <em>"โปรโมชั่นสินค้าใหม่รับหน้าร้อน ลดสูงสุด 50%"</em></li>
+<li>ระบบจะทำงานเจเนอเรตให้พร้อมกันทันที 3 รูปแบบในคลิกเดียว (3-in-1 Adaptive Text Engine):</li>
+<li><strong>Long-form</strong>: บทความขนาดยาว ละเอียด น่าเชื่อถือ</li>
+<li><strong>Social</strong>: แคปชันกระชับ น่ารัก พร้อมอีโมจิดึงดูดสายตา</li>
+<li><strong>AIDA</strong>: โครงสร้างแบบนักเขียนโฆษณามืออาชีพ (Attention, Interest, Desire, Action)</li>
+<li>ผู้ใช้สามารถคลิกสลับแท็บเพื่อดู แก้ไขข้อมูลผ่านกล่อง Textarea ได้ตามใจชอบ</li>
+</ol>
+<p>5. กดปุ่ม <strong>"สร้างรูปภาพ/วิดีโอ"</strong> ด้านล่าง โดยระบบจะดึงสรุปประเด็นจากบทความไปทำเป็น Prompt เริ่มต้นในการวาดภาพหรือสร้างคลิปให้โดยอัตโนมัติ</p>
+
+<h4>🔹 ขั้นตอนที่ 3: 3 เส้นทางในการเผยแพร่ (Action Routes)</h4>
+<p>เมื่อได้ข้อความและรูปภาพ/วิดีโอที่พึงพอใจแล้ว ระบบมีทางเลือกในการจัดการคอนเทนต์ 3 รูปแบบ:</p>
+
+<ul>
+<li><strong>Route A: โพสต์ด่วนทันที (Instant Auto-Post Modal)</strong></li>
+<li>คลิกปุ่ม <strong>"🚀 เผยแพร่ทันที / ตั้งเวลา"</strong></li>
+<li>ระบบจะเปิด Modal พรีวิวหน้าต่างฟีดจำลองขึ้นมา ให้เราเลือกช่องทางโซเชียลมีเดีย</li>
+<li>เลือก <strong>"โพสต์ทันที"</strong> หรือ <strong>"ตั้งเวลา"</strong> จากนั้นกดยืนยัน โพสต์จะถูกนำเข้าคิวรอโพสต์ทันที</li>
+</ul>
+
+<ul>
+<li><strong>Route B: การเก็บตุนแบบร่าง (Save Draft for Batch Production)</strong></li>
+<li>หากครีเอเตอร์ต้องการผลิตเนื้อหาตุนไว้ทีละหลาย ๆ โพสต์ ให้กดปุ่ม <strong>"💾 บันทึกเป็นแบบร่าง (Save Draft)"</strong></li>
+<li>โพสต์จะเข้าไปเก็บไว้ใน <strong>คลังแบบร่างรอโพสต์ (Drafts Queue)</strong> หน้า <code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">/dashboard/history</code></li>
+<li>เมื่อต้องการสั่งโพสต์ ให้มาที่หน้าประวัติ แล้วคลิกปุ่ม <code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">[ 🚀 ตั้งค่า &amp; สั่งโพสต์ ]</code> เพื่อเปิดหน้าต่างเลือกวันเวลาในการโพสต์</li>
+</ul>
+
+<ul>
+<li><strong>Route C: ตัวจัดทำขั้นสูง (Advanced Multi-Post Wizard)</strong></li>
+<li>คลิกปุ่ม <strong>"เปิดใน AI Publisher (ขั้นสูง)"</strong></li>
+<li>ระบบจะใช้กลไก Session Storage ส่งต่อค่าเนื้อหาทั้งหมดไปยังตัวกรอกข้อมูลแบบทีละสเต็ป (4-Step Wizard) เพื่อจัดแจงข้อความเฉพาะเจาะจงของแต่ละโซเชียลและใส่พารามิเตอร์เพิ่มเติม</li>
+</ul>
+
+<h4>🔹 ขั้นตอนที่ 4: การติดตามสถานะโพสต์ (Post Monitor &amp; Token Logs)</h4>
+<ol>
+<li>ไปที่เมนู <strong>Monitor</strong> เพื่อดูตารางปฏิทินโพสต์และคิวงานที่รอการส่งออก</li>
+<li>ไปที่เมนู <strong>History</strong> เพื่อดูสรุปประวัติโพสต์ทั้งหมด</li>
+<li>ตรวจสอบ <strong>AI Usage Summary</strong> ด้านบนเพื่อดูจำนวน Tokens ที่ใช้ไปทั้งหมด และสรุปการประเมินค่าใช้จ่ายหน่วย USD แปลงเป็นเงินบาทไทย (THB) แบบเรียลไทม์</li>
+</ol>
+
+<p>---</p>
+
+<h2>⚠️ 5. คู่มือแก้ไขปัญหาเบื้องต้นสำหรับผู้ดูแลระบบ (Troubleshooting Guide)</h2>
+
+<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%; border: 1px solid #ccc;">
+  <tr>
+    <th style="background-color: #f2f2f2; font-weight: bold; border: 1px solid #ccc;">อาการ/ปัญหา</th>
+    <th style="background-color: #f2f2f2; font-weight: bold; border: 1px solid #ccc;">สาเหตุที่เป็นไปได้</th>
+    <th style="background-color: #f2f2f2; font-weight: bold; border: 1px solid #ccc;">แนวทางแก้ไข</th>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #ccc;"><strong>สั่งสร้างรูปภาพ/วิดีโอแล้วล้มเหลว หรือหมุนโหลดค้าง</strong></td>
+    <td style="border: 1px solid #ccc;">1. คีย์ API ที่กรอกใน Settings ผิดพลาดหรือหมดอายุ&lt;br&gt;2. วงเงินการใช้งานของบัญชีผู้ให้บริการ (เช่น Gemini/Luma) หมดลง</td>
+    <td style="border: 1px solid #ccc;">1. ไปที่หน้ารายงาน <strong>Settings</strong> ตรวจสอบ Badge การใช้งานของ Workspace&lt;br&gt;2. ทดสอบนำคีย์ใหม่ไปเปลี่ยนในระบบและบันทึกอีกครั้ง</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #ccc;"><strong>ภาพที่ออกมาเป็นภาพสต็อกทั่วไป ไม่ใช่รูปวาด AI</strong></td>
+    <td style="border: 1px solid #ccc;">ระบบตรวจพบคิวงานล้น หรือชนขีดจำกัดลิมิต IP จึงสลับใช้ระบบสำรอง (LoremFlickr Fallback)</td>
+    <td style="border: 1px solid #ccc;">ไม่ต้องดำเนินการใด ๆ เป็นกลไกช่วยให้หน้าเว็บไม่พัง (UX Protection) ระบบจะสลับกลับมาสร้างด้วย AI ปกติเมื่อคิวหรือโควตารอบถัดไปว่างลง</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #ccc;"><strong>โพสต์ไม่ขึ้นโซเชียลตามเวลาที่ตั้งไว้</strong></td>
+    <td style="border: 1px solid #ccc;">1. สัญญาณ Cron-job หลังบ้านขัดข้อง&lt;br&gt;2. โทเค็นการเชื่อมต่อเพจ Facebook/Instagram หมดอายุ (Token Expired)</td>
+    <td style="border: 1px solid #ccc;">1. ไปตรวจสอบสถานะโพสต์ในหน้า <strong>History</strong> ค้นหาการ์ดที่ขึ้นสถานะสีแดง <code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">FAILED</code>&lt;br&gt;2. ดูข้อความระบุสาเหตุข้อผิดพลาด (Error Message) ด้านล่างตัวการ์ด&lt;br&gt;3. หากเป็นเรื่องโทเค็น ให้ไปที่หน้า <strong>Social</strong> แล้วทำการ Re-authenticate หรือคลิกเชื่อมต่อใหม่อีกครั้ง</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #ccc;"><strong>เปิดหน้า Wizard สัญญาณภาพหลุดหาย หรือข้อความมาไม่ครบ</strong></td>
+    <td style="border: 1px solid #ccc;">ปัญหาขนาด URL query ยาวเกินขีดจำกัดเบราว์เซอร์ในการส่งต่อหน้าข้ามระบบแบบเดิม</td>
+    <td style="border: 1px solid #ccc;">ระบบแก้ไขโดยส่งต่อด้วย Session Storage Bridge แทนแล้ว หากพบปัญหา ให้รีเฟรชหน้าเบราว์เซอร์หรือตรวจสอบว่าไม่ได้เปิดโหมดส่วนตัว (Incognito) ที่ปิดการทำงานของ Storage</td>
+  </tr>
+</table>
+
+<p>---</p>
+<p><em>จัดทำเอกสารโดย ทีมพัฒนาและสนับสนุนการวางแผนระบบ VibePost Core Engine</em></p>
+
+</body>
+</html>

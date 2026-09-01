@@ -2,6 +2,7 @@ import React from "react";
 import { getActiveWorkspaceContext } from "@/lib/actions/workspace";
 import Link from "next/link";
 import { auth } from "@/auth";
+import { MobileDashboardOverview } from "@/components/dashboard/MobileDashboardOverview";
 
 export const dynamic = "force-dynamic";
 
@@ -11,27 +12,36 @@ export default async function DashboardOverview() {
 
   if (!workspace) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-center h-[60vh]">
+      <div className="flex flex-col items-center justify-center p-8 sm:p-12 text-center h-[60vh]">
         <div className="w-16 h-16 bg-[#1E293B] border border-slate-700/50 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-black/20">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">No Workspace Found</h2>
-        <p className="text-slate-400 max-w-sm mb-6">System requires an active workspace node to function. Initialize a new matrix or contact support.</p>
-        <button className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white px-8 py-3 rounded-full font-semibold transition-all shadow-[0_4px_15px_rgba(59,130,246,0.3)]">Create Workspace</button>
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">No Workspace Found</h2>
+        <p className="text-slate-500 max-w-sm mb-6">System requires an active workspace node to function. Initialize a new matrix or contact support.</p>
+        <Link href="/dashboard/workspaces" className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white px-8 py-3 rounded-full font-semibold transition-all shadow-md">
+          Create Workspace
+        </Link>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="p-8 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 ease-out">
-      <header className="flex items-end justify-between">
+    <>
+      {/* Mobile-Optimized Dashboard Screen */}
+      <div className="block md:hidden">
+        <MobileDashboardOverview workspace={workspace as any} />
+      </div>
+
+      {/* Desktop Dashboard Screen */}
+      <div className="hidden md:block space-y-8 sm:space-y-12 animate-in fade-in duration-500">
+      <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-2 font-heading tracking-tight drop-shadow-sm">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 mb-2 font-heading tracking-tight drop-shadow-sm">
             ภาพรวมระบบ
           </h1>
-          <p className="text-slate-500 font-medium tracking-wide">จัดการระบบโพสต์อัตโนมัติสำหรับ <span className="text-blue-600 font-bold">{workspace.name}</span></p>
+          <p className="text-slate-500 font-medium tracking-wide text-sm sm:text-base">จัดการระบบโพสต์อัตโนมัติสำหรับ <span className="text-blue-600 font-bold">{workspace.name}</span></p>
         </div>
-        <Link href="/dashboard/multi-post" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-full font-semibold text-sm transition-all shadow-[0_4px_15px_rgba(59,130,246,0.2)] flex items-center gap-2">
+        <Link href="/dashboard/multi-post" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-full font-semibold text-sm transition-all shadow-[0_4px_15px_rgba(59,130,246,0.2)] flex items-center justify-center gap-2 w-full sm:w-auto text-center shrink-0">
           สร้างโพสต์ใหม่
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </Link>
@@ -40,11 +50,11 @@ export default async function DashboardOverview() {
       {/* NEW: 3 Steps Workflow mimicking the provided image */}
       <div className="relative">
         <div className="absolute inset-0 bg-blue-500/5 blur-[100px] rounded-[3rem] pointer-events-none"></div>
-        <div className="rounded-[2.5rem] border border-slate-200 bg-white p-10 shadow-xl shadow-slate-200/50 relative overflow-hidden">
+        <div className="rounded-2xl sm:rounded-[2.5rem] border border-slate-200 bg-white p-6 sm:p-10 shadow-xl shadow-slate-200/50 relative overflow-hidden">
           
-          <div className="text-center mb-12">
-            <h2 className="text-2xl font-bold font-heading text-slate-800 mb-3">3 ขั้นตอนการทำงานจากไอเดียสู่การโพสต์อัตโนมัติ</h2>
-            <p className="text-slate-500 text-sm">พลิกโฉมการทำคอนเทนต์ด้วยระบบ Social Auto-Post อัจฉริยะ</p>
+          <div className="text-center mb-10 sm:mb-12">
+            <h2 className="text-xl sm:text-2xl font-bold font-heading text-slate-800 mb-3">3 ขั้นตอนการทำงานจากไอเดียสู่การโพสต์อัตโนมัติ</h2>
+            <p className="text-slate-500 text-xs sm:text-sm">พลิกโฉมการทำคอนเทนต์ด้วยระบบ Social Auto-Post อัจฉริยะ</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative items-start">
@@ -107,6 +117,7 @@ export default async function DashboardOverview() {
           </div>
         ))}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
