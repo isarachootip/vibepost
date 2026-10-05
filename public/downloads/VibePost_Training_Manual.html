@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>คู่มือการฝึกอบรมการใช้งานระบบ VibePost (Training & User Manual)</title>
+<style>
+    body {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        color: #1e293b;
+        max-width: 850px;
+        margin: 0 auto;
+        padding: 30px 20px;
+    }
+    h1, h2, h3, h4 {
+        color: #1e3a8a;
+    }
+    h1 {
+        border-bottom: 2px solid #cbd5e1;
+        padding-bottom: 10px;
+        margin-top: 30px;
+    }
+    h2 {
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 5px;
+        margin-top: 25px;
+    }
+    table {
+        margin: 20px 0;
+        border-collapse: collapse;
+        width: 100%;
+    }
+    th, td {
+        border: 1px solid #cbd5e1;
+        padding: 8px 12px;
+    }
+    th {
+        background-color: #f1f5f9;
+        font-weight: bold;
+    }
+    tr:nth-child(even) {
+        background-color: #f8fafc;
+    }
+    p {
+        margin-bottom: 1em;
+    }
+    ul, ol {
+        margin-bottom: 1em;
+        padding-left: 20px;
+    }
+    li {
+        margin-bottom: 0.3em;
+    }
+</style>
+</head>
+<body>
+<h1>📘 คู่มือการฝึกอบรมการใช้งานระบบ VibePost (Training &amp; User Manual)</h1>
+<h3>สำหรับผู้ใช้งานทั่วไป (Creator), ฝ่ายการตลาด (Marketing), ผู้ดูแลระบบ (Admin) และผู้ฝึกอบรม (Trainer)</h3>
+<p><strong>ระบบผลิตและบริหารจัดการคอนเทนต์โซเชียลมีเดียอัตโนมัติ (Content &amp; Social Media Auto-Pilot Engine)</strong></p>
+
+<p>---</p>
+
+<h2>📑 สารบัญ (Table of Contents)</h2>
+<ol>
+<li><a href="#1-ภาพรวมระบบและสถาปัตยกรรม-system-overview">ภาพรวมระบบและสถาปัตยกรรม (System Overview)</a></li>
+<li><a href="#2-ขั้นตอนที่-1-การตั้งค่าบัญชีและการเชื่อมต่อ-workspace--setup">ขั้นตอนที่ 1: การตั้งค่าบัญชีและการเชื่อมต่อ (Workspace &amp; Setup)</a></li>
+<li><a href="#3-ขั้นตอนที่-2-การสร้างสรรค์เนื้อหาใน-ai-studio-content-production">ขั้นตอนที่ 2: การสร้างสรรค์เนื้อหาใน AI Studio (Content Production)</a></li>
+<li><a href="#4-ขั้นตอนที่-3-เส้นทางการเผยแพร่-3-รูปแบบ-3-action-routes">ขั้นตอนที่ 3: เส้นทางการเผยแพร่ 3 รูปแบบ (3 Action Routes)</a></li>
+</ol>
+<p>5. <a href="#5-ขั้นตอนที่-4-การบริหารจัดการคลังแบบร่าง-staged-drafts-queue">ขั้นตอนที่ 4: การบริหารจัดการคลังแบบร่าง (Staged Drafts Queue)</a></p>
+<p>6. <a href="#6-ขั้นตอนที่-5-การติดตามผลและตรวจสอบค่าใช้จ่าย-monitor--analytics">ขั้นตอนที่ 5: การติดตามผลและตรวจสอบค่าใช้จ่าย (Monitor &amp; Analytics)</a></p>
+<p>7. <a href="#7-ขั้นตอนที่-6-การแก้ไขปัญหาเบื้องต้น-troubleshooting-guide">ขั้นตอนที่ 6: การแก้ไขปัญหาเบื้องต้น (Troubleshooting Guide)</a></p>
+<p>8. <a href="#8-คู่มือการนำเข้าเอกสารสู่-google-docs">คู่มือการนำเข้าเอกสารสู่ Google Docs (Google Docs Integration Guide)</a></p>
+
+<p>---</p>
+
+<h2>1. ภาพรวมระบบและสถาปัตยกรรม (System Overview)</h2>
+
+<p><strong>VibePost</strong> คือแพลตฟอร์มบริหารจัดการเนื้อหาและโพสต์โซเชียลมีเดียอัตโนมัติแบบครบวงจร ที่ผสานขุมพลังปัญญาประดิษฐ์ (Generative AI) ชั้นนำระดับโลก เพื่อช่วยให้ธุรกิจสามารถวางแผน สร้างสรรค์ และกระจายคอนเทนต์ไปยังเพจและช่องทางต่าง ๆ ได้อย่างรวดเร็วและเป็นระบบ</p>
+
+<h3>🌟 จุดเด่นหลักของระบบ</h3>
+<ul>
+<li><strong>Multi-Workspace Isolation</strong>: แยกบริหารจัดการข้อมูล แบรนด์ ทีมงาน คีย์ AI และเพจโซเชียลของแต่ละธุรกิจอย่างเป็นอิสระ ปลอดภัย 100%</li>
+<li><strong>3-in-1 Adaptive Text Engine</strong>: พิมพ์หัวข้อหรือบรีฟสั้นเพียงครั้งเดียว AI สร้างเนื้อหาพร้อมกัน 3 รูปแบบ (Long-form, Social Caption, AIDA Marketing)</li>
+<li><strong>Multi-Model Visual Studio</strong>: สร้างรูปภาพและคลิปวิดีโอคุณภาพสูงผ่าน Google Gemini Imagen 4.0, Google Veo, Luma Dream Machine และ Kling AI พร้อมระบบสำรองรูป/วิดีโออัตโนมัติ (Fallback Protection)</li>
+<li><strong>Flexible Publishing Pipelines</strong>: รองรับทั้งการโพสต์ด่วนทันที (1-Click Fast Track), การตุนคอนเทนต์ลงคลังแบบร่าง (Batch Staging), และการปรับแต่งขั้นสูง (Multi-Channel Wizard)</li>
+<li><strong>Auto-Publisher Cron Engine</strong>: ระบบตั้งเวลาปล่อยโพสต์ตามกำหนดการโดยไม่ต้องเฝ้าหน้าจอ</li>
+<li><strong>Real-Time Token &amp; Cost Analytics</strong>: ติดตามปริมาณการใช้ Token และประเมินค่าใช้จ่ายหน่วย USD แปลงเป็นเงินบาท (THB) แบบเรียลไทม์</li>
+</ul>
+
+<h3>🔄 แผนภาพกระบวนการทำงานแบบ End-to-End</h3>
+<pre style="background-color: #f4f4f4; padding: 10px; border: 1px solid #ddd; font-family: monospace; overflow-x: auto; white-space: pre-wrap;">[บรีฟ/หัวข้อ] ➔ [AI Studio: แคปชัน 3 สไตล์ + รูปภาพ/วิดีโอ]
+      │
+      ├── Route A (ด่วน): ปุ่ม '🚀 เผยแพร่ทันที / ตั้งเวลา' ➔ เข้าคิว Auto-Post
+      ├── Route B (ตุนสต็อก): ปุ่ม '💾 บันทึกเป็นแบบร่าง' ➔ เก็บใน Drafts Queue
+      └── Route C (ปรับแต่งลึก): ปุ่ม '⚙️ เปิดใน AI Publisher' ➔ Wizard 4 ขั้นตอน
+      │
+[Auto-Publisher Cron] ➔ [ยิง Graph API ไปยัง Facebook / Instagram] ➔ [Monitor &amp; History]</pre>
+
+<p>---</p>
+
+<h2>2. ขั้นตอนที่ 1: การตั้งค่าบัญชีและการเชื่อมต่อ (Workspace &amp; Setup)</h2>
+
+<p>ก่อนเริ่มต้นสร้างเนื้อหา ทีมงานจำเป็นต้องตรวจสอบและตั้งค่าพื้นฐานในระบบ 2 ส่วน ได้แก่ การเชื่อมต่อโซเชียลมีเดีย และการใส่คีย์สมองกล AI</p>
+
+<h3>2.1 การจัดการพื้นที่ทำงาน (Workspaces)</h3>
+<ul>
+<li>เมนู <strong>Workspaces</strong> ช่วยให้สามารถสลับการทำงานระหว่างแบรนด์หรือลูกค้าแต่ละเจ้าได้ทันที</li>
+<li>สมาชิกแต่ละคนจะมีบทบาท (Role) ที่ชัดเจน:</li>
+<li><strong>🔑 Admin</strong>: มีสิทธิ์สูงสุดในการตั้งค่าคีย์ API, จัดการสมาชิก และเชื่อมต่อช่องทาง</li>
+<li><strong>👤 Member</strong>: สามารถสร้างคอนเทนต์ ใช้งาน AI Studio และสั่งโพสต์ได้</li>
+<li><strong>👁️ Viewer</strong>: ดูรายงานและปฏิทินโพสต์ได้อย่างเดียว</li>
+</ul>
+
+<h3>2.2 การเชื่อมต่อเพจโซเชียลมีเดีย (Social Integrations)</h3>
+<ol>
+<li>ไปที่เมนู <strong>Integrations (จัดการช่องทาง)</strong> ในแถบด้านซ้าย</li>
+<li>คลิกปุ่ม <strong>"เชื่อมต่อ Facebook / Instagram"</strong></li>
+<li>ระบบจะเปิดหน้าต่างยืนยันสิทธิ์ ให้ล็อกอินและเลือกเพจที่ต้องการมอบหมายให้ VibePost ดูแล</li>
+<li>ตรวจสอบว่าสถานะของเพจขึ้นเป็น <strong>Active (เชื่อมต่อแล้ว)</strong></li>
+</ol>
+
+<h3>2.3 การตั้งค่าคีย์ปัญญาประดิษฐ์ (AI API Keys)</h3>
+<p>ไปที่เมนู <strong>Settings (ตั้งค่า)</strong> เพื่อตรวจสอบหรือกรอกคีย์ผู้ให้บริการ AI:</p>
+<ul>
+<li><strong>Workspace Configuration Summary</strong>: แผงควบคุมด้านบนจะแสดง Badge เขียวเมื่อระบบพร้อมใช้งาน</li>
+<li><strong>Google Gemini (แนะนำอย่างยิ่ง)</strong>:</li>
+<li>สมัครรับคีย์ฟรีหรือแบบชำระเงินที่ <a href="https://aistudio.google.com/">Google AI Studio</a></li>
+<li>นำคีย์มากรอกในช่อง Google Gemini</li>
+<li><em>ประโยชน์</em>: คีย์ชุดนี้ชุดเดียวรองรับทั้งการเขียนเนื้อหา (Gemini 2.5), การเจนรูปภาพ (Imagen 4.0 Fast) และการสร้างวิดีโอ (Google Veo 2.0)</li>
+<li><strong>Kling AI Video (สำหรับวิดีโอความคมชัดสูง)</strong>:</li>
+<li>การกรอกคีย์ Kling ต้องระบุในรูปแบบ <strong><code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">AccessKey:SecretKey</code></strong> (คั่นด้วยเครื่องหมายโคลอน <code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">:</code> เช่น <code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">ak_12345:sk_67890</code>)</li>
+<li>ระบบหลังบ้านจะนำไปสร้าง JWT Token เพื่อติดต่อเซิร์ฟเวอร์สิงคโปร์ให้อัตโนมัติ</li>
+<li><strong>Luma Dream Machine</strong>: กรอก Bearer API Key จากบัญชี Luma</li>
+<li><strong>Moonshot / Kimi AI</strong>: กรอกคีย์สำหรับโมเดลภาษาที่เก่งภาษาไทยและภาษาจีนเป็นพิเศษ</li>
+<li><em>ความปลอดภัย</em>: คีย์ทั้งหมดจะถูกเข้ารหัสลับ (Encrypted) ก่อนบันทึกลงฐานข้อมูล PostgreSQL</li>
+</ul>
+
+<p>---</p>
+
+<h2>3. ขั้นตอนที่ 2: การสร้างสรรค์เนื้อหาใน AI Studio (Content Production)</h2>
+
+<p>หน้า <strong>AI Studio</strong> (<code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">/dashboard/ai-studio</code>) คือห้องทำงานหลักของครีเอเตอร์ในการเปลี่ยนไอเดียให้กลายเป็นโพสต์พร้อมใช้</p>
+
+<h3>3.1 การสร้างข้อความแคปชัน (3-in-1 Adaptive Text Engine)</h3>
+<ol>
+<li>ในช่อง <strong>"หัวข้อคอนเทนต์ / บรีฟสินค้า"</strong> ให้พิมพ์สิ่งที่ต้องการสื่อสาร เช่น:</li>
+</ol>
+<p>   &gt; <em>"เปิดตัวเซรั่มบำรุงผิวหน้าสูตรไฮยาเข้มข้น ลดเลือนริ้วรอยใน 7 วัน โปรโมชั่นซื้อ 1 แถม 1 เฉพาะสัปดาห์นี้"</em></p>
+<ol>
+<li>คลิกปุ่ม <strong>"✨ สร้างเนื้อหา 3 สไตล์"</strong></li>
+<li>ระบบจะแสดงผลลัพธ์ 3 แท็บให้เลือกใช้งาน:</li>
+<li><strong>📄 บทความยาว (Long-form)</strong>: เนื้อหาเชิงลึก อธิบายรายละเอียด เหมาะสำหรับโพสต์บล็อกหรือบทความความรู้</li>
+<li><strong>📱 โซเชียลแคปชัน (Social Caption)</strong>: กระชับ มีการเว้นวรรคให้อ่านง่าย ติดแฮชแท็ก (#) และอีโมจิพร้อมดึงดูดสายตา</li>
+<li><strong>🎯 เชิงการตลาด (Marketing AIDA)</strong>: เขียนตามหลักจิตวิทยาการขาย (Attention - ความสนใจ, Interest - จุดเด่น, Desire - ความอยากได้, Action - กระตุ้นให้สั่งซื้อ)</li>
+<li>ผู้ใช้สามารถคลิกแก้ไขข้อความในกล่องได้โดยตรง</li>
+</ol>
+
+<h3>3.2 การสร้างรูปภาพประกอบ (AI Image Creator)</h3>
+<ol>
+<li>เลื่อนลงมาที่ส่วน <strong>สร้างรูปภาพประกอบ (AI Visual)</strong></li>
+<li>คลิกปุ่ม <strong>"ดึงบรีฟจากแคปชัน"</strong> เพื่อให้ AI ถอดใจความสำคัญมาสร้างเป็น Prompt รูปภาพ หรือพิมพ์ระบุสิ่งที่ต้องการ</li>
+<li>สามารถเลือกสไตล์ เช่น <em>Photorealistic, Minimal, Cinematic, 3D Render</em></li>
+<li>คลิก <strong>"🎨 สร้างรูปภาพ (Generate Image)"</strong></li>
+</ol>
+<p>5. <strong>ระบบป้องกันความผิดพลาด (Fail-Safe Fallback)</strong>:</p>
+<ul>
+<li>ระบบจะสร้างผ่าน Gemini Imagen 4.0 Fast เป็นอันดับแรก</li>
+<li>หากโควตา API เต็ม หรือเครือข่ายมีปัญหา ระบบจะดึงภาพสต็อกความละเอียดสูงที่ตรงกับหมวดหมู่ผ่าน LoremFlickr มาทดแทนให้ทันที หน้าเว็บจะไม่เกิดข้อผิดพลาด</li>
+</ul>
+
+<h3>3.3 การสร้างคลิปวิดีโอ (AI Video Studio)</h3>
+<ol>
+<li>เลื่อนไปที่แท็บ <strong>สร้างวิดีโอ (Video Studio)</strong></li>
+<li>ระบุการเคลื่อนไหวหรือฉากที่ต้องการ เช่น <em>"กล้องแพนช้าๆ เผยให้เห็นหยดเซรั่มกระทบผิวน้ำ มีแสงแดดยามเช้าส่องประกาย ละเอียดระดับ 4K"</em></li>
+<li>สามารถนำรูปภาพที่เจนไว้มาเป็น <strong>Image Reference / Character Seed</strong> เพื่อคุมโทนภาพได้</li>
+<li>คลิก <strong>"🎬 สร้างคลิปวิดีโอ (Generate Video)"</strong></li>
+</ol>
+<p>5. <strong>ลำดับการประมวลผลวิดีโอ (Cascade Pipeline)</strong>:</p>
+<ul>
+<li>ลำดับที่ 1: Google Veo 2.0 (ผ่าน Gemini Key)</li>
+<li>ลำดับที่ 2: Luma Dream Machine</li>
+<li>ลำดับที่ 3: Kling AI</li>
+<li>ลำดับที่ 4: Pexels Curated Video (หากไม่มีคีย์หรือการเจนไม่สำเร็จ จะดึงคลิปสต็อกพรีเมียมมาใส่ให้ทันที)</li>
+</ul>
+
+<p>---</p>
+
+<h2>4. ขั้นตอนที่ 3: เส้นทางการเผยแพร่ 3 รูปแบบ (3 Action Routes)</h2>
+
+<p>เมื่อได้แคปชันและรูปภาพ/วิดีโอเรียบร้อยแล้ว VibePost ให้ความยืดหยุ่นในการทำงานด้วย 3 เส้นทาง:</p>
+
+<h3>🚀 Route A: โพสต์ด่วนทันที (1-Click Fast Track)</h3>
+<ul>
+<li><strong>เหมาะสำหรับ</strong>: คอนเทนต์เกาะกระแส ข่าวสารด่วน หรือโพสต์ประจำวันที่ต้องการความรวดเร็ว</li>
+<li><strong>วิธีทำ</strong>:</li>
+<li>คลิกปุ่มสีน้ำเงิน <strong>"🚀 เผยแพร่ทันที / ตั้งเวลา Auto-Post"</strong></li>
+<li>จะมี Modal พรีวิวหน้าฟีดโซเชียลจำลองปรากฏขึ้น</li>
+<li>ติ๊กเลือกเพจ Facebook หรือ Instagram ที่ต้องการโพสต์</li>
+<li>เลือกโหมด:</li>
+<li><strong>⚡ โพสต์ทันที (Post Now)</strong>: ยิงขึ้นเพจทันที</li>
+<li><strong>📅 ตั้งเวลา (Schedule)</strong>: กำหนดวันและเวลาที่ต้องการล่วงหน้า</li>
+</ul>
+<p>  5. กดยืนยัน โพสต์จะถูกนำเข้าคิวระบบ Auto-Publisher ทันที</p>
+
+<h3>💾 Route B: การเก็บตุนแบบร่าง (Batch Staging Mode)</h3>
+<ul>
+<li><strong>เหมาะสำหรับ</strong>: ครีเอเตอร์ที่ต้องการวางแผนคอนเทนต์ล่วงหน้าเป็นรายสัปดาห์หรือรายเดือน (ตุนไว้ทีละ 10-30 โพสต์)</li>
+<li><strong>วิธีทำ</strong>:</li>
+<li>คลิกปุ่มสีเขียว <strong>"💾 บันทึกเป็นแบบร่าง (Save Draft)"</strong></li>
+<li>โพสต์จะถูกบันทึกสถานะเป็น <code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">DRAFT</code> และถูกส่งไปเก็บไว้ที่ <strong>"คลังแบบร่างรอโพสต์ (Drafts Queue)"</strong></li>
+<li>ทีมงานสามารถสร้างโพสต์ถัดไปได้ทันทีโดยไม่ต้องผูกเพจหรือกำหนดเวลาในขณะนั้น</li>
+</ul>
+
+<h3>⚙️ Route C: วิซาร์ดปรับแต่งขั้นสูง (Multi-Channel Wizard)</h3>
+<ul>
+<li><strong>เหมาะสำหรับ</strong>: แคมเปญขนาดใหญ่ที่ต้องการปรับแต่งข้อความของแต่ละช่องทางให้แตกต่างกัน</li>
+<li><strong>วิธีทำ</strong>:</li>
+<li>คลิกปุ่ม <strong>"เปิดใน AI Publisher (ขั้นสูง)"</strong></li>
+<li>ระบบจะส่งข้อมูลผ่าน Session Storage Bridge เข้าสู่กระบวนการ 4 ขั้นตอน:</li>
+<li><em>สเต็ป 1</em>: เลือกแพลตฟอร์มปลายทาง</li>
+<li><em>สเต็ป 2</em>: ปรับแต่งข้อความแยกตามช่องทาง (เช่น ข้อความยาวสำหรับ Facebook, สั้นกระชับสำหรับ Instagram)</li>
+<li><em>สเต็ป 3</em>: ตรวจสอบพรีวิวแยกอุปกรณ์ (มือถือ / เดสก์ท็อป)</li>
+<li><em>สเต็ป 4</em>: กำหนดเวลาและยืนยันการเผยแพร่</li>
+</ul>
+
+<p>---</p>
+
+<h2>5. ขั้นตอนที่ 4: การบริหารจัดการคลังแบบร่าง (Staged Drafts Queue)</h2>
+
+<p>เมื่อบันทึกแบบร่างไว้ในระบบแล้ว การนำคอนเทนต์มาใช้งานทำได้ดังนี้:</p>
+
+<ol>
+<li>ไปที่เมนู <strong>Post History (ประวัติโพสต์ &amp; คลังเนื้อหา)</strong></li>
+<li>คลิกแท็บ <strong>"📝 คลังแบบร่างรอโพสต์ (Drafts Queue)"</strong></li>
+<li>บนหน้าจอจะแสดงการ์ดของทุกคอนเทนต์ที่ถูกสร้างไว้ พร้อมรูปภาพ/วิดีโอตัวอย่าง และข้อความสรุป</li>
+<li>เครื่องมือบนแต่ละการ์ด:</li>
+<li><strong><code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">[ 🚀 ตั้งค่า &amp; สั่งโพสต์ ]</code></strong>: คลิกเพื่อเปิด Modal สั่งเลือกเพจและกำหนดเวลาปล่อยโพสต์ได้ทันที</li>
+<li><strong><code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">[ ✏️ แก้ไข ]</code></strong>: เปิดเข้าสู่ตัวแก้ไขเพื่อปรับปรุงคำหรือเปลี่ยนภาพประกอบ</li>
+<li><strong><code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">[ 🗑️ ลบ ]</code></strong>: ย้ายแบบร่างที่ไม่ต้องการลงในถังขยะ (Trash)</li>
+</ol>
+
+<p>---</p>
+
+<h2>6. ขั้นตอนที่ 5: การติดตามผลและตรวจสอบค่าใช้จ่าย (Monitor &amp; Analytics)</h2>
+
+<h3>6.1 การดูคิวงานและปฏิทินโพสต์ (Post Monitor)</h3>
+<ul>
+<li>เข้าเมนู <strong>Post Monitor (<code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">/dashboard/monitor</code>)</strong></li>
+<li>ตรวจสอบตารางปฏิทินแสดงโพสต์ตามวันและเวลา</li>
+<li>มีแถบสถานะแยกสีชัดเจน:</li>
+<li>🟡 <strong>SCHEDULED</strong>: โพสต์ที่ตั้งเวลาไว้และรอ Cron ดึงไปเผยแพร่</li>
+<li>🔵 <strong>PUBLISHING</strong>: กำลังส่งข้อมูลไปยังเซิร์ฟเวอร์โซเชียลมีเดีย</li>
+<li>🟢 <strong>PUBLISHED</strong>: โพสต์ขึ้นสู่ช่องทางโซเชียลมีเดียเรียบร้อยแล้ว</li>
+<li>🔴 <strong>FAILED</strong>: เกิดข้อผิดพลาด พร้อมแสดง Error Log จาก Graph API</li>
+</ul>
+
+<h3>6.2 การตรวจสอบ Token และค่าใช้จ่าย AI (Usage &amp; Cost Tracking)</h3>
+<ul>
+<li>เข้าเมนู <strong>Post History (<code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">/dashboard/history</code>)</strong></li>
+<li>ดูการ์ด <strong>AI Usage Summary</strong> ด้านบนสุด:</li>
+<li>แสดงจำนวน Token รวมที่ใช้งานแยกตามค่าย (Gemini, Moonshot, Luma, Kling)</li>
+<li>ประเมินค่าใช้จ่ายสะสมเป็นเงินดอลลาร์สหรัฐ (USD)</li>
+<li>แปลงอัตราแลกเปลี่ยนเป็นเงินบาทไทย (THB) ให้โดยอัตโนมัติ ช่วยให้ผู้บริหารควบคุมงบประมาณได้อย่างแม่นยำ</li>
+</ul>
+
+<p>---</p>
+
+<h2>7. ขั้นตอนที่ 6: การแก้ไขปัญหาเบื้องต้น (Troubleshooting Guide)</h2>
+
+<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%; border: 1px solid #ccc;">
+  <tr>
+    <th style="background-color: #f2f2f2; font-weight: bold; border: 1px solid #ccc;">อาการที่พบ</th>
+    <th style="background-color: #f2f2f2; font-weight: bold; border: 1px solid #ccc;">สาเหตุที่เป็นไปได้</th>
+    <th style="background-color: #f2f2f2; font-weight: bold; border: 1px solid #ccc;">วิธีแก้ไข</th>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #ccc;"><strong>สั่งสร้างรูปภาพหรือวิดีโอแล้วระบบหมุนค้างหรือไม่ตอบสนอง</strong></td>
+    <td style="border: 1px solid #ccc;">1. คีย์ API ที่ระบุใน Settings ไม่ถูกต้องหรือวงเงินหมด&lt;br&gt;2. เซิร์ฟเวอร์ผู้ให้บริการ AI มีผู้ใช้งานหนาแน่น</td>
+    <td style="border: 1px solid #ccc;">1. เข้าไปที่หน้า <strong>Settings</strong> ตรวจสอบว่ามีแถบแจ้งเตือนสีแดงหรือไม่&lt;br&gt;2. ลองนำคีย์ Gemini หรือ Luma ใหม่มาทดสอบบันทึกอีกครั้ง</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #ccc;"><strong>ภาพที่ได้เป็นภาพสต็อกทั่วไป ไม่ใช่รูปที่วาดจาก AI</strong></td>
+    <td style="border: 1px solid #ccc;">เป็นกลไก Fail-Safe Fallback ทำงานเมื่อระบบฟรีติดคิว หรือชนลิมิต IP ของโฮสต์</td>
+    <td style="border: 1px solid #ccc;">ไม่จำเป็นต้องแก้ไข เป็นระบบป้องกันไม่ให้กระบวนการหยุดชะงัก หากต้องการภาพ AI คมชัดตลอดเวลา แนะนำให้ใส่คีย์ Google Gemini ใน Settings</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #ccc;"><strong>โพสต์ไม่ขึ้น Facebook/IG ตามเวลาที่กำหนด (สถานะ FAILED)</strong></td>
+    <td style="border: 1px solid #ccc;">1. Access Token ของเพจหมดอายุ (Facebook บังคับต่ออายุตามรอบความปลอดภัย)&lt;br&gt;2. ระบบ Cron หลังบ้านติดขัด</td>
+    <td style="border: 1px solid #ccc;">1. ไปที่หน้า <strong>History</strong> ค้นหาการ์ดสีแดง แล้วอ่านข้อความ Error ใต้การ์ด&lt;br&gt;2. หากเกิดจาก Token ให้ไปที่เมนู <strong>Integrations</strong> แล้วกด Reconnect เพจใหม่อีกครั้ง</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #ccc;"><strong>เปิดหน้าต่าง Wizard แล้วข้อความหรือรูปภาพไม่แสดง</strong></td>
+    <td style="border: 1px solid #ccc;">เบราว์เซอร์อาจเปิดโหมด Incognito หรือปิดกั้นการจัดเก็บ Session Storage</td>
+    <td style="border: 1px solid #ccc;">รีเฟรชหน้าเบราว์เซอร์ และตรวจสอบว่าการตั้งค่าเบราว์เซอร์อนุญาตให้จัดเก็บข้อมูล Local/Session Storage</td>
+  </tr>
+</table>
+
+<p>---</p>
+
+<h2>8. คู่มือการนำเข้าเอกสารสู่ Google Docs</h2>
+
+<p>เอกสารคู่มือนี้ถูกจัดเตรียมไว้ให้อยู่ในฟอร์แมตที่สามารถนำไปใช้งานบน <strong>Google Docs</strong> ได้ทันทีผ่าน 3 วิธีง่าย ๆ:</p>
+
+<h3>🔹 วิธีที่ 1: อัปโหลดไฟล์ Word (.docx) เข้า Google Drive (แนะนำ สวยงามที่สุด 100%)</h3>
+<ol>
+<li>ดาวน์โหลดไฟล์ <strong><code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">VibePost_Training_Manual.docx</code></strong> จากปุ่มดาวน์โหลดในระบบ</li>
+<li>เปิดเว็บเบราว์เซอร์ไปที่ <a href="https://drive.google.com/">Google Drive</a></li>
+<li>ลากไฟล์ <code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">.docx</code> ไปวางในโฟลเดอร์ Google Drive ของท่าน</li>
+<li>ดับเบิลคลิกเปิดไฟล์ แล้วเลือก <strong>"เปิดด้วย Google เอกสาร (Open with Google Docs)"</strong></li>
+</ol>
+<p>5. เอกสารจะถูกแปลงเป็น Google Doc สมบูรณ์แบบ พร้อมหัวข้อ ตาราง สีสัน และสารบัญ</p>
+
+<h3>🔹 วิธีที่ 2: ใช้ฟังก์ชันคัดลอกในระบบเว็บ (1-Click Copy)</h3>
+<ol>
+<li>ไปที่หน้าคู่มือในระบบ VibePost (<code style="background-color: #f4f4f4; padding: 2px 4px; font-family: monospace;">/dashboard/manual</code>)</li>
+<li>คลิกปุ่ม <strong>"📋 คัดลอกเนื้อหาทั้งหมด (Copy for Google Docs)"</strong> ที่แถบเครื่องมือด้านบน</li>
+<li>เปิดแท็บใหม่ไปที่ <a href="https://docs.new">docs.new</a> เพื่อสร้างเอกสารใหม่</li>
+<li>กดแป้นพิมพ์ <strong>Ctrl + V</strong> (หรือ Cmd + V บน Mac) เพื่อวางเนื้อหาลงในเอกสารได้ทันที</li>
+</ol>
+
+<p>---</p>
+<p><em>เอกสารฉบับนี้จัดทำขึ้นโดยทีมพัฒนาระบบ VibePost Core Engine</em></p>
+<p><em>สงวนลิขสิทธิ์สำหรับการใช้งานภายในองค์กรและพาร์ตเนอร์ที่ได้รับอนุญาต</em></p>
+
+</body>
+</html>
