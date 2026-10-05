@@ -3,11 +3,20 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import { readFile } from "fs/promises";
 import { existsSync } from "fs";
+import { requireSuperAdmin, authErrorResponse } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 const execAsync = promisify(exec);
 
+// SECURITY: this route runs fixed shell commands on the host — Super Admin only.
+// TODO(Phase 2): replace crontab management with a DB-backed scheduler setting + worker.
+
 export async function GET() {
+  try {
+    await requireSuperAdmin();
+  } catch (e) {
+    return authErrorResponse(e) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     // Read current crontab
     let cronEntry = "";
@@ -46,6 +55,11 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    await requireSuperAdmin();
+  } catch (e) {
+    return authErrorResponse(e) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  try {
     const body = await request.json();
     const { intervalMinutes, action } = body;
 
@@ -60,7 +74,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === "update" && intervalMinutes) {
-      const minutes = Math.max(1, Math.min(60, parseInt(intervalMinutes)));
+      const parsed = Number.parseInt(String(intervalMinutes), 10);
+      if (!Number.isInteger(parsed)) {
+        return NextResponse.json({ error: "intervalMinutes must be an integer" }, { status: 400 });
+      }
+      const minutes = Math.max(1, Math.min(60, parsed));
       const cronLine = `*/${minutes} * * * * /usr/local/bin/vibepost-publisher.sh >> /var/log/vibepost-publisher.log 2>&1`;
       
       try {

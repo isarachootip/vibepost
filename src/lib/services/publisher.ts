@@ -222,7 +222,9 @@ export async function executeAutoPost() {
               while (!finished && attempts < 15) {
                 console.log(`[Publisher] Checking Instagram Video Container status... Attempt: ${attempts}`);
                 await new Promise(resolve => setTimeout(resolve, 5000));
-                const pollRes = await fetch(`https://graph.facebook.com/v19.0/${containerId}?fields=status_code&access_token=${accessToken}`);
+                const pollRes = await fetch(`https://graph.facebook.com/v19.0/${containerId}?fields=status_code`, {
+                  headers: { Authorization: `Bearer ${accessToken}` },
+                });
                 const pollData = await pollRes.json();
                 if (pollData.status_code === "FINISHED") {
                   finished = true;

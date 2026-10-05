@@ -6,6 +6,11 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 
+// Never load secrets into the workspace context: it is passed to client components.
+// Code that needs a token/API key must query it explicitly on the server.
+const SOCIAL_SECRET_OMIT = { accessToken: true, refreshToken: true } as const
+const PROMPT_SECRET_OMIT = { apiKey: true } as const
+
 export async function getUserWorkspaces() {
   const session = await auth()
   
@@ -64,8 +69,8 @@ export async function getActiveWorkspaceContext() {
     const workspace = await prisma.workspace.findUnique({
       where: { id: activeId },
       include: {
-        socialConnections: true,
-        promptConfigs: true,
+        socialConnections: { omit: SOCIAL_SECRET_OMIT },
+        promptConfigs: { omit: PROMPT_SECRET_OMIT },
         _count: { select: { posts: true, mediaAssets: true, members: true } }
       }
     })
@@ -83,8 +88,8 @@ export async function getActiveWorkspaceContext() {
     include: {
       workspace: {
         include: {
-          socialConnections: true,
-          promptConfigs: true,
+          socialConnections: { omit: SOCIAL_SECRET_OMIT },
+          promptConfigs: { omit: PROMPT_SECRET_OMIT },
           _count: {
             select: { posts: true, mediaAssets: true, members: true }
           }
@@ -100,8 +105,8 @@ export async function getActiveWorkspaceContext() {
       include: {
         workspace: {
           include: {
-            socialConnections: true,
-            promptConfigs: true,
+            socialConnections: { omit: SOCIAL_SECRET_OMIT },
+            promptConfigs: { omit: PROMPT_SECRET_OMIT },
             _count: {
               select: { posts: true, mediaAssets: true, members: true }
             }

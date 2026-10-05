@@ -21,8 +21,19 @@ export async function getPublishedPostsForLanding(): Promise<{
   totalChannels: number;
 }> {
   try {
+    // Optional allow-list of workspaces shown on the public landing page.
+    // Unset = all workspaces (previous behaviour). Set it in production to avoid exposing clients' posts.
+    const showcaseIds = (process.env.PUBLIC_SHOWCASE_WORKSPACE_IDS || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
     const posts = await prisma.post.findMany({
-      where: { status: "PUBLISHED", isDeleted: false },
+      where: {
+        status: "PUBLISHED",
+        isDeleted: false,
+        ...(showcaseIds.length ? { workspaceId: { in: showcaseIds } } : {}),
+      },
       orderBy: { publishedTime: "desc" },
       take: 60,
       include: {

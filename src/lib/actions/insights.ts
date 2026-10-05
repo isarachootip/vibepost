@@ -45,8 +45,8 @@ export async function syncPostInsights(postTargetId: string) {
     switch (platform) {
       case "FACEBOOK": {
         // Fetch Insights from Graph API
-        const url = `https://graph.facebook.com/v19.0/${externalPostId}/insights?metric=post_impressions_unique,post_engaged_users,post_impressions&access_token=${accessToken}`;
-        const res = await fetch(url);
+        const url = `https://graph.facebook.com/v19.0/${externalPostId}/insights?metric=post_impressions_unique,post_engaged_users,post_impressions`;
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error?.message || "Failed to fetch Facebook insights");
 
@@ -62,8 +62,8 @@ export async function syncPostInsights(postTargetId: string) {
       }
       case "INSTAGRAM": {
         // Instagram Graph API Insights
-        const url = `https://graph.facebook.com/v19.0/${externalPostId}/insights?metric=impressions,reach,engagement&access_token=${accessToken}`;
-        const res = await fetch(url);
+        const url = `https://graph.facebook.com/v19.0/${externalPostId}/insights?metric=impressions,reach,engagement`;
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error?.message || "Failed to fetch Instagram insights");
 

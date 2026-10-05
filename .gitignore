@@ -48,3 +48,10 @@ db-exec.js
 tunnel.js
 update.md
 *.zip
+
+# Secrets & build leftovers
+env_deploy.txt
+env_*.txt
+__pycache__/
+*.pyc
+!.env.example
