@@ -3,6 +3,18 @@ import { getActiveWorkspaceContext } from "@/lib/actions/workspace";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { MobileDashboardOverview } from "@/components/dashboard/MobileDashboardOverview";
+import { 
+  ArrowRight, 
+  Layers, 
+  Share2, 
+  Users, 
+  Sparkles, 
+  Plus, 
+  FileText, 
+  Send,
+  Sliders,
+  CalendarCheck
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -13,13 +25,18 @@ export default async function DashboardOverview() {
   if (!workspace) {
     return (
       <div className="flex flex-col items-center justify-center p-8 sm:p-12 text-center h-[60vh]">
-        <div className="w-16 h-16 bg-[#1E293B] border border-slate-700/50 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-black/20">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+        <div className="w-14 h-14 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 rounded-xl flex items-center justify-center mb-4 shadow-2xs">
+          <Layers className="size-7 text-indigo-600 dark:text-indigo-400" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">No Workspace Found</h2>
-        <p className="text-slate-500 max-w-sm mb-6">System requires an active workspace node to function. Initialize a new matrix or contact support.</p>
-        <Link href="/dashboard/workspaces" className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white px-8 py-3 rounded-full font-semibold transition-all shadow-md">
-          Create Workspace
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No Workspace Found</h2>
+        <p className="text-slate-500 dark:text-slate-400 max-w-sm mb-6 text-sm">
+          จำเป็นต้องเลือกหรือสร้าง Workspace เพื่อเริ่มต้นใช้งานระบบ Auto-Post
+        </p>
+        <Link 
+          href="/dashboard/workspaces" 
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-2xs"
+        >
+          สร้าง Workspace ใหม่
         </Link>
       </div>
     );
@@ -33,90 +50,190 @@ export default async function DashboardOverview() {
       </div>
 
       {/* Desktop Dashboard Screen */}
-      <div className="hidden md:block space-y-8 sm:space-y-12 animate-in fade-in duration-500">
-      <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 mb-2 font-heading tracking-tight drop-shadow-sm">
-            ภาพรวมระบบ
-          </h1>
-          <p className="text-slate-500 font-medium tracking-wide text-sm sm:text-base">จัดการระบบโพสต์อัตโนมัติสำหรับ <span className="text-blue-600 font-bold">{workspace.name}</span></p>
-        </div>
-        <Link href="/dashboard/multi-post" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-2.5 rounded-full font-semibold text-sm transition-all shadow-[0_4px_15px_rgba(59,130,246,0.2)] flex items-center justify-center gap-2 w-full sm:w-auto text-center shrink-0">
-          สร้างโพสต์ใหม่
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-        </Link>
-      </header>
-
-      {/* NEW: 3 Steps Workflow mimicking the provided image */}
-      <div className="relative">
-        <div className="absolute inset-0 bg-blue-500/5 blur-[100px] rounded-[3rem] pointer-events-none"></div>
-        <div className="rounded-2xl sm:rounded-[2.5rem] border border-slate-200 bg-white p-6 sm:p-10 shadow-xl shadow-slate-200/50 relative overflow-hidden">
+      <div className="hidden md:block space-y-6 animate-in fade-in duration-300">
+        {/* Page Header */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#e4e7ee] dark:border-white/10">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                ภาพรวมระบบ
+              </h1>
+              <span className="text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-200/60 dark:border-indigo-800/60">
+                Live Hub
+              </span>
+            </div>
+            <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm">
+              จัดการระบบผลิตและโพสต์คอนเทนต์อัตโนมัติสำหรับ{" "}
+              <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{workspace.name}</span>
+            </p>
+          </div>
           
-          <div className="text-center mb-10 sm:mb-12">
-            <h2 className="text-xl sm:text-2xl font-bold font-heading text-slate-800 mb-3">3 ขั้นตอนการทำงานจากไอเดียสู่การโพสต์อัตโนมัติ</h2>
-            <p className="text-slate-500 text-xs sm:text-sm">พลิกโฉมการทำคอนเทนต์ด้วยระบบ Social Auto-Post อัจฉริยะ</p>
+          <div className="flex items-center gap-2.5">
+            <Link
+              href="/dashboard/ai-studio"
+              className="inline-flex items-center gap-1.5 bg-white dark:bg-[#181d27] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-[#e4e7ee] dark:border-white/10 px-3.5 py-2 rounded-lg font-medium text-xs shadow-2xs transition-colors"
+            >
+              <Sparkles className="size-3.5 text-indigo-600" />
+              <span>AI Studio</span>
+            </Link>
+            
+            <Link 
+              href="/dashboard/multi-post" 
+              className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-xs transition-colors shadow-2xs"
+            >
+              <Plus className="size-3.5" />
+              <span>สร้างโพสต์ใหม่</span>
+            </Link>
+          </div>
+        </header>
+
+        {/* 4 Cruip Artifact Metrics Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { 
+              label: "โพสต์ทั้งหมด", 
+              value: workspace._count.posts, 
+              link: "/dashboard/history", 
+              icon: Layers,
+              badge: "Total Posts",
+              color: "text-indigo-600 dark:text-indigo-400",
+              bg: "bg-indigo-50 dark:bg-indigo-950/50" 
+            },
+            { 
+              label: "เชื่อมต่อโซเชียล", 
+              value: workspace.socialConnections.length, 
+              link: "/dashboard/social", 
+              icon: Share2,
+              badge: "Active Channels",
+              color: "text-blue-600 dark:text-blue-400",
+              bg: "bg-blue-50 dark:bg-blue-950/50" 
+            },
+            { 
+              label: "สมาชิกทีม", 
+              value: workspace._count.members, 
+              link: "/dashboard/workspaces", 
+              icon: Users,
+              badge: "Team Members",
+              color: "text-purple-600 dark:text-purple-400",
+              bg: "bg-purple-50 dark:bg-purple-950/50" 
+            },
+            { 
+              label: "AI Prompt Configs", 
+              value: workspace.promptConfigs.length, 
+              link: "/dashboard/settings", 
+              icon: Sliders,
+              badge: "Ready Prompts",
+              color: "text-emerald-600 dark:text-emerald-400",
+              bg: "bg-emerald-50 dark:bg-emerald-950/50" 
+            }
+          ].map((stat, idx) => {
+            const Icon = stat.icon;
+            return (
+              <Link 
+                key={idx} 
+                href={stat.link}
+                className="group p-5 rounded-xl border border-[#e4e7ee] dark:border-white/10 bg-white dark:bg-[#181d27] shadow-2xs hover:border-indigo-300 dark:hover:border-indigo-500/40 transition-all duration-150 relative block"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                    {stat.label}
+                  </span>
+                  <div className={`w-8 h-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center shrink-0`}>
+                    <Icon className="size-4" />
+                  </div>
+                </div>
+                
+                <div className="flex items-baseline justify-between">
+                  <p className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    {stat.value}
+                  </p>
+                  <span className="text-[10px] font-medium text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 flex items-center gap-0.5 transition-colors">
+                    {stat.badge}
+                    <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* 3 Steps Pipeline Workflow Card */}
+        <div className="rounded-xl border border-[#e4e7ee] dark:border-white/10 bg-white dark:bg-[#181d27] p-6 sm:p-8 shadow-2xs relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-8 pb-4 border-b border-slate-100 dark:border-white/10">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                3 ขั้นตอนการทำงานจากไอเดียสู่การโพสต์อัตโนมัติ
+              </h2>
+              <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
+                กระบวนการทำงานอัตโนมัติที่เชื่อมโยง AI กับเครือข่ายโซเชียลของคุณ
+              </p>
+            </div>
+            <span className="text-xs font-mono text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-md border border-indigo-200/60 dark:border-indigo-800/60 self-start sm:self-auto">
+              Automated Pipeline
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative items-start">
-            {/* Connection Line Behind */}
-            <div className="hidden md:block absolute top-[4.5rem] left-[15%] right-[15%] h-0.5 bg-gradient-to-r from-blue-100 via-slate-300 to-indigo-100 z-0"></div>
-
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative items-start">
             {/* STEP 1 */}
-            <div className="relative z-10 flex flex-col items-center text-center group">
-              <div className="w-24 h-24 rounded-full bg-slate-50 border-2 border-slate-200 group-hover:border-blue-400 group-hover:bg-blue-50 transition-colors flex items-center justify-center mb-6 shadow-md relative overflow-hidden">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <div className="relative z-10 flex flex-col items-center text-center p-4 rounded-xl border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/30 hover:bg-white dark:hover:bg-slate-800/50 hover:border-indigo-200 transition-all duration-150 group">
+              <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-800 border border-[#e4e7ee] dark:border-white/10 text-indigo-600 flex items-center justify-center mb-4 shadow-2xs group-hover:border-indigo-300">
+                <Sliders className="size-6 text-indigo-600" />
               </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors">1. Setup Brand & Prompt</h3>
-              <p className="text-slate-500 text-sm mb-6 max-w-[200px]">ตั้งค่าข้อมูลแบรนด์และกำหนดสไตล์คำสั่ง (Prompts) ให้กับ AI</p>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1.5 group-hover:text-indigo-600 transition-colors">
+                1. Setup Brand & Prompt
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400 text-xs mb-4 min-h-[36px]">
+                ตั้งค่าข้อมูลแบรนด์ โทนเสียง และคำสั่ง Prompt สำหรับให้ AI สร้างคอนเทนต์
+              </p>
               
-              <Link href="/dashboard/settings" className="px-5 py-2 rounded-full border border-blue-200 text-blue-600 bg-blue-50 text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm z-20">
-                {workspace.promptConfigs.length > 0 ? "แก้ไขการตั้งค่า" : "เริ่มตั้งค่า"}
+              <Link 
+                href="/dashboard/settings" 
+                className="w-full py-1.5 px-3 rounded-lg border border-[#e4e7ee] dark:border-white/10 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 text-xs font-medium hover:border-indigo-300 hover:text-indigo-600 transition-colors shadow-2xs text-center"
+              >
+                {workspace.promptConfigs.length > 0 ? "จัดการการตั้งค่า" : "เริ่มตั้งค่า"}
               </Link>
             </div>
 
             {/* STEP 2 */}
-            <div className="relative z-10 flex flex-col items-center text-center group">
-              <div className="w-24 h-24 rounded-full bg-slate-50 border-2 border-slate-200 group-hover:border-purple-400 group-hover:bg-purple-50 transition-colors flex items-center justify-center mb-6 shadow-md relative overflow-hidden">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-purple-500"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <div className="relative z-10 flex flex-col items-center text-center p-4 rounded-xl border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/30 hover:bg-white dark:hover:bg-slate-800/50 hover:border-purple-200 transition-all duration-150 group">
+              <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-800 border border-[#e4e7ee] dark:border-white/10 text-purple-600 flex items-center justify-center mb-4 shadow-2xs group-hover:border-purple-300">
+                <Sparkles className="size-6 text-purple-600" />
               </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-purple-600 transition-colors">2. AI Drafts & Human Review</h3>
-              <p className="text-slate-500 text-sm mb-6 max-w-[220px]">AI สร้างเนื้อหาแล้วส่งไปแจ้งเตือนผ่าน Discord เพื่อให้ผู้อนุมัติ</p>
-              <button className="px-5 py-2 rounded-full border border-purple-200 text-purple-600 bg-purple-50 text-xs font-bold hover:bg-purple-600 hover:text-white transition-all shadow-sm z-20">
-                View Drafts
-              </button>
-            </div>
-
-            {/* STEP 3 */}
-            <div className="relative z-10 flex flex-col items-center text-center group">
-              <div className="w-24 h-24 rounded-full bg-slate-50 border-2 border-slate-200 group-hover:border-emerald-400 group-hover:bg-emerald-50 transition-colors flex items-center justify-center mb-6 shadow-md relative overflow-hidden">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M12 14v4"/><path d="M10 16h4"/></svg>
-              </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-emerald-600 transition-colors">3. Scheduling & Auto-Post</h3>
-              <p className="text-slate-500 text-sm mb-6 max-w-[220px]">ระบบนำคอนเทนต์ที่ผ่านการอนุมัติไปโพสต์โซเชียลมีเดียตามเวลาที่กำหนดไว้</p>
-              <Link href="/dashboard/social" className="px-5 py-2 rounded-full border border-emerald-200 text-emerald-600 bg-emerald-50 text-xs font-bold hover:bg-emerald-600 hover:text-white transition-all shadow-sm z-20">
-                Manage Channels
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1.5 group-hover:text-purple-600 transition-colors">
+                2. AI Generation & Studio
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400 text-xs mb-4 min-h-[36px]">
+                AI ผลิตแคปชัน 3 สไตล์พร้อมสื่อรูปภาพและวิดีโอเพื่อตรวจสอบและอนุมัติ
+              </p>
+              <Link 
+                href="/dashboard/ai-studio"
+                className="w-full py-1.5 px-3 rounded-lg border border-[#e4e7ee] dark:border-white/10 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 text-xs font-medium hover:border-purple-300 hover:text-purple-600 transition-colors shadow-2xs text-center"
+              >
+                เปิด AI Studio
               </Link>
             </div>
 
+            {/* STEP 3 */}
+            <div className="relative z-10 flex flex-col items-center text-center p-4 rounded-xl border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/30 hover:bg-white dark:hover:bg-slate-800/50 hover:border-emerald-200 transition-all duration-150 group">
+              <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-800 border border-[#e4e7ee] dark:border-white/10 text-emerald-600 flex items-center justify-center mb-4 shadow-2xs group-hover:border-emerald-300">
+                <CalendarCheck className="size-6 text-emerald-600" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1.5 group-hover:text-emerald-600 transition-colors">
+                3. Schedule & Auto-Publish
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400 text-xs mb-4 min-h-[36px]">
+                ตั้งเวลาและยิงส่งคอนเทนต์ไปยัง Facebook Page, Instagram, TikTok อัตโนมัติ
+              </p>
+              <Link 
+                href="/dashboard/social" 
+                className="w-full py-1.5 px-3 rounded-lg border border-[#e4e7ee] dark:border-white/10 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 text-xs font-medium hover:border-emerald-300 hover:text-emerald-600 transition-colors shadow-2xs text-center"
+              >
+                จัดการช่องทางเชื่อมต่อ
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Metrics Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { label: "Total Posts", value: workspace._count.posts, link: "/dashboard/history", color: "text-blue-600" },
-          { label: "Connected Accounts", value: workspace.socialConnections.length, link: "/dashboard/social", color: "text-purple-600" },
-          { label: "Team Members", value: workspace._count.members, link: "/dashboard/workspaces", color: "text-slate-600" },
-          { label: "AI Configs", value: workspace.promptConfigs.length, link: "/dashboard/settings", color: "text-emerald-600" }
-        ].map((stat, idx) => (
-          <div key={idx} className="relative group overflow-hidden rounded-[2rem] p-6 transition-all hover:-translate-y-1 shadow-md hover:shadow-lg bg-white border border-slate-200 text-center">
-            <p className={`text-5xl font-extrabold font-heading mb-2 tracking-tight ${stat.color}`}>{stat.value}</p>
-            <p className="text-sm font-semibold tracking-wide text-slate-500">{stat.label}</p>
-            <Link href={stat.link} className="absolute inset-0 z-10"><span className="sr-only">View {stat.label}</span></Link>
-          </div>
-        ))}
-      </div>
       </div>
     </>
   );

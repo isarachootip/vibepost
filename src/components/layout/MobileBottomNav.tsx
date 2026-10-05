@@ -59,13 +59,13 @@ export function MobileBottomNav() {
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform duration-200 active:scale-95 ${
                     item.isActive
-                      ? "bg-red-600 text-white shadow-red-600/30"
-                      : "bg-red-500 text-white hover:bg-red-600 shadow-red-500/25"
+                      ? "bg-indigo-600 text-white shadow-indigo-600/30"
+                      : "bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/25"
                   }`}
                 >
                   <Icon className="w-6 h-6" />
                 </div>
-                <span className="text-[10px] font-semibold text-slate-700 mt-1">
+                <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 mt-1">
                   {item.label}
                 </span>
               </Link>
@@ -78,8 +78,8 @@ export function MobileBottomNav() {
               href={item.href}
               className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all duration-200 ${
                 item.isActive
-                  ? "text-red-600 font-bold scale-105"
-                  : "text-slate-500 hover:text-slate-800"
+                  ? "text-indigo-600 dark:text-indigo-400 font-bold scale-105"
+                  : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
               }`}
             >
               <Icon
