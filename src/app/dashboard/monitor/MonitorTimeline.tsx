@@ -357,7 +357,11 @@ export function MonitorTimeline({ initialWorkspaceId, workspaces }: { initialWor
                               className="flex-1 min-w-[160px] p-2 border-r border-slate-200/60 last:border-r-0 min-h-[100px] flex flex-col gap-2 bg-white hover:bg-slate-50/20 transition-colors shrink-0"
                             >
                               {slotPosts.map((post) => {
-                                const status = STATUS_MAP[post.status] || { label: post.status, bg: "bg-slate-100 text-slate-700", dot: "bg-slate-400" };
+                                const target = post.targetConnections.find(
+                                  (t) => t.socialConnectionId === chan.id
+                                );
+                                const channelStatus = target?.status || post.status;
+                                const status = STATUS_MAP[channelStatus] || { label: channelStatus, bg: "bg-slate-100 text-slate-700", dot: "bg-slate-400" };
                                 const time = post.scheduledTime ? new Date(post.scheduledTime) : post.publishedTime ? new Date(post.publishedTime) : null;
                                 return (
                                   <button

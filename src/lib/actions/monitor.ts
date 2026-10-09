@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getActiveWorkspaceContext } from "./workspace";
 import { auth } from "@/auth";
+import { getUserWorkspaceRole } from "./posts";
 
 export type MonitorChannel = {
   id: string;
@@ -46,7 +47,12 @@ export async function getMonitorData(
     if (!session?.user) throw new Error("Unauthorized");
 
     let targetWorkspaceId = workspaceId;
-    if (!targetWorkspaceId) {
+    if (targetWorkspaceId) {
+      const role = await getUserWorkspaceRole(targetWorkspaceId);
+      if (!role) {
+        return { success: false, channels: [], posts: [], error: "สิทธิ์ไม่เพียงพอ — คุณไม่ได้เป็นสมาชิกของ Workspace นี้" };
+      }
+    } else {
       const workspace = await getActiveWorkspaceContext();
       if (!workspace) return { success: true, channels: [], posts: [] };
       targetWorkspaceId = workspace.id;
@@ -128,7 +134,7 @@ export async function getMonitorData(
       images: p.media
         .filter((m) => m.mediaAsset.fileType === "IMAGE")
         .map((m) => ({ url: m.mediaAsset.fileUrl })),
-      targetConnections: p.targets.map((t: any) => ({
+      targetConnections: p.targets.map((t) => ({
         id: t.id,
         socialConnectionId: t.socialConnectionId,
         status: t.status,
@@ -146,8 +152,9 @@ export async function getMonitorData(
       channels: connections,
       posts: formattedPosts,
     };
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Monitor fetch error";
     console.error("Monitor fetch error:", error);
-    return { success: false, channels: [], posts: [], error: error.message };
+    return { success: false, channels: [], posts: [], error: message };
   }
 }

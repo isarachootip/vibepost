@@ -30,11 +30,18 @@ export async function getPublishedPostsForLanding(): Promise<{
 
     const posts = await prisma.post.findMany({
       where: {
-        status: "PUBLISHED",
         isDeleted: false,
         ...(showcaseIds.length ? { workspaceId: { in: showcaseIds } } : {}),
+        targets: {
+          some: {
+            status: "PUBLISHED",
+          },
+        },
       },
-      orderBy: { publishedTime: "desc" },
+      orderBy: [
+        { publishedTime: "desc" },
+        { createdAt: "desc" },
+      ],
       take: 60,
       include: {
         media: {
@@ -45,6 +52,9 @@ export async function getPublishedPostsForLanding(): Promise<{
           },
         },
         targets: {
+          where: {
+            status: "PUBLISHED",
+          },
           include: {
             socialConnection: {
               select: { platform: true, accountName: true },
@@ -55,18 +65,10 @@ export async function getPublishedPostsForLanding(): Promise<{
       },
     });
 
-    // Count unique platforms across all posts
-    const platformSet = new Set<string>();
-    posts.forEach((post) => {
-      post.targets.forEach((t) =>
-        platformSet.add(t.socialConnection.platform)
-      );
-    });
-
     const data: PublishedPostForGallery[] = posts.map((post) => ({
       id: post.id,
       content: post.content,
-      publishedTime: post.publishedTime,
+      publishedTime: post.publishedTime || post.createdAt,
       workspace: post.workspace.name,
       images: post.media
         .filter((m) => m.mediaAsset.fileType === "IMAGE")
@@ -81,6 +83,14 @@ export async function getPublishedPostsForLanding(): Promise<{
         externalPostId: t.externalPostId,
       })),
     }));
+
+    // Count unique platforms across all posts with published channels
+    const platformSet = new Set<string>();
+    data.forEach((post) => {
+      post.channels.forEach((c) =>
+        platformSet.add(c.platform)
+      );
+    });
 
     return {
       posts: data,
@@ -310,8 +320,8 @@ export async function movePostToTrash(postId: string) {
     if (!post) throw new Error("Post not found");
 
     const role = await getUserWorkspaceRole(post.workspaceId);
-    if (role === "VIEWER") {
-      throw new Error("สิทธิ์ไม่เพียงพอ — Viewer ไม่สามารถย้ายโพสต์ลงถังขยะได้");
+    if (!role || role === "VIEWER") {
+      throw new Error("สิทธิ์ไม่เพียงพอ — เฉพาะสมาชิกที่มีสิทธิ์แก้ไขเท่านั้นที่สามารถย้ายโพสต์ลงถังขยะได้");
     }
 
     await prisma.post.update({
@@ -339,8 +349,8 @@ export async function restorePostFromTrash(postId: string) {
     if (!post) throw new Error("Post not found");
 
     const role = await getUserWorkspaceRole(post.workspaceId);
-    if (role === "VIEWER") {
-      throw new Error("สิทธิ์ไม่เพียงพอ — Viewer ไม่สามารถกู้คืนโพสต์ได้");
+    if (!role || role === "VIEWER") {
+      throw new Error("สิทธิ์ไม่เพียงพอ — เฉพาะสมาชิกที่มีสิทธิ์แก้ไขเท่านั้นที่สามารถกู้คืนโพสต์ได้");
     }
 
     await prisma.post.update({
@@ -586,8 +596,8 @@ export async function publishDraftPostAction(data: {
   if (!workspace) throw new Error("Workspace not found");
 
   const role = await getUserWorkspaceRole(workspace.id);
-  if (role === "VIEWER") {
-    return { success: false, error: "สิทธิ์ไม่เพียงพอ" };
+  if (!role || role === "VIEWER") {
+    return { success: false, error: "สิทธิ์ไม่เพียงพอ — Viewer หรือผู้ที่ไม่ได้เป็นสมาชิกไม่สามารถเผยแพร่โพสต์ได้" };
   }
 
   if (data.targetConnectionIds.length === 0) {
@@ -595,16 +605,29 @@ export async function publishDraftPostAction(data: {
   }
 
   try {
+    // 🔒 Verify the post belongs to the active workspace to prevent IDOR
+    const draftPost = await prisma.post.findFirst({
+      where: {
+        id: data.postId,
+        workspaceId: workspace.id,
+        isDeleted: false,
+      },
+    });
+
+    if (!draftPost) {
+      return { success: false, error: "ไม่พบโพสต์แบบร่างใน Workspace นี้" };
+    }
+
     const isPostNow = !data.scheduledTime || new Date(data.scheduledTime) <= new Date();
     const finalScheduledTime = isPostNow ? new Date() : new Date(data.scheduledTime!);
 
     // Remove old targets and attach new
     await prisma.postTarget.deleteMany({
-      where: { postId: data.postId },
+      where: { postId: draftPost.id },
     });
 
     await prisma.post.update({
-      where: { id: data.postId },
+      where: { id: draftPost.id },
       data: {
         content: data.content,
         status: "SCHEDULED",
