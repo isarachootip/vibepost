@@ -4,14 +4,14 @@ import React, { useState } from "react";
 import { generateAIPost, createScheduledPost } from "@/lib/actions/posts";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { 
   CalendarIcon, Sparkles, Send, CheckCircle2, RefreshCcw, 
-  Image as ImageIcon, Bot, LayoutTemplate, Clock
+  Image as ImageIcon, Bot, LayoutTemplate
 } from "lucide-react";
+import { useFutureSchedule } from "@/hooks/use-future-schedule";
+import { ScheduleDateTimePicker } from "@/components/scheduling/ScheduleDateTimePicker";
 
 type Connection = {
   id: string;
@@ -40,9 +40,7 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
   const [selectedContent, setถูกเลือกแล้วContent] = useState("");
   
   // Step 4 State
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [scheduleHour, setScheduleHour] = useState(String(new Date().getHours()).padStart(2, "0"));
-  const [scheduleMinute, setScheduleMinute] = useState("00");
+  const schedule = useFutureSchedule();
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [scheduledDateTime, setScheduledDateTime] = useState<Date | null>(null);
@@ -81,8 +79,9 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
       }
 
       setImageUrl(data.url); // This is the public server URL Facebook can access
-    } catch (err: any) {
-      setUploadError(`Upload failed: ${err.message}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setUploadError(`Upload failed: ${msg}`);
       setImagePreview(null);
     } finally {
       setIsUploading(false);
@@ -124,20 +123,14 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
     setError("");
     setIsPublishing(true);
 
-    // Combine selected date + time
-    let publishDate: Date;
-    if (isPostNow) {
-      publishDate = new Date();
-    } else {
-      publishDate = date ? new Date(date) : new Date();
-      publishDate.setHours(parseInt(scheduleHour), parseInt(scheduleMinute), 0, 0);
-    }
+    const publishDate = isPostNow ? new Date() : schedule.getScheduledDate();
 
     const res = await createScheduledPost({
       content: selectedContent,
-      scheduledTime: publishDate,
+      scheduledTime: isPostNow ? null : publishDate,
+      publishMode: isPostNow ? "NOW" : "SCHEDULE",
       targetConnectionIds: selectedChannels,
-      imageUrl: imageUrl || undefined, // Only pass URL if image was successfully uploaded to server
+      imageUrl: imageUrl || undefined,
     });
 
     setIsPublishing(false);
@@ -358,66 +351,7 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
                 <div className="mt-8 p-6 rounded-2xl bg-slate-50 border border-slate-200">
                   <h4 className="text-base font-bold text-slate-800 mb-4">📅 กำหนดเวลาเผยแพร่</h4>
                   <div className="flex flex-col gap-4">
-                    {/* Date + Time Row */}
-                    <div className="flex flex-col md:flex-row gap-3">
-                      {/* Date Picker */}
-                      <div className="flex-1">
-                        <label className="text-xs font-bold text-slate-500 mb-1.5 block uppercase tracking-wide">📆 วันที่</label>
-                        <Popover>
-                          <PopoverTrigger 
-                            className={`w-full justify-start text-left font-semibold bg-white border-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 inline-flex items-center rounded-xl transition-colors h-12 px-4 py-2 ${!date && "text-slate-400"}`}
-                          >
-                            <CalendarIcon className="mr-3 h-5 w-5 text-slate-400" />
-                            {date ? format(date, "d MMM yyyy", { locale: th }) : <span>เลือกวันที่</span>}
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-white border-slate-200 text-slate-800 shadow-xl rounded-xl">
-                            <Calendar
-                              mode="single"
-                              selected={date}
-                              onSelect={setDate}
-                              disabled={{ before: new Date() }}
-                              className="bg-white text-slate-800 rounded-xl"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-
-                      {/* Time Picker */}
-                      <div className="md:w-52">
-                        <label className="text-xs font-bold text-slate-500 mb-1.5 block uppercase tracking-wide">🕐 เวลา</label>
-                        <div className="flex items-center gap-2 bg-white border-2 border-slate-200 rounded-xl px-4 h-12">
-                          <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                          <select
-                            value={scheduleHour}
-                            onChange={(e) => setScheduleHour(e.target.value)}
-                            className="bg-transparent text-slate-700 font-semibold text-sm focus:outline-none flex-1"
-                          >
-                            {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map(h => (
-                              <option key={h} value={h}>{h}</option>
-                            ))}
-                          </select>
-                          <span className="text-slate-400 font-bold">:</span>
-                          <select
-                            value={scheduleMinute}
-                            onChange={(e) => setScheduleMinute(e.target.value)}
-                            className="bg-transparent text-slate-700 font-semibold text-sm focus:outline-none flex-1"
-                          >
-                            {["00", "15", "30", "45"].map(m => (
-                              <option key={m} value={m}>{m}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Preview of scheduled time */}
-                    {date && (
-                      <div className="text-xs text-slate-500 bg-white border border-slate-100 rounded-lg px-3 py-2">
-                        📌 จะโพสต์วันที่ <span className="font-bold text-slate-700">
-                          {format(date, "EEEE d MMMM yyyy", { locale: th })}
-                        </span> เวลา <span className="font-bold text-red-600">{scheduleHour}:{scheduleMinute} น.</span>
-                      </div>
-                    )}
+                    <ScheduleDateTimePicker schedule={schedule} accentColor="red" />
 
                     {/* Action Buttons */}
                     <div className="flex gap-3 pt-2">
@@ -475,6 +409,7 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
                 setImageUrl(null);
                 setImagePreview(null);
                 setScheduledDateTime(null);
+                schedule.resetSchedule();
               }}>
                 Create Another Post
               </Button>

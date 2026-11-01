@@ -1,325 +1,190 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect, useCallback } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { generateAIImageAction } from "@/lib/actions/ai-generation";
-import { Sparkles, Loader2, Image as ImageIcon, Check } from "lucide-react";
+import { extractVisualPromptAction } from "@/lib/actions/visual-prompt";
+import type { AIImageProvider, MediaGenerationMetadata } from "@/lib/validations/ai-media.schema";
+import { ImagePromptEditor, type PromptBuilderFields } from "./ImagePromptEditor";
+import { ImagePreviewPanel } from "./ImagePreviewPanel";
+import { Sparkles } from "lucide-react";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  onSelectImage: (url: string) => void;
+  onSelectImage: (url: string, meta?: MediaGenerationMetadata) => void;
   initialPrompt?: string;
+  sourceContent?: string;
 };
 
 const STYLES = [
   { id: "photo", label: "📸 Realistic Photo", desc: "ภาพถ่ายสมจริง แสงธรรมชาติ" },
-  { id: "3d-render", label: "🤖 3D Render", desc: "ภาพสามมิติสไตล์การ์ตูน/โมเดิร์น" },
-  { id: "vector", label: "🎨 Vector Art", desc: "ภาพเวกเตอร์สำหรับกราฟิกแบนแบรนด์" },
+  { id: "3d-render", label: "🤖 3D Render", desc: "ภาพสามมิติสไตล์โมเดิร์น" },
+  { id: "vector", label: "🎨 Vector Art", desc: "ภาพเวกเตอร์สำหรับกราฟิกแบรนด์" },
   { id: "digital-art", label: "🖌️ Digital Paint", desc: "ภาพวาดดิจิทัลลายเส้นสวยงาม" },
   { id: "anime", label: "🌸 Anime Style", desc: "ภาพวาดสไตล์อนิเมะญี่ปุ่น" },
 ];
 
-const PROVIDERS = [
-  { id: "FREE" as const, label: "✨ Free Stable Diffusion (ไม่ต้องใช้คีย์)", desc: "ภาพสวยงาม เจนรวดเร็ว ฟรี 100%" },
-  { id: "GEMINI" as const, label: "♊ Gemini Imagen 3 (ใช้คีย์สเปซ)", desc: "ความละเอียดสูง ภาพสมจริง เหมาะกับธุรกิจ" },
-  { id: "OPENAI" as const, label: "🧠 OpenAI DALL-E 3 (ใช้คีย์สเปซ)", desc: "เข้าใจคำสั่งละเอียด ตอบสนองได้ดีเยี่ยม" },
+const PROVIDERS: Array<{ id: AIImageProvider; label: string; desc: string }> = [
+  { id: "FREE", label: "✨ Free Stable Diffusion (ไม่ต้องใช้คีย์)", desc: "เจนรวดเร็ว ฟรี 100%" },
+  { id: "GEMINI", label: "♊ Gemini Imagen 4 (ใช้คีย์สเปซ)", desc: "ความละเอียดสูง ภาพสมจริง" },
+  { id: "OPENAI", label: "🧠 OpenAI DALL-E 3 (ใช้คีย์สเปซ)", desc: "เข้าใจคำสั่งละเอียดแม่นยำ" },
 ];
 
-export function AIImageCreatorModal({ isOpen, onClose, onSelectImage, initialPrompt }: Props) {
+export function AIImageCreatorModal({ isOpen, onClose, onSelectImage, initialPrompt, sourceContent }: Props) {
   const [prompt, setPrompt] = useState("");
   const [selectedStyle, setSelectedStyle] = useState("photo");
-  const [selectedProvider, setSelectedProvider] = useState<"FREE" | "GEMINI" | "OPENAI">("FREE");
+  const [selectedProvider, setSelectedProvider] = useState<AIImageProvider>("FREE");
   const [loading, setLoading] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [extractionBadge, setExtractionBadge] = useState<"llm" | "fallback" | null>(null);
   const [error, setError] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
-  // Prompt Engineering Builder States
+  const [generationMeta, setGenerationMeta] = useState<MediaGenerationMetadata | null>(null);
   const [promptMode, setPromptMode] = useState<"direct" | "builder">("direct");
-  const [subject, setSubject] = useState("");
-  const [setting, setSetting] = useState("");
-  const [style, setStyle] = useState("");
-  const [camera, setCamera] = useState("");
+  const [builder, setBuilder] = useState<PromptBuilderFields>({ subject: "", setting: "", style: "", camera: "" });
 
-  // Copy initialPrompt when modal opens
-  useEffect(() => {
-    if (isOpen && initialPrompt) {
-      setPrompt(initialPrompt);
-      setPromptMode("direct"); // Default to direct editing for pre-populated article text
+  const rawContext = sourceContent?.trim() || initialPrompt?.trim() || "";
+
+  const runPromptExtraction = useCallback(async (textToExtract: string, styleId: string) => {
+    if (!textToExtract.trim()) return;
+    setExtracting(true);
+    setError("");
+    setPromptMode("direct");
+    try {
+      const res = await extractVisualPromptAction({ content: textToExtract, mediaType: "image", style: styleId });
+      if (res.success) {
+        setPrompt(res.englishPrompt);
+        setExtractionBadge(res.usedFallbackTranslator ? "fallback" : "llm");
+      } else {
+        setPrompt(textToExtract.slice(0, 300));
+        setExtractionBadge(null);
+      }
+    } catch {
+      setPrompt(textToExtract.slice(0, 300));
+      setExtractionBadge(null);
+    } finally {
+      setExtracting(false);
     }
-  }, [isOpen, initialPrompt]);
+  }, []);
 
-  // Combine builder fields into prompt state in real-time
+  useEffect(() => {
+    if (isOpen) {
+      setError("");
+      setPreviewUrl(null);
+      setGenerationMeta(null);
+      if (rawContext) void runPromptExtraction(rawContext, selectedStyle);
+      else setExtractionBadge(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, rawContext]);
+
   useEffect(() => {
     if (promptMode === "builder") {
-      const combined = [subject, setting, style, camera].filter(Boolean).join(", ");
-      setPrompt(combined);
+      setPrompt([builder.subject, builder.setting, builder.style, builder.camera].filter(Boolean).join(", "));
     }
-  }, [promptMode, subject, setting, style, camera]);
+  }, [promptMode, builder]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       setError("กรุณากรอกคำอธิบายรูปภาพ (Prompt) ที่ต้องการสร้าง");
       return;
     }
-
     setLoading(true);
     setError("");
     setPreviewUrl(null);
-
+    setGenerationMeta(null);
     try {
       const res = await generateAIImageAction(prompt, selectedStyle, selectedProvider);
       if (res.success && res.asset) {
         setPreviewUrl(res.asset.fileUrl);
+        setGenerationMeta(res.meta ?? null);
+        if (res.meta?.resolvedEnglishPrompt) setPrompt(res.meta.resolvedEnglishPrompt);
       } else {
         setError(res.error || "ไม่สามารถเจนภาพได้ เกิดข้อผิดพลาดทางเทคนิค");
       }
-    } catch (err: any) {
-      setError(err.message || "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     } finally {
       setLoading(false);
     }
   };
 
   const handleUseImage = () => {
-    if (previewUrl) {
-      onSelectImage(previewUrl);
-      onClose();
-      // Reset state
-      setPrompt("");
-      setSubject("");
-      setSetting("");
-      setStyle("");
-      setCamera("");
-      setPreviewUrl(null);
-    }
+    if (!previewUrl) return;
+    onSelectImage(previewUrl, generationMeta ?? undefined);
+    onClose();
+    setPreviewUrl(null);
+    setGenerationMeta(null);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-2xl bg-white border border-slate-200 text-slate-800 shadow-2xl rounded-2xl p-6 overflow-y-auto max-h-[90vh]">
-        <DialogHeader className="mb-4">
+        <DialogHeader className="mb-3">
           <DialogTitle className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-purple-600 animate-pulse" />
             AI Image Creator
           </DialogTitle>
-          <DialogDescription className="text-slate-500 font-medium">
-            สร้างภาพประกอบโพสต์คุณภาพสูงด้วยคำบรรยายของคุณเอง
+          <DialogDescription className="text-slate-500 font-medium text-xs">
+            สกัด English Visual Prompt จากเนื้อหาอัตโนมัติ แก้ไขคำสั่งภาษาอังกฤษได้ก่อนกดสร้างภาพ
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-semibold">
-              ⚠️ {error}
-            </div>
-          )}
+        {error && (
+          <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold">
+            ⚠️ {error}
+          </div>
+        )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left side: Inputs */}
-            <div className="space-y-5">
-              <div>
-                <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
-                  1. การสร้างคำสั่งภาพ (Prompt Editor)
-                </Label>
-                
-                {/* Mode Selector Toggle */}
-                <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mb-3 border border-slate-200/50">
-                  <button
-                    type="button"
-                    onClick={() => setPromptMode("direct")}
-                    className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${
-                      promptMode === "direct"
-                        ? "bg-white text-purple-900 shadow-sm border border-slate-200"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    ✍️ คีย์คำสั่งหลัก (Direct)
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <ImagePromptEditor
+              prompt={prompt}
+              onPromptChange={(val) => { setPrompt(val); setExtractionBadge(null); }}
+              promptMode={promptMode}
+              onPromptModeChange={setPromptMode}
+              builder={builder}
+              onBuilderChange={(patch) => setBuilder((prev) => ({ ...prev, ...patch }))}
+              extracting={extracting}
+              extractionBadge={extractionBadge}
+              canReExtract={Boolean(rawContext)}
+              onReExtract={() => void runPromptExtraction(rawContext, selectedStyle)}
+            />
+
+            <div>
+              <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-1.5">2. เลือกสไตล์ภาพ (Style)</Label>
+              <div className="grid grid-cols-1 gap-1.5">
+                {STYLES.map((item) => (
+                  <button key={item.id} type="button" onClick={() => setSelectedStyle(item.id)}
+                    className={`p-2 text-left rounded-xl border text-xs transition-all flex flex-col ${
+                      selectedStyle === item.id ? "border-purple-600 bg-purple-50/50 text-purple-900 shadow-sm" : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}>
+                    <span className="font-bold">{item.label}</span>
+                    <span className="text-[10px] text-slate-400">{item.desc}</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setPromptMode("builder")}
-                    className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${
-                      promptMode === "builder"
-                        ? "bg-white text-purple-900 shadow-sm border border-slate-200"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    🤖 สร้างคำสั่งแยกส่วน (Builder)
-                  </button>
-                </div>
-
-                {promptMode === "direct" ? (
-                  <Textarea
-                    placeholder="เช่น ถ้วยกาแฟสกัดเย็น วางอยู่บนโต๊ะไม้ที่มีแสงแดดส่องผ่านหน้าต่าง สไตล์อบอุ่น..."
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    className="bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400 h-44 focus-visible:ring-purple-500 rounded-xl text-sm resize-none leading-relaxed"
-                  />
-                ) : (
-                  <div className="space-y-2.5 p-3 border border-slate-200 bg-slate-50 rounded-xl">
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">วัตถุหลัก (Subject)</span>
-                      <Input
-                        placeholder="เช่น แก้วกาแฟเอสเปรสโซ่ร้อน, แมวส้มแสนน่ารัก"
-                        value={subject}
-                        onChange={(e) => setSubject(e.target.value)}
-                        className="bg-white border-slate-200 text-slate-800 text-xs rounded-xl focus-visible:ring-purple-500 h-9"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">ฉากหลัง/สถานที่ (Setting)</span>
-                      <Input
-                        placeholder="เช่น วางบนโต๊ะไม้ริมหน้าต่างในคาเฟ่ยามเช้า"
-                        value={setting}
-                        onChange={(e) => setSetting(e.target.value)}
-                        className="bg-white border-slate-200 text-slate-800 text-xs rounded-xl focus-visible:ring-purple-500 h-9"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">สไตล์และแสง (Style & Lighting)</span>
-                      <Input
-                        placeholder="เช่น ภาพถ่ายสไตล์สมจริง แสงแดดอุ่นส่องเฉียง"
-                        value={style}
-                        onChange={(e) => setStyle(e.target.value)}
-                        className="bg-white border-slate-200 text-slate-800 text-xs rounded-xl focus-visible:ring-purple-500 h-9"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">มุมกล้องและเลนส์ (Camera/Lens)</span>
-                      <Input
-                        placeholder="เช่น ภาพโคลสอัพ หน้าชัดหลังเบลอ (Close-up)"
-                        value={camera}
-                        onChange={(e) => setCamera(e.target.value)}
-                        className="bg-white border-slate-200 text-slate-800 text-xs rounded-xl focus-visible:ring-purple-500 h-9"
-                      />
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-200/50">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Preview Prompt ผลรวม</span>
-                      <div className="p-2 bg-purple-50/50 border border-purple-100 rounded-lg text-[10px] text-purple-950 font-mono max-h-16 overflow-y-auto select-all leading-relaxed break-words">
-                        {prompt || "กรอกข้อมูลด้านบนเพื่อรวบรวม..."}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
-                  2. เลือกสไตล์ภาพ (Style)
-                </Label>
-                <div className="grid grid-cols-1 gap-1.5">
-                  {STYLES.map((style) => (
-                    <button
-                      key={style.id}
-                      onClick={() => setSelectedStyle(style.id)}
-                      className={`p-2.5 text-left rounded-xl border text-xs transition-all duration-200 flex flex-col ${
-                        selectedStyle === style.id
-                          ? "border-purple-600 bg-purple-50/50 text-purple-900 shadow-sm"
-                          : "border-slate-200 hover:border-slate-300 bg-white"
-                      }`}
-                    >
-                      <span className="font-bold">{style.label}</span>
-                      <span className="text-[10px] text-slate-400 mt-0.5">{style.desc}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
-                  3. เลือกผู้ให้บริการ AI (AI engine)
-                </Label>
-                <div className="space-y-1.5">
-                  {PROVIDERS.map((provider) => (
-                    <button
-                      key={provider.id}
-                      onClick={() => setSelectedProvider(provider.id)}
-                      className={`w-full p-2.5 text-left rounded-xl border text-xs transition-all duration-200 flex flex-col ${
-                        selectedProvider === provider.id
-                          ? "border-purple-600 bg-purple-50/50 text-purple-900 shadow-sm"
-                          : "border-slate-200 hover:border-slate-300 bg-white"
-                      }`}
-                    >
-                      <span className="font-bold">{provider.label}</span>
-                      <span className="text-[10px] text-slate-400 mt-0.5">{provider.desc}</span>
-                    </button>
-                  ))}
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* Right side: Preview area */}
-            <div className="flex flex-col justify-between border border-slate-100 rounded-2xl p-4 bg-slate-50 min-h-[300px]">
-              <div>
-                <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-3">
-                  พรีวิวรูปภาพประกอบ
-                </Label>
-
-                {loading ? (
-                  <div className="aspect-square w-full bg-white border border-slate-200 rounded-xl flex flex-col items-center justify-center p-6 text-center shadow-inner">
-                    <Loader2 className="w-12 h-12 text-purple-600 animate-spin mb-4" />
-                    <h4 className="font-bold text-slate-800">กำลังเจเนอเรตรูปภาพ...</h4>
-                    <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                      AI กำลังประมวลผลแสง สี และรายละเอียดภาพตามคำสั่งของคุณ ใช้เวลาประมาณ 5-10 วินาที
-                    </p>
-                  </div>
-                ) : previewUrl ? (
-                  <div className="aspect-square w-full rounded-xl overflow-hidden border border-slate-200 shadow-md relative group">
-                    <img
-                      src={previewUrl}
-                      alt="AI Preview"
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                ) : (
-                  <div className="aspect-square w-full border-2 border-dashed border-slate-300 bg-white rounded-xl flex flex-col items-center justify-center p-6 text-center text-slate-400">
-                    <ImageIcon className="w-12 h-12 text-slate-300 mb-3" />
-                    <p className="font-semibold text-slate-500 text-sm">ยังไม่ได้สร้างรูปภาพ</p>
-                    <p className="text-xs text-slate-400 mt-1 max-w-[200px]">
-                      ป้อนคำสั่งด้านซ้ายแล้วกดสร้างเพื่อพรีวิวภาพที่นี่
-                    </p>
-                  </div>
-                )}
+            <div>
+              <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-1.5">3. ผู้ให้บริการ AI (AI Engine)</Label>
+              <div className="space-y-1.5">
+                {PROVIDERS.map((prov) => (
+                  <button key={prov.id} type="button" onClick={() => setSelectedProvider(prov.id)}
+                    className={`w-full p-2 text-left rounded-xl border text-xs transition-all flex flex-col ${
+                      selectedProvider === prov.id ? "border-purple-600 bg-purple-50/50 text-purple-900 shadow-sm" : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}>
+                    <span className="font-bold">{prov.label}</span>
+                    <span className="text-[10px] text-slate-400">{prov.desc}</span>
+                  </button>
+                ))}
               </div>
-
-              {previewUrl ? (
-                <Button
-                  onClick={handleUseImage}
-                  className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold h-12 rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
-                >
-                  <Check className="w-5 h-5" /> นำรูปภาพนี้ไปใช้งาน
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleGenerate}
-                  disabled={loading}
-                  className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold h-12 rounded-xl shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" /> กำลังสร้าง...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-5 h-5" /> เจเนอเรตรูปภาพ AI
-                    </>
-                  )}
-                </Button>
-              )}
             </div>
           </div>
+
+          <ImagePreviewPanel loading={loading} extracting={extracting} previewUrl={previewUrl} generationMeta={generationMeta} onGenerate={handleGenerate} onUseImage={handleUseImage} />
         </div>
       </DialogContent>
     </Dialog>

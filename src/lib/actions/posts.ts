@@ -105,6 +105,12 @@ export async function getPublishedPostsForLanding(): Promise<{
 import { getActiveWorkspaceContext } from "./workspace";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
+import {
+  createScheduledPostInputSchema,
+  publishDraftPostInputSchema,
+  type PublishMode,
+} from "@/lib/validations/post-schedule.schema";
+import { validateScheduledTime } from "@/lib/services/schedule-time.service";
 
 /**
  * Returns the user's role in the given workspace.
@@ -239,38 +245,61 @@ export async function createScheduledPost(data: {
   targetConnectionIds: string[];
   imageUrls?: string[];     // multiple images (multi-photo) — replaces imageUrl
   imageUrl?: string;         // legacy single-image compat
+  publishMode?: PublishMode;
 }) {
   const workspace = await getActiveWorkspaceContext();
   if (!workspace) throw new Error("Workspace not found");
 
-  // 🔒 VIEWER cannot create or schedule posts
+  // 🔒 Non-members and VIEWER cannot create or schedule posts
   const role = await getUserWorkspaceRole(workspace.id);
-  if (role === "VIEWER") {
+  if (!role || role === "VIEWER") {
     return { success: false, error: "สิทธิ์ไม่เพียงพอ — Viewer ไม่สามารถสร้าง Post ได้" };
   }
 
-  if (data.targetConnectionIds.length === 0) {
-    return { success: false, error: "Please select at least one social channel." };
+  const normalizedInput = {
+    ...data,
+    scheduledTime: data.scheduledTime ? new Date(data.scheduledTime) : null,
+  };
+  const parsed = createScheduledPostInputSchema.safeParse(normalizedInput);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "ข้อมูลการตั้งโพสต์ไม่ถูกต้อง",
+    };
+  }
+
+  const mode: PublishMode =
+    parsed.data.publishMode ?? (parsed.data.scheduledTime ? "SCHEDULE" : "NOW");
+  const timeValidation = validateScheduledTime(parsed.data.scheduledTime, mode);
+  if (!timeValidation.valid) {
+    return { success: false, error: timeValidation.error };
+  }
+
+  const uniqueTargetIds = Array.from(new Set(parsed.data.targetConnectionIds));
+  const validTargetsCount = await prisma.socialConnection.count({
+    where: { id: { in: uniqueTargetIds }, workspaceId: workspace.id },
+  });
+  if (validTargetsCount !== uniqueTargetIds.length) {
+    return { success: false, error: "ช่องทางโซเชียลที่เลือกไม่ถูกต้องหรือไม่ได้อยู่ใน Workspace นี้" };
   }
 
   // Merge imageUrls and legacy imageUrl into one array
   const allImageUrls: string[] = [
-    ...(data.imageUrls ?? []),
-    ...(data.imageUrl ? [data.imageUrl] : []),
+    ...(parsed.data.imageUrls ?? []),
+    ...(parsed.data.imageUrl ? [parsed.data.imageUrl] : []),
   ].filter(Boolean);
 
   try {
-    const isPostNow = !data.scheduledTime || new Date(data.scheduledTime) <= new Date();
-    const finalScheduledTime = isPostNow ? new Date() : new Date(data.scheduledTime!);
+    const { isPostNow, finalTime: finalScheduledTime } = timeValidation;
 
     const newPost = await prisma.post.create({
       data: {
         workspaceId: workspace.id,
-        content: data.content,
+        content: parsed.data.content,
         status: "SCHEDULED",
         scheduledTime: finalScheduledTime,
         targets: {
-          create: data.targetConnectionIds.map((id) => ({
+          create: uniqueTargetIds.map((id) => ({
             socialConnectionId: id,
             status: "SCHEDULED",
           })),
@@ -302,9 +331,10 @@ export async function createScheduledPost(data: {
     revalidatePath("/dashboard/history");
 
     return { success: true, isPostNow };
-  } catch (error: any) {
-    console.error("Create Post Error:", error);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "ไม่สามารถบันทึกโพสต์ได้";
+    console.error("Create Post Error:", message);
+    return { success: false, error: message };
   }
 }
 
@@ -591,6 +621,7 @@ export async function publishDraftPostAction(data: {
   content: string;
   targetConnectionIds: string[];
   scheduledTime: Date | null;
+  publishMode?: PublishMode;
 }) {
   const workspace = await getActiveWorkspaceContext();
   if (!workspace) throw new Error("Workspace not found");
@@ -600,15 +631,30 @@ export async function publishDraftPostAction(data: {
     return { success: false, error: "สิทธิ์ไม่เพียงพอ — Viewer หรือผู้ที่ไม่ได้เป็นสมาชิกไม่สามารถเผยแพร่โพสต์ได้" };
   }
 
-  if (data.targetConnectionIds.length === 0) {
-    return { success: false, error: "กรุณาเลือกช่องทางโซเชียลมีเดียอย่างน้อย 1 ช่องทาง" };
+  const normalizedInput = {
+    ...data,
+    scheduledTime: data.scheduledTime ? new Date(data.scheduledTime) : null,
+  };
+  const parsed = publishDraftPostInputSchema.safeParse(normalizedInput);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "ข้อมูลการเผยแพร่แบบร่างไม่ถูกต้อง",
+    };
+  }
+
+  const mode: PublishMode =
+    parsed.data.publishMode ?? (parsed.data.scheduledTime ? "SCHEDULE" : "NOW");
+  const timeValidation = validateScheduledTime(parsed.data.scheduledTime, mode);
+  if (!timeValidation.valid) {
+    return { success: false, error: timeValidation.error };
   }
 
   try {
     // 🔒 Verify the post belongs to the active workspace to prevent IDOR
     const draftPost = await prisma.post.findFirst({
       where: {
-        id: data.postId,
+        id: parsed.data.postId,
         workspaceId: workspace.id,
         isDeleted: false,
       },
@@ -618,35 +664,44 @@ export async function publishDraftPostAction(data: {
       return { success: false, error: "ไม่พบโพสต์แบบร่างใน Workspace นี้" };
     }
 
-    const isPostNow = !data.scheduledTime || new Date(data.scheduledTime) <= new Date();
-    const finalScheduledTime = isPostNow ? new Date() : new Date(data.scheduledTime!);
-
-    // Remove old targets and attach new
-    await prisma.postTarget.deleteMany({
-      where: { postId: draftPost.id },
+    const uniqueTargetIds = Array.from(new Set(parsed.data.targetConnectionIds));
+    const validTargetsCount = await prisma.socialConnection.count({
+      where: { id: { in: uniqueTargetIds }, workspaceId: workspace.id },
     });
+    if (validTargetsCount !== uniqueTargetIds.length) {
+      return { success: false, error: "ช่องทางโซเชียลที่เลือกไม่ถูกต้องหรือไม่ได้อยู่ใน Workspace นี้" };
+    }
 
-    await prisma.post.update({
-      where: { id: draftPost.id },
-      data: {
-        content: data.content,
-        status: "SCHEDULED",
-        scheduledTime: finalScheduledTime,
-        targets: {
-          create: data.targetConnectionIds.map((id) => ({
-            socialConnectionId: id,
-            status: "SCHEDULED",
-          })),
+    const { isPostNow, finalTime: finalScheduledTime } = timeValidation;
+
+    // Atomically replace old targets and schedule draft post
+    await prisma.$transaction([
+      prisma.postTarget.deleteMany({
+        where: { postId: draftPost.id },
+      }),
+      prisma.post.update({
+        where: { id: draftPost.id },
+        data: {
+          content: parsed.data.content,
+          status: "SCHEDULED",
+          scheduledTime: finalScheduledTime,
+          targets: {
+            create: uniqueTargetIds.map((id) => ({
+              socialConnectionId: id,
+              status: "SCHEDULED",
+            })),
+          },
         },
-      },
-    });
+      }),
+    ]);
 
     revalidatePath("/dashboard/history");
     revalidatePath("/dashboard/monitor");
 
     return { success: true, isPostNow, scheduledTime: finalScheduledTime };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "ไม่สามารถเผยแพร่โพสต์ได้";
+    return { success: false, error: message };
   }
 }
 

@@ -5,15 +5,16 @@ import { useSearchParams } from "next/navigation";
 import { generateAIPost, createScheduledPost } from "@/lib/actions/posts";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { 
   CalendarIcon, Sparkles, Send, CheckCircle2, RefreshCcw, 
   Image as ImageIcon, Bot, LayoutTemplate, Clock, Film, PenTool, Loader2,
-  Check, ArrowLeft, Globe
+  Check, ArrowLeft, AlertTriangle
 } from "lucide-react";
+import { useFutureSchedule } from "@/hooks/use-future-schedule";
+import { ScheduleDateTimePicker } from "@/components/scheduling/ScheduleDateTimePicker";
+import type { MediaGenerationMetadata } from "@/lib/validations/ai-media.schema";
 
 // Modals
 import { AIImageCreatorModal } from "./AIImageCreatorModal";
@@ -27,13 +28,15 @@ type Connection = {
   isActive: boolean;
 };
 
+interface SinglePostWizardProps {
+  connections: Connection[];
+  defaultMediaType?: "image" | "video";
+}
+
 function SinglePostWizardInner({ 
   connections, 
   defaultMediaType = "image" 
-}: { 
-  connections: Connection[]; 
-  defaultMediaType?: "image" | "video";
-}) {
+}: SinglePostWizardProps) {
   const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
@@ -48,6 +51,7 @@ function SinglePostWizardInner({
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<"image" | "video">(defaultMediaType);
+  const [mediaMeta, setMediaMeta] = useState<MediaGenerationMetadata | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
@@ -62,9 +66,7 @@ function SinglePostWizardInner({
   const [selectedContent, setSelectedContent] = useState("");
   
   // Step 4 State
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [scheduleHour, setScheduleHour] = useState(String(new Date().getHours()).padStart(2, "0"));
-  const [scheduleMinute, setScheduleMinute] = useState("00");
+  const schedule = useFutureSchedule();
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [scheduledDateTime, setScheduledDateTime] = useState<Date | null>(null);
@@ -171,8 +173,10 @@ function SinglePostWizardInner({
       }
 
       setMediaUrl(data.url); // This is the public server URL Facebook can access
-    } catch (err: any) {
-      setUploadError(`Upload failed: ${err.message}`);
+      setMediaMeta(null);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setUploadError(`Upload failed: ${msg}`);
       setMediaPreview(null);
     } finally {
       setIsUploading(false);
@@ -222,20 +226,14 @@ function SinglePostWizardInner({
     setError("");
     setIsPublishing(true);
 
-    // Combine selected date + time
-    let publishDate: Date;
-    if (isPostNow) {
-      publishDate = new Date();
-    } else {
-      publishDate = date ? new Date(date) : new Date();
-      publishDate.setHours(parseInt(scheduleHour), parseInt(scheduleMinute), 0, 0);
-    }
+    const publishDate = isPostNow ? new Date() : schedule.getScheduledDate();
 
     const res = await createScheduledPost({
       content: selectedContent,
-      scheduledTime: publishDate,
+      scheduledTime: isPostNow ? null : publishDate,
+      publishMode: isPostNow ? "NOW" : "SCHEDULE",
       targetConnectionIds: selectedChannels,
-      imageUrl: mediaUrl || undefined, // Pass mediaUrl (supports both image and video urls)
+      imageUrl: mediaUrl || undefined,
     });
 
     setIsPublishing(false);
@@ -598,66 +596,7 @@ function SinglePostWizardInner({
                 <Clock className="w-5 h-5 text-red-600" /> กำหนดเวลาเผยแพร่ / เผยแพร่ทันที
               </h4>
               <div className="flex flex-col gap-4">
-                {/* Date + Time Row */}
-                <div className="flex flex-col md:flex-row gap-3">
-                  {/* Date Picker */}
-                  <div className="flex-1">
-                    <label className="text-xs font-bold text-slate-500 mb-1.5 block uppercase tracking-wide">📆 วันที่</label>
-                    <Popover>
-                      <PopoverTrigger 
-                        className={`w-full justify-start text-left font-semibold bg-white border-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 inline-flex items-center rounded-xl transition-colors h-12 px-4 py-2 ${!date && "text-slate-400"}`}
-                      >
-                        <CalendarIcon className="mr-3 h-5 w-5 text-slate-400" />
-                        {date ? format(date, "d MMM yyyy", { locale: th }) : <span>เลือกวันที่</span>}
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 bg-white border-slate-200 text-slate-800 shadow-xl rounded-2xl">
-                        <Calendar
-                          mode="single"
-                          selected={date}
-                          onSelect={setDate}
-                          disabled={{ before: new Date() }}
-                          className="bg-white text-slate-800 rounded-2xl"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  {/* Time Picker */}
-                  <div className="md:w-52">
-                    <label className="text-xs font-bold text-slate-500 mb-1.5 block uppercase tracking-wide">🕐 เวลา</label>
-                    <div className="flex items-center gap-2 bg-white border-2 border-slate-200 rounded-xl px-4 h-12">
-                      <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                      <select
-                        value={scheduleHour}
-                        onChange={(e) => setScheduleHour(e.target.value)}
-                        className="bg-transparent text-slate-700 font-semibold text-sm focus:outline-none flex-1"
-                      >
-                        {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map(h => (
-                          <option key={h} value={h}>{h}</option>
-                        ))}
-                      </select>
-                      <span className="text-slate-400 font-bold">:</span>
-                      <select
-                        value={scheduleMinute}
-                        onChange={(e) => setScheduleMinute(e.target.value)}
-                        className="bg-transparent text-slate-700 font-semibold text-sm focus:outline-none flex-1"
-                      >
-                        {["00", "15", "30", "45"].map(m => (
-                          <option key={m} value={m}>{m}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Preview of scheduled time */}
-                {date && (
-                  <div className="text-xs text-slate-500 bg-white border border-slate-100 rounded-xl px-4 py-2.5">
-                    📌 จะโพสต์วันที่ <span className="font-bold text-slate-700">
-                      {format(date, "EEEE d MMMM yyyy", { locale: th })}
-                    </span> เวลา <span className="font-bold text-red-600">{scheduleHour}:{scheduleMinute} น.</span>
-                  </div>
-                )}
+                <ScheduleDateTimePicker schedule={schedule} accentColor="red" />
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-2">
@@ -718,8 +657,10 @@ function SinglePostWizardInner({
                   setSelectedContent("");
                   setMediaUrl(null);
                   setMediaPreview(null);
+                  setMediaMeta(null);
                   setScheduledDateTime(null);
                   setIsFromStudio(false);
+                  schedule.resetSchedule();
                 }}
               >
                 ✨ สร้างโพสต์ใหม่
@@ -730,32 +671,46 @@ function SinglePostWizardInner({
 
       </div>
 
+      {mediaMeta?.usedFallback && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-800 font-semibold flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-black block">ใช้โมเดลสำรอง: {mediaMeta.actualModel}</span>
+            <span className="text-[11px] text-amber-700">{mediaMeta.fallbackReason}</span>
+          </div>
+        </div>
+      )}
+
       {/* AI Modals */}
       <AIImageCreatorModal
         isOpen={isImageModalOpen}
         onClose={() => setIsImageModalOpen(false)}
-        onSelectImage={(url) => {
+        onSelectImage={(url, meta) => {
           setMediaUrl(url);
           setMediaPreview(url);
           setMediaType("image");
+          setMediaMeta(meta ?? null);
         }}
+        sourceContent={selectedContent.trim() || topic.trim()}
       />
 
       <AIVideoStudioModal
         isOpen={isVideoModalOpen}
         onClose={() => setIsVideoModalOpen(false)}
-        onSelectVideo={(url) => {
+        onSelectVideo={(url, meta) => {
           setMediaUrl(url);
           setMediaPreview(url);
           setMediaType("video");
+          setMediaMeta(meta ?? null);
         }}
+        sourceContent={selectedContent.trim() || topic.trim()}
       />
 
       <AIArticleWriterModal
         isOpen={isArticleModalOpen}
         onClose={() => setIsArticleModalOpen(false)}
         onUseArticle={(article) => {
-          setTopic(article); // Insert generated article directly into post editor topic
+          setTopic(article);
         }}
       />
 
@@ -763,7 +718,7 @@ function SinglePostWizardInner({
   );
 }
 
-export function SinglePostWizard(props: any) {
+export function SinglePostWizard(props: SinglePostWizardProps) {
   return (
     <Suspense fallback={<div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-slate-400" /></div>}>
       <SinglePostWizardInner {...props} />

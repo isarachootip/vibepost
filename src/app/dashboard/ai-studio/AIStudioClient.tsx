@@ -13,10 +13,10 @@ import { createDraftPost } from "@/lib/actions/posts";
 import { AIImageCreatorModal } from "../multi-post/AIImageCreatorModal";
 import { AIVideoStudioModal } from "../multi-post/AIVideoStudioModal";
 import { StudioAutoPostModal } from "./StudioAutoPostModal";
+import type { MediaGenerationMetadata } from "@/lib/validations/ai-media.schema";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
@@ -25,18 +25,16 @@ import {
   PenTool,
   Film,
   Image as ImageIcon,
-  Send,
   Loader2,
   Check,
   BookOpen,
   X,
-  Coins,
-  History,
-  TrendingUp,
   Rocket,
   Settings2,
   BookmarkPlus,
   Layers,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 
 const TONES = [
@@ -67,6 +65,23 @@ type Connection = {
   isActive: boolean;
 };
 
+type ArticleFormatKey = "longForm" | "socialPost" | "marketingAida";
+
+interface AIUsageStats {
+  totalCost: number;
+  totalTokens: number;
+  totalCalls: number;
+  articleCalls: number;
+  imageCalls: number;
+  videoCalls: number;
+}
+
+const FORMAT_OPTIONS: Array<{ id: ArticleFormatKey; label: string; desc: string }> = [
+  { id: "longForm", label: "📄 บทความยาว", desc: "Long-form" },
+  { id: "socialPost", label: "📱 แคปชันโซเชียล", desc: "Short Caption" },
+  { id: "marketingAida", label: "🎯 โฆษณา AIDA", desc: "Marketing copy" },
+];
+
 export function AIStudioClient({ connections = [] }: { connections?: Connection[] }) {
   const router = useRouter();
   
@@ -78,18 +93,19 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
   const [loadingArticle, setLoadingArticle] = useState(false);
   
   // 3 Formats Content State
-  const [formats, setFormats] = useState({
+  const [formats, setFormats] = useState<Record<ArticleFormatKey, string>>({
     longForm: "",
     socialPost: "",
     marketingAida: ""
   });
-  const [selectedFormat, setSelectedFormat] = useState<"longForm" | "socialPost" | "marketingAida">("longForm");
+  const [selectedFormat, setSelectedFormat] = useState<ArticleFormatKey>("longForm");
   
   const [error, setError] = useState("");
 
   // Media State
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<"image" | "video">("image");
+  const [mediaMeta, setMediaMeta] = useState<MediaGenerationMetadata | null>(null);
 
   // Modals state
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
@@ -98,14 +114,8 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
   const [savingDraft, setSavingDraft] = useState(false);
   const [isDraftSuccessOpen, setIsDraftSuccessOpen] = useState(false);
 
-  // Copy Prompt Dialog state
-  const [isConfirmCopyOpen, setIsConfirmCopyOpen] = useState(false);
-  const [copyTargetType, setCopyTargetType] = useState<"image" | "video" | null>(null);
-  const [modalInitialPrompt, setModalInitialPrompt] = useState("");
-
   // AI Usage Stats state
-  const [stats, setStats] = useState<any>(null);
-  const [loadingStats, setLoadingStats] = useState(true);
+  const [stats, setStats] = useState<AIUsageStats | null>(null);
 
   // Load stats on mount
   const loadStats = async () => {
@@ -116,8 +126,6 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
       }
     } catch (err) {
       console.error("Failed to load AI usage stats", err);
-    } finally {
-      setLoadingStats(false);
     }
   };
 
@@ -153,8 +161,8 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
       } else {
         setError(res.error || "เกิดข้อผิดพลาดในการสร้างบทความ กรุณาตรวจสอบการตั้งค่าคีย์ API");
       }
-    } catch (err: any) {
-      setError(err.message || "เกิดข้อผิดพลาดการเชื่อมต่อเครือข่าย");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาดการเชื่อมต่อเครือข่าย");
     } finally {
       setLoadingArticle(false);
     }
@@ -167,42 +175,10 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
     }));
   };
 
-  // Clean prompt helper to extract core theme / headline
-  const cleanForPrompt = (text: string) => {
-    let clean = text.replace(/#\w+/g, ""); // Remove hashtags
-    const lines = clean.split("\n").map(l => l.trim()).filter(Boolean);
-    if (lines.length > 0) {
-      // Return first line minus list numbering
-      return lines[0].replace(/^[0-9.\-\s]+/, "");
-    }
-    return text.substring(0, 100);
-  };
-
-  // Handle open media creator with prompt confirmation
+  // Open media creator immediately — English Visual Prompt is auto-extracted inside the modal
   const handleOpenMediaCreator = (type: "image" | "video") => {
-    const activeText = formats[selectedFormat];
-    if (activeText && activeText.trim()) {
-      setCopyTargetType(type);
-      setIsConfirmCopyOpen(true);
-    } else {
-      setModalInitialPrompt("");
-      if (type === "image") setIsImageModalOpen(true);
-      if (type === "video") setIsVideoModalOpen(true);
-    }
-  };
-
-  const handleConfirmCopyPrompt = (useCopy: boolean) => {
-    setIsConfirmCopyOpen(false);
-    if (useCopy) {
-      const activeText = formats[selectedFormat];
-      const cleanedPrompt = cleanForPrompt(activeText);
-      setModalInitialPrompt(cleanedPrompt);
-    } else {
-      setModalInitialPrompt("");
-    }
-
-    if (copyTargetType === "image") setIsImageModalOpen(true);
-    if (copyTargetType === "video") setIsVideoModalOpen(true);
+    if (type === "image") setIsImageModalOpen(true);
+    if (type === "video") setIsVideoModalOpen(true);
   };
 
   const handleSaveDraft = async () => {
@@ -223,8 +199,8 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
       } else {
         setError(res.error || "ไม่สามารถบันทึกแบบร่างได้");
       }
-    } catch (err: any) {
-      setError(err.message || "เกิดข้อผิดพลาดในการบันทึกแบบร่าง");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการบันทึกแบบร่าง");
     } finally {
       setSavingDraft(false);
     }
@@ -433,17 +409,13 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
               
               {/* 3 Formats Card selectors (ticks) */}
               <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: "longForm", label: "📄 บทความยาว", desc: "Long-form" },
-                  { id: "socialPost", label: "📱 แคปชันโซเชียล", desc: "Short Caption" },
-                  { id: "marketingAida", label: "🎯 โฆษณา AIDA", desc: "Marketing copy" }
-                ].map((fmt) => {
-                  const hasContent = !!formats[fmt.id as keyof typeof formats];
+                {FORMAT_OPTIONS.map((fmt) => {
+                  const hasContent = Boolean(formats[fmt.id]);
                   return (
                     <button
                       key={fmt.id}
                       type="button"
-                      onClick={() => setSelectedFormat(fmt.id as any)}
+                      onClick={() => setSelectedFormat(fmt.id)}
                       className={`p-3 text-left rounded-xl border text-xs transition-all duration-200 flex flex-col relative ${
                         selectedFormat === fmt.id
                           ? "border-purple-600 bg-purple-50/50 text-purple-900 shadow-xs"
@@ -526,17 +498,53 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
                     />
                   )}
                   <button
+                    type="button"
                     onClick={() => {
                       setMediaUrl(null);
+                      setMediaMeta(null);
                     }}
                     className="absolute top-3 right-3 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-lg transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
+
+                {mediaMeta?.usedFallback && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-semibold flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-black block">
+                        ใช้โมเดลสำรอง: {mediaMeta.actualModel}
+                      </span>
+                      <span className="text-[11px] text-amber-700">
+                        {mediaMeta.fallbackReason}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-xs text-green-700 font-semibold flex items-center gap-2">
                   <Check className="w-4 h-4 shrink-0" />
                   แนบไฟล์{mediaType === "video" ? "วิดีโอ" : "รูปภาพ"} AI สำเร็จแล้ว! พร้อมส่งออกเพื่อดีพลอย
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleOpenMediaCreator("image")}
+                    className="border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs h-10 rounded-xl flex items-center justify-center gap-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-purple-600" /> แก้ Prompt / เจนรูปใหม่
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleOpenMediaCreator("video")}
+                    className="border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs h-10 rounded-xl flex items-center justify-center gap-1.5"
+                  >
+                    <Film className="w-3.5 h-3.5 text-purple-600" /> สลับเป็นวิดีโอ AI
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -632,37 +640,6 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
         </div>
       </div>
 
-      {/* Confirm Copy Prompt Dialog */}
-      <Dialog open={isConfirmCopyOpen} onOpenChange={setIsConfirmCopyOpen}>
-        <DialogContent className="sm:max-w-md bg-white border border-slate-200 text-slate-800 rounded-2xl p-6 shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-600 animate-pulse" />
-              ต้องการดึงเนื้อหาไปเป็น Prompt หรือไม่?
-            </DialogTitle>
-            <DialogDescription className="text-slate-500 font-medium text-xs mt-1.5 leading-relaxed">
-              ระบบพบเนื้อหาบทความที่คุณเลือก คุณต้องการคัดลอกใจความสำคัญหลักจากบทความไปใช้เป็นคำอธิบายในการ{" "}
-              {copyTargetType === "image" ? "เจนรูปภาพ" : "ค้นหาวิดีโอ"} โดยอัตโนมัติหรือไม่?
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-3 mt-5 justify-end">
-            <Button
-              variant="outline"
-              onClick={() => handleConfirmCopyPrompt(false)}
-              className="border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold rounded-xl h-10 px-4"
-            >
-              ไม่ใช้ (เริ่มใหม่เอง)
-            </Button>
-            <Button
-              onClick={() => handleConfirmCopyPrompt(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl h-10 px-4 shadow-sm"
-            >
-              ใช่ คัดลอกและเริ่ม
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Draft Success Dialog */}
       <Dialog open={isDraftSuccessOpen} onOpenChange={setIsDraftSuccessOpen}>
         <DialogContent className="sm:max-w-md bg-white border border-slate-200 text-slate-800 rounded-3xl p-6 shadow-2xl text-center">
@@ -675,7 +652,7 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
                 บันทึกเข้าคลังแบบร่างเรียบร้อย! 🎉
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
-                คอนเทนต์ถูกเก็บไว้ใน <strong>"คลังแบบร่างรอโพสต์ (Drafts Queue)"</strong> คุณสามารถเปิดดูและคลิกสั่งโพสต์ได้ทุกเมื่อ
+                คอนเทนต์ถูกเก็บไว้ใน <strong>&ldquo;คลังแบบร่างรอโพสต์ (Drafts Queue)&rdquo;</strong> คุณสามารถเปิดดูและคลิกสั่งโพสต์ได้ทุกเมื่อ
               </DialogDescription>
             </div>
             <div className="flex gap-3 pt-3 w-full">
@@ -716,26 +693,28 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
         isOpen={isImageModalOpen}
         onClose={() => {
           setIsImageModalOpen(false);
-          loadStats(); // Reload stats after modal actions
+          void loadStats();
         }}
-        onSelectImage={(url) => {
+        onSelectImage={(url, meta) => {
           setMediaUrl(url);
           setMediaType("image");
+          setMediaMeta(meta ?? null);
         }}
-        initialPrompt={modalInitialPrompt}
+        sourceContent={formats[selectedFormat].trim() || topic.trim()}
       />
 
       <AIVideoStudioModal
         isOpen={isVideoModalOpen}
         onClose={() => {
           setIsVideoModalOpen(false);
-          loadStats(); // Reload stats after modal actions
+          void loadStats();
         }}
-        onSelectVideo={(url) => {
+        onSelectVideo={(url, meta) => {
           setMediaUrl(url);
           setMediaType("video");
+          setMediaMeta(meta ?? null);
         }}
-        initialPrompt={modalInitialPrompt}
+        sourceContent={formats[selectedFormat].trim() || topic.trim()}
       />
     </div>
   );

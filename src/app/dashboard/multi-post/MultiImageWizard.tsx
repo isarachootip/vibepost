@@ -4,15 +4,15 @@ import React, { useState, useRef, useCallback } from "react";
 import { generateAIPost, createScheduledPost } from "@/lib/actions/posts";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import {
   CalendarIcon, Sparkles, Send, CheckCircle2, RefreshCcw,
-  Upload, X, Clock, LayoutTemplate, ArrowLeft, PenTool,
+  Upload, X, LayoutTemplate, ArrowLeft, PenTool,
   GripVertical, Plus, AlertCircle, Images
 } from "lucide-react";
+import { useFutureSchedule } from "@/hooks/use-future-schedule";
+import { ScheduleDateTimePicker } from "@/components/scheduling/ScheduleDateTimePicker";
 
 import { AIImageCreatorModal } from "./AIImageCreatorModal";
 import { AIArticleWriterModal } from "./AIArticleWriterModal";
@@ -56,9 +56,7 @@ export function MultiImageWizard({
   const [variants, setVariants] = useState<string[]>([]);
   const [selectedContent, setSelectedContent] = useState("");
 
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [scheduleHour, setScheduleHour] = useState(String(new Date().getHours()).padStart(2, "0"));
-  const [scheduleMinute, setScheduleMinute] = useState("00");
+  const schedule = useFutureSchedule();
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [scheduledDateTime, setScheduledDateTime] = useState<Date | null>(null);
@@ -67,7 +65,6 @@ export function MultiImageWizard({
   const fileRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const filledSlots = slots.filter(s => s.url !== null);
-  const allUploaded = slots.every(s => s.url !== null);
   const anyUploading = slots.some(s => s.uploading);
 
   // ─── Upload ───
@@ -89,10 +86,11 @@ export function MultiImageWizard({
         next[index] = { ...next[index], url: data.url, uploading: false };
         return next;
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Upload failed";
       setSlots(prev => {
         const next = [...prev];
-        next[index] = { ...next[index], uploading: false, error: e.message };
+        next[index] = { ...next[index], uploading: false, error: msg };
         return next;
       });
     }
@@ -136,12 +134,13 @@ export function MultiImageWizard({
             next[idx] = { ...next[idx], url: data.url, uploading: false };
             return next;
           });
-        } catch (e: any) {
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : "Upload failed";
           setSlots(prev => {
             const idx = prev.findIndex(s => s.file === file);
             if (idx < 0) return prev;
             const next = [...prev];
-            next[idx] = { ...next[idx], uploading: false, error: e.message };
+            next[idx] = { ...next[idx], uploading: false, error: msg };
             return next;
           });
         }
@@ -218,18 +217,13 @@ export function MultiImageWizard({
     if (filledSlots.length === 0) { setError("กรุณาอัปโหลดรูปอย่างน้อย 1 รูป"); return; }
     setError(""); setIsPublishing(true);
 
-    let publishDate: Date;
-    if (isPostNow) {
-      publishDate = new Date();
-    } else {
-      publishDate = date ? new Date(date) : new Date();
-      publishDate.setHours(parseInt(scheduleHour), parseInt(scheduleMinute), 0, 0);
-    }
+    const publishDate = isPostNow ? new Date() : schedule.getScheduledDate();
 
     const imageUrls = filledSlots.map(s => s.url!);
     const res = await createScheduledPost({
       content: selectedContent,
       scheduledTime: isPostNow ? null : publishDate,
+      publishMode: isPostNow ? "NOW" : "SCHEDULE",
       targetConnectionIds: selectedChannels,
       imageUrls,
     });
@@ -549,41 +543,7 @@ export function MultiImageWizard({
                 {/* Scheduling */}
                 <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
                   <h4 className="font-bold text-slate-800 text-sm">📅 กำหนดเวลาเผยแพร่</h4>
-                  <div className="flex flex-col md:flex-row gap-3">
-                    <div className="flex-1">
-                      <label className="text-xs font-bold text-slate-500 mb-1.5 block">📆 วันที่</label>
-                      <Popover>
-                        <PopoverTrigger className={`w-full justify-start text-left font-semibold bg-white border-2 border-slate-200 text-slate-700 hover:bg-slate-50 inline-flex items-center rounded-xl h-11 px-4 ${!date && "text-slate-400"}`}>
-                          <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
-                          {date ? format(date, "d MMM yyyy", { locale: th }) : "เลือกวันที่"}
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 bg-white shadow-xl rounded-xl">
-                          <Calendar mode="single" selected={date} onSelect={setDate} disabled={{ before: new Date() }} className="bg-white rounded-xl" />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <div className="md:w-48">
-                      <label className="text-xs font-bold text-slate-500 mb-1.5 block">🕐 เวลา</label>
-                      <div className="flex items-center gap-2 bg-white border-2 border-slate-200 rounded-xl px-3 h-11">
-                        <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                        <select value={scheduleHour} onChange={e => setScheduleHour(e.target.value)} className="bg-transparent text-slate-700 font-semibold text-sm focus:outline-none flex-1">
-                          {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map(h => (
-                            <option key={h} value={h}>{h}</option>
-                          ))}
-                        </select>
-                        <span className="text-slate-400 font-bold">:</span>
-                        <select value={scheduleMinute} onChange={e => setScheduleMinute(e.target.value)} className="bg-transparent text-slate-700 font-semibold text-sm focus:outline-none flex-1">
-                          {["00", "15", "30", "45"].map(m => <option key={m} value={m}>{m}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {date && (
-                    <div className="text-xs text-slate-500 bg-white border border-slate-100 rounded-lg px-3 py-2">
-                      📌 จะโพสต์วันที่ <span className="font-bold text-slate-700">{format(date, "EEEE d MMMM yyyy", { locale: th })}</span> เวลา <span className="font-bold text-blue-600">{scheduleHour}:{scheduleMinute} น.</span>
-                    </div>
-                  )}
+                  <ScheduleDateTimePicker schedule={schedule} accentColor="blue" />
 
                   {filledSlots.length === 0 && (
                     <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
@@ -666,6 +626,7 @@ export function MultiImageWizard({
                   setVariants([]);
                   setScheduledDateTime(null);
                   setSlots([emptySlot(), emptySlot(), emptySlot(), emptySlot()]);
+                  schedule.resetSchedule();
                 }}
               >
                 สร้าง Album ใหม่
@@ -688,6 +649,7 @@ export function MultiImageWizard({
             });
           }
         }}
+        sourceContent={selectedContent.trim() || topic.trim()}
       />
 
       <AIArticleWriterModal

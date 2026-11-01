@@ -8,6 +8,17 @@ import { existsSync } from "fs";
 import path from "path";
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
+import {
+  generateImageInputSchema,
+  generateVideoInputSchema,
+  type MediaGenerationMetadata,
+} from "@/lib/validations/ai-media.schema";
+import {
+  createWorkspaceLLMRunner,
+  ensureEnglishMediaPrompt,
+} from "@/lib/services/media-translator.service";
+import { inferVideoCategoryFromEnglish } from "@/lib/services/visual-prompt.service";
+import { executeImageGeneration } from "@/lib/services/image-provider.service";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "/app/uploads";
 const PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://vibepost.online";
@@ -212,7 +223,7 @@ async function downloadAndSaveFile(fileUrl: string, extension: string): Promise<
 
 /**
  * Server Action: Generates an image using AI (Gemini, OpenAI, or Pollinations.ai)
- * and saves it locally.
+ * with automatic English Visual Prompt translation & transparent fallback reporting.
  */
 export async function generateAIImageAction(
   prompt: string,
@@ -224,162 +235,102 @@ export async function generateAIImageAction(
     if (!workspace) return { success: false, error: "Workspace not found" };
 
     const role = await getUserWorkspaceRole(workspace.id);
-    if (role === "VIEWER") {
+    if (!role || role === "VIEWER") {
       return { success: false, error: "สิทธิ์ไม่เพียงพอ — Viewer ไม่สามารถสร้างรูปได้" };
     }
 
-    if (!prompt.trim()) {
-      return { success: false, error: "โปรดป้อนรายละเอียดรูปภาพ (Prompt)" };
+    const parsedInput = generateImageInputSchema.safeParse({ prompt, style, provider });
+    if (!parsedInput.success) {
+      return {
+        success: false,
+        error: parsedInput.error.issues[0]?.message ?? "โปรดป้อนรายละเอียดรูปภาพ (Prompt)",
+      };
     }
 
-    // Enhance prompt based on style
-    const enhancedPrompt = `${prompt}, style: ${style}, high resolution, cinematic, stunning details`;
+    const [activeGeminiConfig, activeOpenAIConfig, anyActiveLlmConfig] = await Promise.all([
+      prisma.promptConfig.findFirst({
+        where: { workspaceId: workspace.id, provider: "GEMINI", isActive: true },
+        select: { provider: true, apiKey: true },
+      }),
+      prisma.promptConfig.findFirst({
+        where: { workspaceId: workspace.id, provider: "OPENAI", isActive: true },
+        select: { provider: true, apiKey: true },
+      }),
+      prisma.promptConfig.findFirst({
+        where: { workspaceId: workspace.id, isActive: true },
+        select: { provider: true, apiKey: true },
+      }),
+    ]);
 
-    let generatedImageUrl = "";
-    let finalProvider = provider;
-    let config = null;
-
-    // Check if there is an active GEMINI key in this workspace
-    const activeGeminiConfig = await prisma.promptConfig.findFirst({
-      where: { workspaceId: workspace.id, provider: "GEMINI", isActive: true },
+    // Safety Net: ensure non-Latin / Thai prompt text is translated to accurate English
+    const englishReady = await ensureEnglishMediaPrompt(parsedInput.data.prompt, {
+      llmRunner: createWorkspaceLLMRunner(activeGeminiConfig ?? anyActiveLlmConfig),
     });
 
-    if (provider === "FREE" && activeGeminiConfig) {
-      // Auto-upgrade FREE tier requests to GEMINI if an active key is found in the workspace
-      finalProvider = "GEMINI";
-      config = activeGeminiConfig;
-    } else if (provider !== "FREE") {
-      config = await prisma.promptConfig.findFirst({
-        where: { workspaceId: workspace.id, provider: provider, isActive: true },
-      });
-      if (!config) {
-        // Fallback to FREE if no key is configured
-        finalProvider = "FREE";
-      }
+    if (englishReady.usage) {
+      await recordAIUsage(
+        workspace.id,
+        "ARTICLE",
+        englishReady.usage.provider,
+        englishReady.usage.modelName,
+        englishReady.usage.promptTokens,
+        englishReady.usage.completionTokens,
+        englishReady.usage.totalTokens,
+        englishReady.usage.estimatedCost
+      );
     }
 
-    // Execute provider logic
-    if (finalProvider !== "FREE" && config) {
-      if (finalProvider === "GEMINI") {
-        try {
-          // Imagen 4.0 Fast via Google Gemini API
-          const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${config.apiKey}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                instances: [
-                  { prompt: enhancedPrompt }
-                ],
-                parameters: {
-                  sampleCount: 1,
-                  aspectRatio: "1:1",
-                  outputMimeType: "image/jpeg"
-                }
-              })
-            }
-          );
-          const data = await response.json();
-          if (!response.ok || !data.predictions?.[0]?.bytesBase64Encoded) {
-            throw new Error(data.error?.message || "Gemini Imagen 4.0 API error");
-          }
-          // Gemini returns base64 image bytes
-          const base64Bytes = data.predictions[0].bytesBase64Encoded;
-          
-          // Write to disk directly from base64
+    const genResult = await executeImageGeneration(
+      {
+        englishPrompt: englishReady.englishPrompt,
+        keywords: englishReady.keywords,
+        style: parsedInput.data.style,
+        requestedProvider: parsedInput.data.provider,
+        geminiApiKey: activeGeminiConfig?.apiKey ?? null,
+        openaiApiKey: activeOpenAIConfig?.apiKey ?? null,
+      },
+      {
+        saveBase64Jpg: async (base64Bytes: string) => {
           if (!existsSync(UPLOAD_DIR)) {
             await mkdir(UPLOAD_DIR, { recursive: true });
           }
           const uniqueName = `ai-img-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.jpg`;
           const filePath = path.join(UPLOAD_DIR, uniqueName);
           await writeFile(filePath, Buffer.from(base64Bytes, "base64"));
-          generatedImageUrl = `${PUBLIC_BASE_URL}/api/files/${uniqueName}`;
-
-          // Log Gemini Imagen Usage ($0.03 estimated cost)
-          await recordAIUsage(workspace.id, "IMAGE", "GEMINI", "imagen-4.0-fast-generate-001", 0, 0, 0, 0.03);
-        } catch (e: any) {
-          console.error("Gemini Imagen failed, falling back to Pollinations/LoremFlickr:", e.message);
-          finalProvider = "FREE"; // fallback
-        }
-      } else if (finalProvider === "OPENAI") {
-        try {
-          // DALL-E 3
-          const response = await fetch("https://api.openai.com/v1/images/generations", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${config.apiKey}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              model: "dall-e-3",
-              prompt: enhancedPrompt,
-              n: 1,
-              size: "1024x1024"
-            })
-          });
-          const data = await response.json();
-          if (!response.ok || !data.data?.[0]?.url) {
-            throw new Error(data.error?.message || "DALL-E API error");
-          }
-          generatedImageUrl = await downloadAndSaveFile(data.data[0].url, "jpg");
-
-          // Log OpenAI DALL-E 3 Usage ($0.04 estimated cost)
-          await recordAIUsage(workspace.id, "IMAGE", "OPENAI", "dall-e-3", 0, 0, 0, 0.04);
-        } catch (e: any) {
-          console.error("DALL-E failed, falling back to Pollinations/LoremFlickr:", e.message);
-          finalProvider = "FREE"; // fallback
-        }
+          return `${PUBLIC_BASE_URL}/api/files/${uniqueName}`;
+        },
+        downloadRemoteJpg: (remoteUrl: string) => downloadAndSaveFile(remoteUrl, "jpg"),
       }
-    }
+    );
 
-    // Free stable diffusion fallback (Pollinations.ai / LoremFlickr)
-    if (finalProvider === "FREE" || !generatedImageUrl) {
-      try {
-        const randomSeed = Math.floor(Math.random() * 1000000);
-        const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=1024&height=1024&seed=${randomSeed}&nologo=true&private=true`;
-        
-        generatedImageUrl = await downloadAndSaveFile(pollinationsUrl, "jpg");
-
-        // Log Pollinations Usage ($0.00 cost)
-        await recordAIUsage(workspace.id, "IMAGE", "FREE", "pollinations.ai", 0, 0, 0, 0.00);
-      } catch (e: any) {
-        console.error("Pollinations.ai failed (likely rate-limited), falling back to LoremFlickr:", e.message);
-        
-        // Clean prompt for loremflickr tags (comma-separated keywords)
-        const tags = prompt
-          .toLowerCase()
-          .replace(/[^a-z0-9\s,]/g, "") // Keep only letters, numbers, spaces, and commas
-          .split(/[\s,]+/) // Split by spaces or commas
-          .filter(tag => tag.length > 2 && !["and", "the", "with", "for", "beautiful", "high", "resolution", "style", "photo", "cinematic", "stunning", "details"].includes(tag))
-          .slice(0, 3) // Take up to 3 tags
-          .join(",");
-        
-        const fallbackUrl = `https://loremflickr.com/1024/1024/${tags || "business,marketing"}`;
-        console.log("Downloading fallback image from LoremFlickr URL:", fallbackUrl);
-        generatedImageUrl = await downloadAndSaveFile(fallbackUrl, "jpg");
-
-        // Log LoremFlickr Usage ($0.00 cost)
-        await recordAIUsage(workspace.id, "IMAGE", "FREE", "loremflickr", 0, 0, 0, 0.00);
-      }
-    }
+    await recordAIUsage(
+      workspace.id,
+      "IMAGE",
+      genResult.meta.actualProvider,
+      genResult.meta.actualModel,
+      0,
+      0,
+      0,
+      genResult.estimatedCost
+    );
 
     // Save image to database MediaAsset
     const asset = await prisma.mediaAsset.create({
       data: {
         workspaceId: workspace.id,
-        fileName: generatedImageUrl.split("/").pop() || "ai-image.jpg",
-        fileUrl: generatedImageUrl,
+        fileName: genResult.imageUrl.split("/").pop() || "ai-image.jpg",
+        fileUrl: genResult.imageUrl,
         fileType: "IMAGE",
         status: "APPROVED",
-      }
+      },
     });
 
     revalidatePath("/dashboard/multi-post");
-    return { success: true, asset };
-  } catch (error: any) {
-    console.error("Generate AI Image Action Error:", error);
-    return { success: false, error: error.message };
+    return { success: true, asset, meta: genResult.meta };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "ไม่สามารถสร้างรูปภาพได้";
+    console.error("Generate AI Image Action Error:", message);
+    return { success: false, error: message };
   }
 }
 
@@ -427,24 +378,55 @@ export async function generateAIVideoAction(prompt: string, category: string = "
     if (!workspace) return { success: false, error: "Workspace not found" };
 
     const role = await getUserWorkspaceRole(workspace.id);
-    if (role === "VIEWER") {
+    if (!role || role === "VIEWER") {
       return { success: false, error: "สิทธิ์ไม่เพียงพอ — Viewer ไม่สามารถสร้างวิดีโอได้" };
     }
 
-    if (!prompt.trim()) {
-      return { success: false, error: "โปรดระบุรายละเอียดวิดีโอหรือคีย์เวิร์ด" };
+    const parsedInput = generateVideoInputSchema.safeParse({ prompt, category });
+    if (!parsedInput.success) {
+      return {
+        success: false,
+        error: parsedInput.error.issues[0]?.message ?? "โปรดระบุรายละเอียดวิดีโอหรือคีย์เวิร์ด",
+      };
     }
 
-    // ── Check if there is an active GEMINI, KLING, or LUMA API config ──
-    const activeGeminiConfig = await prisma.promptConfig.findFirst({
-      where: { workspaceId: workspace.id, provider: "GEMINI", isActive: true },
+    // ── Check if there is an active GEMINI, KLING, LUMA, or general LLM API config ──
+    const [activeGeminiConfig, activeLumaConfig, activeKlingConfig, anyLlmConfig] =
+      await Promise.all([
+        prisma.promptConfig.findFirst({
+          where: { workspaceId: workspace.id, provider: "GEMINI", isActive: true },
+        }),
+        prisma.promptConfig.findFirst({
+          where: { workspaceId: workspace.id, provider: "LUMA", isActive: true },
+        }),
+        prisma.promptConfig.findFirst({
+          where: { workspaceId: workspace.id, provider: "KLING", isActive: true },
+        }),
+        prisma.promptConfig.findFirst({
+          where: { workspaceId: workspace.id, isActive: true },
+          select: { provider: true, apiKey: true },
+        }),
+      ]);
+
+    const englishReady = await ensureEnglishMediaPrompt(parsedInput.data.prompt, {
+      llmRunner: createWorkspaceLLMRunner(activeGeminiConfig ?? anyLlmConfig),
     });
-    const activeLumaConfig = await prisma.promptConfig.findFirst({
-      where: { workspaceId: workspace.id, provider: "LUMA", isActive: true },
-    });
-    const activeKlingConfig = await prisma.promptConfig.findFirst({
-      where: { workspaceId: workspace.id, provider: "KLING", isActive: true },
-    });
+
+    if (englishReady.usage) {
+      await recordAIUsage(
+        workspace.id,
+        "ARTICLE",
+        englishReady.usage.provider,
+        englishReady.usage.modelName,
+        englishReady.usage.promptTokens,
+        englishReady.usage.completionTokens,
+        englishReady.usage.totalTokens,
+        englishReady.usage.estimatedCost
+      );
+    }
+
+    const resolvedPrompt = englishReady.englishPrompt;
+    const fallbackReasons: string[] = [];
 
     let generatedVideoUrl = "";
     let finalProvider = "FREE";
@@ -465,7 +447,7 @@ export async function generateAIVideoAction(prompt: string, category: string = "
             body: JSON.stringify({
               instances: [
                 {
-                  prompt: prompt
+                  prompt: resolvedPrompt
                 }
               ],
               parameters: {
@@ -525,8 +507,10 @@ export async function generateAIVideoAction(prompt: string, category: string = "
         finalProvider = "GEMINI";
         finalModel = "veo-2.0-generate-video";
         estimatedCost = 0.10; // Estimated cost in USD
-      } catch (err: any) {
-        console.error("Google Veo Video Generation failed, falling back:", err.message);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Veo error";
+        console.error("Google Veo Video Generation failed, falling back:", msg);
+        fallbackReasons.push("Google Veo ไม่สามารถใช้งานได้ จึงสลับไปใช้วิดีโอสำรอง");
       }
     }
 
@@ -541,7 +525,7 @@ export async function generateAIVideoAction(prompt: string, category: string = "
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            prompt: prompt,
+            prompt: resolvedPrompt,
             aspect_ratio: "1:1"
           })
         });
@@ -585,8 +569,10 @@ export async function generateAIVideoAction(prompt: string, category: string = "
         finalProvider = "LUMA";
         finalModel = "dream-machine-v1";
         estimatedCost = 0.15; // Estimated cost in USD
-      } catch (err: any) {
-        console.error("Luma Video Generation failed, falling back to stock:", err.message);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Luma error";
+        console.error("Luma Video Generation failed, falling back to stock:", msg);
+        fallbackReasons.push("Luma Dream Machine ไม่สามารถใช้งานได้ จึงสลับไปใช้วิดีโอสำรอง");
       }
     }
 
@@ -608,7 +594,7 @@ export async function generateAIVideoAction(prompt: string, category: string = "
           },
           body: JSON.stringify({
             model_name: "kling-v2-6",
-            prompt: prompt,
+            prompt: resolvedPrompt,
             duration: "5"
           })
         });
@@ -653,28 +639,30 @@ export async function generateAIVideoAction(prompt: string, category: string = "
         finalProvider = "KLING";
         finalModel = "kling-v2-6";
         estimatedCost = 0.12; // Estimated cost in USD
-      } catch (err: any) {
-        console.error("Kling Video Generation failed, falling back to stock:", err.message);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Kling error";
+        console.error("Kling Video Generation failed, falling back to stock:", msg);
+        fallbackReasons.push("Kling AI ไม่สามารถใช้งานได้ จึงสลับไปใช้วิดีโอสำรอง");
       }
     }
 
-    // 3. Fallback to Curated stock videos from Pexels if no AI succeeded
+    // 4. Fallback to Curated stock videos from Pexels using English keywords & inferred category
     if (!generatedVideoUrl) {
-      console.log("No AI Video configuration active or generation failed. Falling back to Stock Video.");
-      const searchTerms = prompt.toLowerCase();
-      
-      let matchedVideos = CURATED_VIDEOS.filter(video => {
+      const searchTerms = `${resolvedPrompt} ${englishReady.keywords.join(" ")}`.toLowerCase();
+      const inferredCategory =
+        parsedInput.data.category !== "trending" && parsedInput.data.category !== "custom"
+          ? parsedInput.data.category.toLowerCase()
+          : inferVideoCategoryFromEnglish(resolvedPrompt);
+
+      let matchedVideos = CURATED_VIDEOS.filter((video) => {
+        if (video.title.toLowerCase() === parsedInput.data.prompt.toLowerCase()) return true;
         if (searchTerms.includes(video.category)) return true;
-        return video.tags.some(tag => searchTerms.includes(tag));
+        return video.tags.some((tag) => searchTerms.includes(tag));
       });
 
       if (matchedVideos.length === 0) {
-        const categoryMatch = CURATED_VIDEOS.filter(v => v.category === category.toLowerCase());
-        if (categoryMatch.length > 0) {
-          matchedVideos = categoryMatch;
-        } else {
-          matchedVideos = CURATED_VIDEOS;
-        }
+        const categoryMatch = CURATED_VIDEOS.filter((v) => v.category === inferredCategory);
+        matchedVideos = categoryMatch.length > 0 ? categoryMatch : CURATED_VIDEOS;
       }
 
       const selectedVideo = matchedVideos[Math.floor(Math.random() * matchedVideos.length)];
@@ -701,11 +689,28 @@ export async function generateAIVideoAction(prompt: string, category: string = "
     // Log video usage in billing logs
     await recordAIUsage(workspace.id, "VIDEO", finalProvider, finalModel, 0, 0, 0, estimatedCost);
 
+    const meta: MediaGenerationMetadata = {
+      resolvedEnglishPrompt: resolvedPrompt,
+      keywords: englishReady.keywords,
+      requestedProvider: activeGeminiConfig
+        ? "GEMINI"
+        : activeLumaConfig
+          ? "LUMA"
+          : activeKlingConfig
+            ? "KLING"
+            : "FREE",
+      actualProvider: finalProvider,
+      actualModel: finalModel,
+      usedFallback: finalProvider === "FREE" && fallbackReasons.length > 0,
+      fallbackReason: fallbackReasons[0],
+    };
+
     revalidatePath("/dashboard/multi-post");
-    return { success: true, asset };
-  } catch (error: any) {
-    console.error("Generate AI Video Action Error:", error);
-    return { success: false, error: error.message };
+    return { success: true, asset, meta };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "ไม่สามารถสร้างวิดีโอได้";
+    console.error("Generate AI Video Action Error:", message);
+    return { success: false, error: message };
   }
 }
 

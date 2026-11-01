@@ -12,17 +12,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import {
   CalendarIcon,
-  Clock,
   Send,
-  Sparkles,
   CheckCircle2,
-  Share2,
   Film,
   Image as ImageIcon,
   Loader2,
@@ -31,6 +26,8 @@ import {
   Globe,
 } from "lucide-react";
 import { createScheduledPost } from "@/lib/actions/posts";
+import { useFutureSchedule } from "@/hooks/use-future-schedule";
+import { ScheduleDateTimePicker } from "@/components/scheduling/ScheduleDateTimePicker";
 
 type Connection = {
   id: string;
@@ -64,29 +61,26 @@ export function StudioAutoPostModal({
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
   const [publishMode, setPublishMode] = useState<"instant" | "scheduled">("instant");
 
-  // Date and Time state
-  const [scheduleDate, setScheduleDate] = useState<Date | undefined>(new Date());
-  const [scheduleHour, setScheduleHour] = useState(
-    String(new Date().getHours()).padStart(2, "0")
-  );
-  const [scheduleMinute, setScheduleMinute] = useState("00");
+  const schedule = useFutureSchedule();
+  const { resetSchedule } = schedule;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [scheduledResultTime, setScheduledResultTime] = useState<Date | null>(null);
 
-  // Sync content and select active channels on open
+  // Sync content, refresh future schedule slot, and select active channels on open
   useEffect(() => {
     if (isOpen) {
       setPostContent(content);
       setError("");
       setSuccess(false);
+      resetSchedule();
       if (connections.length > 0) {
         setSelectedChannels(connections.filter((c) => c.isActive).map((c) => c.id));
       }
     }
-  }, [isOpen, content, connections]);
+  }, [isOpen, content, connections, resetSchedule]);
 
   const toggleChannel = (id: string) => {
     setSelectedChannels((prev) =>
@@ -116,17 +110,13 @@ export function StudioAutoPostModal({
     setIsSubmitting(true);
 
     try {
-      let targetDate: Date;
-      if (publishMode === "instant") {
-        targetDate = new Date();
-      } else {
-        targetDate = scheduleDate ? new Date(scheduleDate) : new Date();
-        targetDate.setHours(parseInt(scheduleHour), parseInt(scheduleMinute), 0, 0);
-      }
+      const isInstant = publishMode === "instant";
+      const targetDate = isInstant ? new Date() : schedule.getScheduledDate();
 
       const res = await createScheduledPost({
         content: postContent,
-        scheduledTime: targetDate,
+        scheduledTime: isInstant ? null : targetDate,
+        publishMode: isInstant ? "NOW" : "SCHEDULE",
         targetConnectionIds: selectedChannels,
         imageUrl: mediaUrl || undefined,
       });
@@ -137,8 +127,8 @@ export function StudioAutoPostModal({
       } else {
         setError(res.error || "เกิดข้อผิดพลาดในการบันทึกโพสต์");
       }
-    } catch (err: any) {
-      setError(err.message || "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     } finally {
       setIsSubmitting(false);
     }
@@ -385,82 +375,14 @@ export function StudioAutoPostModal({
 
                     {/* Schedule Date & Time Controls */}
                     {publishMode === "scheduled" && (
-                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 animate-in fade-in">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase">
-                              📆 วันที่ต้องการส่ง
-                            </label>
-                            <Popover>
-                              <PopoverTrigger
-                                className="w-full justify-start text-left font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl h-10 px-3 text-xs inline-flex items-center shadow-xs"
-                              >
-                                <CalendarIcon className="mr-2 h-3.5 w-3.5 text-slate-400" />
-                                {scheduleDate ? (
-                                  format(scheduleDate, "d MMM yyyy", { locale: th })
-                                ) : (
-                                  <span>เลือกวันที่</span>
-                                )}
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0 bg-white border-slate-200 text-slate-800 shadow-xl rounded-2xl">
-                                <Calendar
-                                  mode="single"
-                                  selected={scheduleDate}
-                                  onSelect={setScheduleDate}
-                                  disabled={{ before: new Date() }}
-                                  className="bg-white text-slate-800 rounded-2xl"
-                                />
-                              </PopoverContent>
-                            </Popover>
-                          </div>
-
-                          <div>
-                            <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase">
-                              🕐 เวลาที่โพสต์
-                            </label>
-                            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl px-2.5 h-10 shadow-xs">
-                              <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <select
-                                value={scheduleHour}
-                                onChange={(e) => setScheduleHour(e.target.value)}
-                                className="bg-transparent text-slate-700 font-bold text-xs focus:outline-none flex-1"
-                              >
-                                {Array.from({ length: 24 }, (_, i) =>
-                                  String(i).padStart(2, "0")
-                                ).map((h) => (
-                                  <option key={h} value={h}>
-                                    {h}
-                                  </option>
-                                ))}
-                              </select>
-                              <span className="text-slate-400 font-bold text-xs">:</span>
-                              <select
-                                value={scheduleMinute}
-                                onChange={(e) => setScheduleMinute(e.target.value)}
-                                className="bg-transparent text-slate-700 font-bold text-xs focus:outline-none flex-1"
-                              >
-                                {["00", "15", "30", "45"].map((m) => (
-                                  <option key={m} value={m}>
-                                    {m}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-
-                        {scheduleDate && (
-                          <div className="text-[11px] text-purple-700 bg-purple-50/70 border border-purple-100 rounded-xl p-2.5 font-semibold">
-                            📌 โพสต์จะถูกเผยแพร่อัตโนมัติวันที่{" "}
-                            <span className="font-black text-purple-900">
-                              {format(scheduleDate, "EEEE d MMMM yyyy", { locale: th })}
-                            </span>{" "}
-                            เวลา{" "}
-                            <span className="font-black text-purple-900">
-                              {scheduleHour}:{scheduleMinute} น.
-                            </span>
-                          </div>
-                        )}
+                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl animate-in fade-in">
+                        <ScheduleDateTimePicker
+                          schedule={schedule}
+                          accentColor="purple"
+                          compact
+                          dateLabel="📆 วันที่ต้องการส่ง"
+                          timeLabel="🕐 เวลาที่โพสต์"
+                        />
                       </div>
                     )}
                   </div>

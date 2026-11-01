@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef } from "react";
 import { generateAIPost, createScheduledPost } from "@/lib/actions/posts";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, addMinutes } from "date-fns";
 import { th } from "date-fns/locale";
 import {
   CalendarIcon, Sparkles, Send, CheckCircle2, RefreshCcw,
-  Upload, X, Clock, ArrowLeft, GripVertical, Plus, PenTool,
+  Upload, X, ArrowLeft, GripVertical, Plus, PenTool,
   AlertCircle, List
 } from "lucide-react";
+import { useFutureSchedule } from "@/hooks/use-future-schedule";
+import { ScheduleDateTimePicker } from "@/components/scheduling/ScheduleDateTimePicker";
 import { AIImageCreatorModal } from "./AIImageCreatorModal";
 import { AIArticleWriterModal } from "./AIArticleWriterModal";
 
@@ -82,9 +82,7 @@ export function SequentialPostWizard({
   const [captionMode, setCaptionMode] = useState<"shared" | "individual">("shared");
 
   // Schedule
-  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
-  const [scheduleHour, setScheduleHour] = useState(String(new Date().getHours()).padStart(2, "0"));
-  const [scheduleMinute, setScheduleMinute] = useState("00");
+  const schedule = useFutureSchedule();
 
   // Publish
   const [isPublishing, setIsPublishing] = useState(false);
@@ -97,22 +95,6 @@ export function SequentialPostWizard({
   const fileRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // ─── Upload ───
-  const uploadFile = useCallback(async (slot: ImageSlot, file: File): Promise<ImageSlot> => {
-    const preview = URL.createObjectURL(file);
-    const updating: ImageSlot = { ...slot, file, preview, uploading: true, error: "" };
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (!res.ok || !data.url) throw new Error(data.error || "Upload failed");
-      return { ...updating, url: data.url, uploading: false };
-    } catch (e: any) {
-      return { ...updating, uploading: false, error: e.message };
-    }
-  }, []);
-
   const handleFileSelect = async (index: number, file: File) => {
     const preview = URL.createObjectURL(file);
     setSlots(prev => {
@@ -132,10 +114,11 @@ export function SequentialPostWizard({
         next[index] = { ...next[index], url: data.url, uploading: false };
         return next;
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Upload failed";
       setSlots(prev => {
         const next = [...prev];
-        next[index] = { ...next[index], uploading: false, error: e.message };
+        next[index] = { ...next[index], uploading: false, error: msg };
         return next;
       });
     }
@@ -182,12 +165,13 @@ export function SequentialPostWizard({
             next[idx] = { ...next[idx], url: data.url, uploading: false };
             return next;
           });
-        } catch (e: any) {
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : "Upload failed";
           setSlots(prev => {
             const idx = prev.findIndex(s => s.file === file);
             if (idx < 0) return prev;
             const next = [...prev];
-            next[idx] = { ...next[idx], uploading: false, error: e.message };
+            next[idx] = { ...next[idx], uploading: false, error: msg };
             return next;
           });
         }
@@ -286,24 +270,20 @@ export function SequentialPostWizard({
     setError("");
     setIsPublishing(true);
 
-    let baseDate: Date;
-    if (isPostNow) {
-      baseDate = new Date();
-    } else {
-      baseDate = startDate ? new Date(startDate) : new Date();
-      baseDate.setHours(parseInt(scheduleHour), parseInt(scheduleMinute), 0, 0);
-    }
+    const baseDate = isPostNow ? new Date() : schedule.getScheduledDate();
 
     const results: { success: boolean; error?: string }[] = [];
 
     for (let i = 0; i < filledSlots.length; i++) {
       const slot = filledSlots[i];
+      const isImmediateSlot = isPostNow && (intervalMinutes === 0 || i === 0);
       const postTime = getPostTime(i, baseDate);
       const caption = captionMode === "individual" ? (slot.caption || sharedCaption) : sharedCaption;
 
       const res = await createScheduledPost({
         content: caption,
-        scheduledTime: isPostNow && intervalMinutes === 0 ? null : postTime,
+        scheduledTime: isImmediateSlot ? null : postTime,
+        publishMode: isImmediateSlot ? "NOW" : "SCHEDULE",
         targetConnectionIds: selectedChannels,
         imageUrls: slot.url ? [slot.url] : [],
       });
@@ -432,17 +412,10 @@ export function SequentialPostWizard({
                           <AlertCircle className="w-3 h-3" /> {slot.error}
                         </p>
                       )}
-                      {slot.url && intervalMinutes > 0 && startDate && (
+                      {slot.url && intervalMinutes > 0 && (
                         <p className="text-xs text-slate-400 mt-0.5">
                           🕐 {format(
-                            addMinutes(
-                              (() => {
-                                const d = new Date(startDate);
-                                d.setHours(parseInt(scheduleHour), parseInt(scheduleMinute), 0, 0);
-                                return d;
-                              })(),
-                              idx * intervalMinutes
-                            ),
+                            addMinutes(schedule.getScheduledDate(), idx * intervalMinutes),
                             "d MMM HH:mm",
                             { locale: th }
                           )} น.
@@ -550,33 +523,12 @@ export function SequentialPostWizard({
             {intervalMinutes > 0 && (
               <div>
                 <label className="text-sm font-bold text-slate-700 mb-3 block">📅 เวลาเริ่มโพสต์แรก</label>
-                <div className="flex flex-col md:flex-row gap-3">
-                  <div className="flex-1">
-                    <Popover>
-                      <PopoverTrigger className={`w-full justify-start text-left font-semibold bg-white border-2 border-slate-200 text-slate-700 hover:bg-slate-50 inline-flex items-center rounded-xl h-11 px-4 ${!startDate && "text-slate-400"}`}>
-                        <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
-                        {startDate ? format(startDate, "d MMM yyyy", { locale: th }) : "เลือกวันที่"}
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 bg-white shadow-xl rounded-xl">
-                        <Calendar mode="single" selected={startDate} onSelect={setStartDate} disabled={{ before: new Date() }} className="bg-white rounded-xl" />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="md:w-48">
-                    <div className="flex items-center gap-2 bg-white border-2 border-slate-200 rounded-xl px-3 h-11">
-                      <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                      <select value={scheduleHour} onChange={e => setScheduleHour(e.target.value)} className="bg-transparent text-slate-700 font-semibold text-sm focus:outline-none flex-1">
-                        {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map(h => (
-                          <option key={h} value={h}>{h}</option>
-                        ))}
-                      </select>
-                      <span className="text-slate-400 font-bold">:</span>
-                      <select value={scheduleMinute} onChange={e => setScheduleMinute(e.target.value)} className="bg-transparent text-slate-700 font-semibold text-sm focus:outline-none flex-1">
-                        {["00", "15", "30", "45"].map(m => <option key={m} value={m}>{m}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                </div>
+                <ScheduleDateTimePicker
+                  schedule={schedule}
+                  accentColor="orange"
+                  showLabels={false}
+                  showPreview={false}
+                />
               </div>
             )}
 
@@ -692,17 +644,22 @@ export function SequentialPostWizard({
               </div>
             )}
 
+            {/* Schedule Start Time Picker */}
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+              <h4 className="font-bold text-slate-800 text-sm">⏰ เวลาเริ่มตั้งโพสต์ (สำหรับปุ่ม Schedule)</h4>
+              <ScheduleDateTimePicker
+                schedule={schedule}
+                accentColor="orange"
+                showPreview={intervalMinutes === 0}
+              />
+            </div>
+
             {/* Timeline Preview */}
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
-              <h4 className="font-bold text-slate-800 text-sm mb-3">📅 Timeline การโพสต์</h4>
+              <h4 className="font-bold text-slate-800 text-sm mb-3">📅 Timeline การโพสต์ (เมื่อกด Schedule)</h4>
               <div className="space-y-2">
                 {filledSlots.map((slot, idx) => {
-                  const postTime = (() => {
-                    if (intervalMinutes === 0) return null;
-                    const d = startDate ? new Date(startDate) : new Date();
-                    d.setHours(parseInt(scheduleHour), parseInt(scheduleMinute), 0, 0);
-                    return addMinutes(d, idx * intervalMinutes);
-                  })();
+                  const postTime = addMinutes(schedule.getScheduledDate(), idx * intervalMinutes);
                   return (
                     <div key={slot.id} className="flex items-center gap-3">
                       <div className="w-6 h-6 rounded-full bg-orange-100 text-orange-700 text-xs font-black flex items-center justify-center shrink-0">
@@ -715,9 +672,7 @@ export function SequentialPostWizard({
                       <div className="flex-1">
                         <p className="text-xs font-bold text-slate-700">Post {idx + 1}</p>
                         <p className="text-xs text-slate-500">
-                          {postTime
-                            ? format(postTime, "EEEE d MMM yyyy HH:mm", { locale: th }) + " น."
-                            : "โพสต์ทันที"}
+                          {format(postTime, "EEEE d MMM yyyy HH:mm", { locale: th })} น.
                         </p>
                       </div>
                     </div>
@@ -794,6 +749,7 @@ export function SequentialPostWizard({
                   setTopic("");
                   setSharedCaption("");
                   setSlots([makeSlot(), makeSlot()]);
+                  schedule.resetSchedule();
                 }}
               >
                 สร้าง Sequential ใหม่
@@ -816,6 +772,7 @@ export function SequentialPostWizard({
             });
           }
         }}
+        sourceContent={sharedCaption.trim() || topic.trim()}
       />
 
       <AIArticleWriterModal
