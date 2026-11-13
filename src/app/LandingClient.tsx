@@ -2,683 +2,86 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { LandingNav } from "@/components/landing/LandingNav";
+import { LandingHero } from "@/components/landing/LandingHero";
+import { LandingGalleryCard } from "@/components/landing/LandingGalleryCard";
+import {
+  getDemoPosts,
+  LANDING_COPY,
+  type LandingLang,
+  type LandingPost,
+} from "@/components/landing/landing-types";
 
-const PLATFORM_CONFIG: Record<
-  string,
-  { label: string; color: string; bg: string; icon: React.ReactNode }
-> = {
-  FACEBOOK: {
-    label: "Facebook",
-    color: "#fff",
-    bg: "#1877F2",
-    icon: (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-      </svg>
-    ),
-  },
-  INSTAGRAM: {
-    label: "Instagram",
-    color: "#fff",
-    bg: "linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)",
-    icon: (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-        <circle cx="12" cy="12" r="4" />
-        <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none" />
-      </svg>
-    ),
-  },
-  TWITTER: {
-    label: "X / Twitter",
-    color: "#fff",
-    bg: "#000",
-    icon: (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-      </svg>
-    ),
-  },
-  LINKEDIN: {
-    label: "LinkedIn",
-    color: "#fff",
-    bg: "#0A66C2",
-    icon: (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-        <rect x="2" y="9" width="4" height="12" />
-        <circle cx="4" cy="4" r="2" />
-      </svg>
-    ),
-  },
-  LINE: {
-    label: "LINE",
-    color: "#fff",
-    bg: "#00C300",
-    icon: (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M24 10.3c0-4.4-4.5-8-10.1-8C8.3 2.3 3.8 5.9 3.8 10.3c0 3.9 3.2 7.2 7.7 7.9-.3 1.1-.9 2.7-.9 2.8-.1.3.1.5.3.6.1 0 .2.1.3.1.2 0 .4-.1.6-.2 1.2-.8 6.4-3.8 8.4-6 1.7-1.3 2.8-3.1 2.8-5.2z"/>
-      </svg>
-    ),
-  },
-  TIKTOK: {
-    label: "TikTok",
-    color: "#fff",
-    bg: "#000",
-    icon: (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12.5 0v16.1c0 2.2-1.8 3.9-3.9 3.9s-3.9-1.8-3.9-3.9 1.8-3.9 3.9-3.9v-3c-3.9 0-7 3.1-7 7s3.1 7 7 7 7-3.1 7-7V4.3c2.4 1.8 5.5 2 6.4 2v-3c-1.5 0-4.3-.4-6.5-2.3z"/>
-      </svg>
-    ),
-  }
-};
-
-function formatDate(date: Date | null, lang: string): string {
-  if (!date) return "—";
-  return new Intl.DateTimeFormat(lang === "th" ? "th-TH" : lang === "cn" ? "zh-CN" : "en-US", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(date));
+interface LandingClientProps {
+  dbPosts: LandingPost[];
+  initialTotal: number;
+  initialChannels: number;
 }
 
-function getPostUrl(platform: string, externalId: string | null | undefined): string | null {
-  if (!externalId) return null;
-  if (platform === "FACEBOOK") {
-    if (externalId.includes("_")) {
-      const parts = externalId.split("_");
-      return `https://facebook.com/${parts[0]}/posts/${parts[1]}`;
-    }
-    return `https://facebook.com/${externalId}`;
-  }
-  return null;
-}
+export default function LandingClient({
+  dbPosts,
+  initialTotal,
+  initialChannels,
+}: LandingClientProps) {
+  const [lang, setLang] = useState<LandingLang>("th");
+  const copy = LANDING_COPY[lang];
 
-const TRANSLATIONS = {
-  th: {
-    gallery: "ผลงานการโพสต์อัตโนมัติทุก Channel",
-    desc: "รวมภาพและเนื้อหาที่ระบบ VibePost ได้ส่งออกไปยัง Social Media ทุกช่องทางสำเร็จแล้ว อัปเดตแบบ Real-time",
-    totalPosts: "โพสต์ทั้งหมด",
-    platforms: "แพลตฟอร์ม",
-    success: "การส่งออกสำเร็จ",
-    channels: "ช่องทาง:",
-    latest: "Gallery โพสต์ล่าสุด",
-    login: "เข้าสู่ระบบ",
-    items: "รายการ",
-    mock1: "ตื่นเต้นมากที่จะประกาศฟีเจอร์ใหม่ที่กำลังจะเปิดตัว! 🚀 ทีมงานของเราทำงานอย่างหนักเพื่อมอบประสบการณ์ที่ดีที่สุดให้กับคุณ รอติดตามอัปเดตเพิ่มเติมได้เลย #TechUpdate #Innovation",
-    mock2: "สุขสันต์วันศุกร์ทุกคน! วันหยุดสุดสัปดาห์นี้มีแผนจะทำอะไรกันบ้าง? 🎉 บอกเราในคอมเมนต์ด้านล่างได้เลย!",
-    mock3: "รู้หรือไม่? การโพสต์สม่ำเสมอสามารถเพิ่มการมีส่วนร่วมได้กว่า 300% เริ่มอัตโนมัติเวิร์กโฟลว์ของคุณตั้งแต่วันนี้เลย! 💡",
-  },
-  en: {
-    gallery: "Auto-Post Gallery Across All Channels",
-    desc: "A real-time collection of images and content successfully exported to all Social Media platforms by VibePost.",
-    totalPosts: "Total Posts",
-    platforms: "Platforms",
-    success: "Successful Exports",
-    channels: "Channels:",
-    latest: "Latest Posts Gallery",
-    login: "Login",
-    items: "Items",
-    mock1: "Excited to announce our upcoming feature release! 🚀 Our team has been working hard to bring you the best experience. Stay tuned for more updates. #TechUpdate #Innovation",
-    mock2: "Happy Friday everyone! What are your plans for the weekend? 🎉 Let us know in the comments below!",
-    mock3: "Did you know? Consistent posting can increase your engagement by over 300%. Start automating your workflow today! 💡",
-  },
-  cn: {
-    gallery: "全渠道自动发布作品集",
-    desc: "实时汇总 VibePost 成功发布到各大社交媒体平台的图片与内容。",
-    totalPosts: "总发帖数",
-    platforms: "平台",
-    success: "发布成功",
-    channels: "渠道:",
-    latest: "最新帖子作品集",
-    login: "登录",
-    items: "项目",
-    mock1: "很高兴宣布我们即将推出的新功能！🚀 我们的团队一直在努力为您带来最佳体验。敬请期待更多更新。#TechUpdate #Innovation",
-    mock2: "大家周五快乐！你周末有什么计划？🎉 请在下面的评论中告诉我们！",
-    mock3: "你知道吗？持续发帖可以将您的参与度提高 300% 以上。今天就开始自动化您的工作流程吧！💡",
-  }
-};
-
-export default function LandingClient({ dbPosts, initialTotal, initialChannels }: any) {
-  const [lang, setLang] = useState<"th" | "en" | "cn">("th");
-  const t = TRANSLATIONS[lang];
-
-  // If no DB posts, show beautiful Mockup Data
   const isDemo = dbPosts.length === 0;
-  
-  const posts = isDemo ? [
-    {
-      id: "demo-1",
-      content: t.mock1,
-      publishedTime: new Date(Date.now() - 1000 * 60 * 30),
-      channels: [
-        { platform: "FACEBOOK", accountName: "VibePost Brand" },
-        { platform: "INSTAGRAM", accountName: "@vibepost" }
-      ],
-      images: [{ url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=600&auto=format&fit=crop", fileName: "feature.jpg" }]
-    },
-    {
-      id: "demo-2",
-      content: t.mock2,
-      publishedTime: new Date(Date.now() - 1000 * 60 * 60 * 24),
-      channels: [
-        { platform: "TWITTER", accountName: "@vibepost" },
-        { platform: "LINKEDIN", accountName: "VibePost Inc." }
-      ],
-      images: [{ url: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=600&auto=format&fit=crop", fileName: "weekend.jpg" }]
-    },
-    {
-      id: "demo-3",
-      content: t.mock3,
-      publishedTime: new Date(Date.now() - 1000 * 60 * 60 * 48),
-      channels: [
-        { platform: "FACEBOOK", accountName: "VibePost Brand" },
-        { platform: "TWITTER", accountName: "@vibepost" },
-        { platform: "LINKEDIN", accountName: "VibePost Inc." }
-      ],
-      images: []
-    },
-    {
-      id: "demo-4",
-      content: lang === "en" ? "Check out our latest product demo! The new UI makes managing multiple brands a breeze. Watch till the end for a surprise! 🎬🔥" : lang === "cn" ? "来看看我们最新的产品演示！全新的用户界面让管理多个品牌变得轻而易举。看到最后有惊喜！🎬🔥" : "มาดูวีดีโอสาธิตผลิตภัณฑ์ล่าสุดของเรา! UI ใหม่ช่วยให้การจัดการหลายแบรนด์เป็นเรื่องง่าย ดูให้จบมีเซอร์ไพรส์! 🎬🔥",
-      publishedTime: new Date(Date.now() - 1000 * 60 * 60 * 72),
-      channels: [
-        { platform: "FACEBOOK", accountName: "VibePost Brand" },
-        { platform: "INSTAGRAM", accountName: "@vibepost" }
-      ],
-      images: [{ url: "https://videos.pexels.com/video-files/3129957/3129957-hd_1920_1080_25fps.mp4", fileName: "demo_video.mp4", type: "video" }]
-    }
-  ] : dbPosts;
-
-  const totalPosts = isDemo ? 4 : initialTotal;
+  const posts = isDemo ? getDemoPosts(lang) : dbPosts;
+  const totalPosts = isDemo ? posts.length : initialTotal;
   const totalChannels = isDemo ? 4 : initialChannels;
-  const totalSuccess = isDemo ? 9 : posts.reduce((sum: number, p: any) => sum + p.channels.length, 0);
+  const totalSuccess = isDemo
+    ? 9
+    : posts.reduce((sum, post) => sum + post.channels.length, 0);
 
   const uniquePlatforms = [
-    ...new Set(posts.flatMap((p: any) => p.channels.map((c: any) => c.platform))),
+    ...new Set(posts.flatMap((post) => post.channels.map((ch) => ch.platform))),
   ];
 
   return (
-    <>
-      <style>{`
-        :root {
-          --primary: #dc2626; /* red-600 */
-          --primary-dark: #b91c1c; /* red-700 */
-          --primary-light: #ef4444; /* red-500 */
-          --primary-glow: rgba(220, 38, 38, 0.1);
-          --accent: #f87171; /* red-400 */
-          --bg: #ffffff;
-          --card-bg: #ffffff;
-          --border: #e2e8f0; /* slate-200 */
-          --text-primary: #0f172a; /* slate-900 */
-          --text-secondary: #475569; /* slate-600 */
-          --text-muted: #64748b; /* slate-500 */
-          --radius: 16px;
-          --radius-sm: 8px;
-          --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-          --transition: all 0.3s ease;
-        }
+    <div className="min-h-screen flex flex-col bg-[var(--sheet)] text-foreground">
+      <LandingNav lang={lang} onChangeLang={setLang} loginLabel={copy.login} />
 
-        .lp-body {
-          font-family: 'Noto Sans Thai','Inter',sans-serif;
-          background: var(--bg);
-          color: var(--text-primary);
-          min-height: 100vh;
-          position: relative;
-          overflow-x: hidden;
-        }
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-10 sm:space-y-12">
+        <LandingHero
+          copy={copy}
+          isDemo={isDemo}
+          totalPosts={totalPosts}
+          totalChannels={totalChannels}
+          totalSuccess={totalSuccess}
+          uniquePlatforms={uniquePlatforms}
+        />
 
-        .lp-body::before {
-          content: ''; position: fixed; top: -10%; left: -10%; width: 50%; height: 50%;
-          background: radial-gradient(ellipse, rgba(220,38,38,0.05) 0%, transparent 65%);
-          pointer-events: none; z-index: 0; filter: blur(100px);
-        }
-        .lp-body::after {
-          content: ''; position: fixed; bottom: -10%; right: -10%; width: 50%; height: 50%;
-          background: radial-gradient(ellipse, rgba(15,23,42,0.03) 0%, transparent 65%);
-          pointer-events: none; z-index: 0; filter: blur(120px);
-        }
-
-        .lp-content { position: relative; z-index: 1; }
-
-        .lp-nav {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 18px 40px; background: rgba(255,255,255,0.9); backdrop-filter: blur(20px);
-          border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;
-        }
-        .lp-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .lp-logo-icon {
-          width: 38px; height: 38px; background: var(--primary); border-radius: 10px;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 18px; box-shadow: 0 4px 16px rgba(220,38,38,0.3);
-        }
-        .lp-logo-text { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
-        .lp-logo-text span { color: var(--primary); }
-        .lp-login-btn {
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 9px 24px; border-radius: 50px; background: var(--primary); color: #fff;
-          font-size: 0.85rem; font-weight: 600; text-decoration: none; transition: var(--transition);
-          box-shadow: 0 4px 14px rgba(220,38,38,0.2); border: none; cursor: pointer;
-        }
-        .lp-login-btn:hover {
-          background: var(--primary-dark); box-shadow: 0 6px 20px rgba(220,38,38,0.3);
-          transform: translateY(-1px);
-        }
-
-        .lp-hero { text-align: center; padding: 80px 40px 60px; max-width: 720px; margin: 0 auto; }
-        .lp-hero-badge {
-          display: inline-flex; align-items: center; gap: 6px; padding: 6px 16px; border-radius: 50px;
-          background: #f1f5f9; border: 1px solid #e2e8f0;
-          color: var(--text-secondary); font-size: 0.78rem; font-weight: 600;
-          margin-bottom: 24px; letter-spacing: 0.04em; animation: fadeInDown 0.6s ease;
-        }
-        .lp-hero-badge span { color: var(--primary); }
-        .lp-hero h1 {
-          font-size: clamp(2.5rem, 5vw, 3.8rem); font-weight: 800; line-height: 1.15;
-          color: var(--text-primary); margin-bottom: 20px; letter-spacing: -0.02em;
-          animation: fadeInDown 0.7s ease 0.1s both;
-        }
-        .lp-hero h1 .gradient-text {
-          background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-        }
-        .lp-hero p {
-          color: var(--text-secondary); font-size: 1.1rem; line-height: 1.65;
-          max-width: 580px; margin: 0 auto 36px; animation: fadeInDown 0.7s ease 0.2s both;
-        }
-
-        .lp-stats {
-          display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;
-          padding: 0 40px 60px; animation: fadeInDown 0.7s ease 0.3s both;
-        }
-        .lp-stat-chip {
-          display: flex; align-items: center; gap: 16px; padding: 16px 28px;
-          background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
-          transition: var(--transition); box-shadow: var(--shadow);
-        }
-        .lp-stat-chip:hover { border-color: #cbd5e1; transform: translateY(-4px); box-shadow: 0 12px 24px -4px rgba(0,0,0,0.08); }
-        .lp-stat-icon {
-          width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center;
-          justify-content: center; font-size: 1.3rem; flex-shrink: 0;
-        }
-        .lp-stat-icon.purple { background: #fef2f2; color: #ef4444; }
-        .lp-stat-icon.blue { background: #eff6ff; color: #3b82f6; }
-        .lp-stat-icon.green { background: #f0fdf4; color: #22c55e; }
-        .lp-stat-value { font-size: 1.75rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
-        .lp-stat-label { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
-
-        .lp-platforms {
-          display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;
-          padding: 0 40px 48px;
-        }
-        .lp-platforms-label {
-          font-size: 0.75rem; color: var(--text-muted); margin-right: 6px;
-          font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-        }
-
-        .lp-section { max-width: 1400px; margin: 0 auto; padding: 0 32px 80px; }
-        .lp-section-header {
-          display: flex; align-items: center; justify-content: space-between;
-          margin-bottom: 32px; padding-bottom: 16px; border-bottom: 2px solid #f1f5f9;
-        }
-        .lp-section-title {
-          font-size: 1.5rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 12px;
-        }
-        .lp-section-title::before {
-          content: ''; display: block; width: 6px; height: 24px;
-          background: linear-gradient(180deg, var(--primary), var(--primary-dark)); border-radius: 3px;
-        }
-        .lp-count-badge {
-          font-size: 0.8rem; font-weight: 700; padding: 4px 12px;
-          background: #f1f5f9; border: 1px solid #e2e8f0;
-          border-radius: 50px; color: var(--text-secondary);
-        }
-
-        .lp-gallery {
-          display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px;
-        }
-
-        .lp-card {
-          background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
-          overflow: hidden; transition: var(--transition);
-          display: flex; flex-direction: column; animation: cardIn 0.5s ease both;
-          box-shadow: var(--shadow);
-        }
-        .lp-card:hover {
-          border-color: #cbd5e1;
-          box-shadow: 0 16px 32px -4px rgba(0,0,0,0.1);
-          transform: translateY(-6px);
-        }
-        .lp-card-img-wrap {
-          position: relative; overflow: hidden;
-          background: #f8fafc;
-          aspect-ratio: 16/9; flex-shrink: 0;
-          border-bottom: 1px solid var(--border);
-        }
-        .lp-card-img-wrap img, .lp-card-img-wrap video {
-          width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease;
-        }
-        .lp-card:hover .lp-card-img-wrap img, .lp-card:hover .lp-card-img-wrap video { transform: scale(1.04); }
-        .video-icon {
-          position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6);
-          backdrop-filter: blur(4px); padding: 8px; border-radius: 50%; color: white;
-          display: flex; align-items: center; justify-content: center; z-index: 10;
-        }
-        .lp-card-img-placeholder {
-          width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-          flex-direction: column; gap: 10px;
-        }
-        .lp-card-img-placeholder svg { opacity: 0.4; color: var(--text-muted); }
-        .lp-card-img-placeholder span { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
-        .lp-card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
-        .lp-card-content {
-          font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6;
-          display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex: 1;
-        }
-        .lp-card-footer {
-          display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
-          padding-top: 16px; border-top: 1px solid #f1f5f9;
-        }
-        .lp-channels { display: flex; gap: 6px; flex-wrap: wrap; }
-        .lp-platform-badge {
-          display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 50px;
-          font-size: 0.7rem; font-weight: 700; color: #fff; white-space: nowrap;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .lp-card-date { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; white-space: nowrap; }
-
-        .lp-footer {
-          text-align: center; padding: 40px 20px; border-top: 1px solid var(--border);
-          color: var(--text-muted); font-size: 0.9rem; background: #f8fafc; font-weight: 500;
-        }
-        .lp-footer a { color: var(--primary); text-decoration: none; font-weight: 600; transition: var(--transition); }
-        .lp-footer a:hover { color: var(--primary-dark); }
-
-        @keyframes fadeInDown {
-          from { opacity: 0; transform: translateY(-16px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes cardIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-
-        @media (max-width: 640px) {
-          .lp-nav { padding: 16px 20px; }
-          .lp-hero { padding: 56px 20px 48px; }
-          .lp-stats { padding: 0 20px 48px; }
-          .lp-platforms { padding: 0 20px 40px; }
-          .lp-section { padding: 0 16px 64px; }
-          .lp-gallery { grid-template-columns: 1fr; }
-        }
-      `}</style>
-
-      <div className="lp-body">
-        <div className="lp-content">
-          {/* NAV */}
-          <nav className="lp-nav">
-            <a href="/" className="lp-logo">
-              <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 100 100" className="drop-shadow-sm">
-                <defs>
-                  <linearGradient id="logoGradientLp" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#ef4444" />
-                    <stop offset="40%" stopColor="#dc2626" />
-                    <stop offset="60%" stopColor="#b91c1c" />
-                    <stop offset="100%" stopColor="#991b1b" />
-                  </linearGradient>
-                </defs>
-                <path d="M10,25 L50,85 L90,25 L75,25 L50,60 L25,25 Z" fill="url(#logoGradientLp)" />
-                <path d="M5,20 L45,80 L55,80 L95,20 L80,20 L50,65 L20,20 Z" fill="url(#logoGradientLp)" opacity="0.6" />
-              </svg>
-              <div className="lp-logo-text flex flex-col ml-1" style={{fontFamily: "serif", fontSize: "1.2rem", letterSpacing: "0.15em", color: "#0f172a"}}>
-                VIBE POST
-                <span style={{fontSize: "0.55rem", letterSpacing: "0.2em", color: "#64748b", marginTop: "-4px"}}>Social Media</span>
-              </div>
-            </a>
-            
-            <div className="flex items-center gap-4">
-              {/* Language Selector */}
-              <div className="flex bg-slate-100 border border-slate-200 rounded-full p-1.5 shadow-inner gap-1.5 mr-2">
-                <button 
-                  onClick={() => setLang("en")} 
-                  title="English"
-                  className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${lang === "en" ? "ring-2 ring-red-500 scale-110 shadow-sm" : "opacity-50 hover:opacity-100 hover:scale-105"}`}
-                >
-                  <img src="https://flagcdn.com/w40/us.png" alt="English" className="w-full h-full object-cover" />
-                </button>
-                <button 
-                  onClick={() => setLang("th")} 
-                  title="ภาษาไทย"
-                  className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${lang === "th" ? "ring-2 ring-red-500 scale-110 shadow-sm" : "opacity-50 hover:opacity-100 hover:scale-105"}`}
-                >
-                  <img src="https://flagcdn.com/w40/th.png" alt="Thai" className="w-full h-full object-cover" />
-                </button>
-                <button 
-                  onClick={() => setLang("cn")} 
-                  title="中文"
-                  className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden transition-all duration-300 ${lang === "cn" ? "ring-2 ring-red-500 scale-110 shadow-sm" : "opacity-50 hover:opacity-100 hover:scale-105"}`}
-                >
-                  <img src="https://flagcdn.com/w40/cn.png" alt="Chinese" className="w-full h-full object-cover" />
-                </button>
-              </div>
-
-              <Link href="/login" className="lp-login-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                  <polyline points="10 17 15 12 10 7" />
-                  <line x1="15" x2="3" y1="12" y2="12" />
-                </svg>
-                {t.login}
-              </Link>
-            </div>
-          </nav>
-
-          {/* HERO */}
-          <section className="lp-hero">
-            {isDemo && (
-              <div className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-bold animate-pulse">
-                Mockup Demo Mode Active
-              </div>
+        <section id="gallery" className="space-y-5">
+          <div className="flex items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
+            <h2 className="font-display text-base sm:text-xl text-foreground flex items-center gap-2.5">
+              <span className="neu-tint-primary inline-block w-2 h-6 rounded-full" />
+              <span>{copy.latest}</span>
+            </h2>
+            {totalPosts > 0 && (
+              <span className="neu-pressed rounded-full px-3 py-1 text-[11px] font-bold text-muted-foreground tabular-nums border border-[var(--border)]">
+                {totalPosts} {copy.items}
+              </span>
             )}
-            <br/>
-            <div className="lp-hero-badge">
-              <span>●</span> Auto-Post Gallery
-            </div>
-            <h1>
-              {lang === "th" ? (
-                <>ผลงานการโพสต์<br /><span className="gradient-text">อัตโนมัติทุก Channel</span></>
-              ) : lang === "en" ? (
-                <>Automated Content<br /><span className="gradient-text">Across All Channels</span></>
-              ) : (
-                <>全渠道自动发布<br /><span className="gradient-text">作品集</span></>
-              )}
-            </h1>
-            <p>
-              {t.desc}
-            </p>
-          </section>
-
-          {/* STATS BAR */}
-          <div className="lp-stats">
-            <div className="lp-stat-chip">
-              <div className="lp-stat-icon purple">📸</div>
-              <div>
-                <div className="lp-stat-value">{totalPosts}</div>
-                <div className="lp-stat-label">{t.totalPosts}</div>
-              </div>
-            </div>
-            <div className="lp-stat-chip">
-              <div className="lp-stat-icon blue">🌐</div>
-              <div>
-                <div className="lp-stat-value">{totalChannels}</div>
-                <div className="lp-stat-label">{t.platforms}</div>
-              </div>
-            </div>
-            <div className="lp-stat-chip">
-              <div className="lp-stat-icon green">✅</div>
-              <div>
-                <div className="lp-stat-value">{totalSuccess}</div>
-                <div className="lp-stat-label">{t.success}</div>
-              </div>
-            </div>
           </div>
 
-          {/* PLATFORMS ROW */}
-          {uniquePlatforms.length > 0 && (
-            <div className="lp-platforms">
-              <span className="lp-platforms-label">{t.channels}</span>
-              {uniquePlatforms.map((platform) => {
-                const cfg = PLATFORM_CONFIG[platform as string];
-                if (!cfg) return null;
-                return (
-                  <span
-                    key={platform as string}
-                    className="lp-platform-badge"
-                    style={{
-                      background: cfg.bg,
-                      padding: "5px 12px",
-                      borderRadius: 50,
-                      fontSize: "0.75rem",
-                    }}
-                  >
-                    {cfg.icon}
-                    {cfg.label}
-                  </span>
-                );
-              })}
-            </div>
-          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {posts.map((post) => (
+              <LandingGalleryCard key={post.id} post={post} lang={lang} />
+            ))}
+          </div>
+        </section>
+      </main>
 
-          {/* GALLERY */}
-          <section className="lp-section">
-            <div className="lp-section-header">
-              <h2 className="lp-section-title">
-                {t.latest}
-              </h2>
-              {totalPosts > 0 && (
-                <span className="lp-count-badge">{totalPosts} {t.items}</span>
-              )}
-            </div>
-
-            <div className="lp-gallery">
-              {posts.map((post: any, idx: number) => {
-                const mainImage = post.images && post.images[0];
-                return (
-                  <article
-                    key={post.id}
-                    className="lp-card"
-                    style={{ animationDelay: `${Math.min(idx * 0.05, 0.5)}s` }}
-                  >
-                    {/* Image or Video */}
-                    <div className="lp-card-img-wrap">
-                      {mainImage ? (
-                        mainImage.type === "video" || mainImage.fileName?.endsWith('.mp4') ? (
-                          <>
-                            <video
-                              src={mainImage.url}
-                              autoPlay
-                              muted
-                              loop
-                              playsInline
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="video-icon">
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M8 5v14l11-7z" />
-                              </svg>
-                            </div>
-                          </>
-                        ) : (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={mainImage.url}
-                            alt={mainImage.fileName || "Image"}
-                            loading="lazy"
-                          />
-                        )
-                      ) : (
-                        <div className="lp-card-img-placeholder">
-                          <svg
-                            width="40"
-                            height="40"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="rgba(245,158,11,0.6)"
-                            strokeWidth="1.5"
-                          >
-                            <rect x="3" y="3" width="18" height="18" rx="2" />
-                            <circle cx="8.5" cy="8.5" r="1.5" />
-                            <polyline points="21 15 16 10 5 21" />
-                          </svg>
-                          <span>Text Post</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Body */}
-                    <div className="lp-card-body">
-                      <p className="lp-card-content">{post.content}</p>
-
-                      <div className="lp-card-footer">
-                        {/* Channel badges */}
-                        <div className="lp-channels">
-                          {post.channels.map((ch: any, i: number) => {
-                            const cfg = PLATFORM_CONFIG[ch.platform];
-                            if (!cfg) return null;
-                            const postUrl = getPostUrl(ch.platform, ch.externalPostId);
-                            
-                            const badgeContent = (
-                              <span
-                                className="lp-platform-badge"
-                                style={{ background: cfg.bg, cursor: postUrl ? 'pointer' : 'default' }}
-                                title={ch.accountName}
-                              >
-                                {cfg.icon}
-                                <span style={{ marginLeft: "2px" }}>{ch.accountName}</span>
-                                {postUrl && (
-                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "2px", opacity: 0.8 }}>
-                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>
-                                  </svg>
-                                )}
-                              </span>
-                            );
-
-                            return (
-                              <React.Fragment key={i}>
-                                {postUrl ? (
-                                  <a href={postUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                                    {badgeContent}
-                                  </a>
-                                ) : (
-                                  badgeContent
-                                )}
-                              </React.Fragment>
-                            );
-                          })}
-                        </div>
-                        {/* Date */}
-                        <span className="lp-card-date">
-                          {formatDate(post.publishedTime, lang)}
-                        </span>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* FOOTER */}
-          <footer className="lp-footer">
-            <p>
-              ⚡ Powered by{" "}
-              <a href="/dashboard">VibePost Auto-Post System</a> · อัปเดตอัตโนมัติ
-            </p>
-          </footer>
-        </div>
-      </div>
-    </>
+      <footer className="border-t border-[var(--border)] bg-[var(--surface)]/70 py-7 px-4 text-center text-xs text-muted-foreground">
+        <p>
+          {copy.footerPrefix}{" "}
+          <Link href="/dashboard" className="font-bold text-primary-ink hover:underline">
+            {copy.footerLink}
+          </Link>{" "}
+          · {copy.footerSuffix}
+        </p>
+      </footer>
+    </div>
   );
 }

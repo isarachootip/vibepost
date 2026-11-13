@@ -22,17 +22,17 @@ interface ScheduleDateTimePickerProps {
 }
 
 const ACCENT_TEXT: Record<ScheduleAccentColor, string> = {
-  red: "text-red-600",
-  purple: "text-purple-700",
-  blue: "text-blue-600",
-  orange: "text-orange-600",
+  red: "text-destructive dark:text-rose-400",
+  purple: "text-primary",
+  blue: "text-sky-600 dark:text-sky-400",
+  orange: "text-amber-600 dark:text-amber-400",
 };
 
 const ACCENT_BANNER: Record<ScheduleAccentColor, string> = {
-  red: "bg-white border-slate-100 text-slate-600",
-  purple: "bg-purple-50/70 border-purple-100 text-purple-800",
-  blue: "bg-white border-slate-100 text-slate-600",
-  orange: "bg-orange-50/60 border-orange-100 text-slate-700",
+  red: "bg-[var(--surface-recessed)] border-border/60 text-muted-foreground",
+  purple: "bg-primary/10 border-primary/25 text-foreground/90",
+  blue: "bg-[var(--surface-recessed)] border-border/60 text-muted-foreground",
+  orange: "bg-amber-500/10 border-amber-500/25 text-foreground/90",
 };
 
 export function ScheduleDateTimePicker({
@@ -56,31 +56,31 @@ export function ScheduleDateTimePicker({
     isMinuteOptionDisabled,
   } = schedule;
 
-  const heightCls = compact ? "h-10 text-xs border" : "h-11 sm:h-12 text-sm border-2";
+  const heightCls = compact ? "h-10 text-xs border" : "h-11 sm:h-12 text-sm border";
 
   return (
     <div className="space-y-3">
       <div className={compact ? "grid grid-cols-1 sm:grid-cols-2 gap-2" : "flex flex-col md:flex-row gap-3"}>
         <div className="flex-1">
           {showLabels && (
-            <label className="text-[11px] font-bold text-slate-500 mb-1.5 block uppercase tracking-wide">
+            <label className="text-[11px] font-bold text-muted-foreground mb-1.5 block uppercase tracking-wide">
               {dateLabel}
             </label>
           )}
           <Popover>
             <PopoverTrigger
-              className={`w-full justify-start text-left font-semibold bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 inline-flex items-center rounded-xl transition-colors px-3.5 ${heightCls}`}
+              className={`w-full justify-start text-left font-semibold neu-pressed bg-[var(--surface-recessed)] border-border/70 text-foreground hover:bg-[var(--surface-elevated)] inline-flex items-center rounded-xl transition-colors px-3.5 ${heightCls}`}
             >
-              <CalendarIcon className="mr-2.5 h-4 w-4 text-slate-400 shrink-0" />
+              <CalendarIcon className="mr-2.5 h-4 w-4 text-muted-foreground shrink-0" />
               {format(date, "d MMM yyyy", { locale: th })}
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-white border-slate-200 text-slate-800 shadow-xl rounded-2xl">
+            <PopoverContent className="w-auto p-0 rounded-2xl">
               <Calendar
                 mode="single"
                 selected={date}
                 onSelect={setDate}
                 disabled={{ before: minSelectableDate }}
-                className="bg-white text-slate-800 rounded-2xl"
+                className="bg-transparent text-foreground rounded-2xl"
               />
             </PopoverContent>
           </Popover>
@@ -88,42 +88,38 @@ export function ScheduleDateTimePicker({
 
         <div className={compact ? "" : "md:w-52"}>
           {showLabels && (
-            <label className="text-[11px] font-bold text-slate-500 mb-1.5 block uppercase tracking-wide">
+            <label className="text-[11px] font-bold text-muted-foreground mb-1.5 block uppercase tracking-wide">
               {timeLabel}
             </label>
           )}
-          <div className={`flex items-center gap-1.5 bg-white border-slate-200 rounded-xl px-3 ${heightCls}`}>
-            <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+          <div
+            className={`flex items-center gap-1.5 neu-pressed bg-[var(--surface-recessed)] border-border/70 rounded-xl px-3 ${heightCls}`}
+          >
+            <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
             <select
               aria-label="ชั่วโมงที่ตั้งโพสต์"
               value={scheduleHour}
               onChange={(e) => setScheduleHour(e.target.value)}
-              className="bg-transparent text-slate-700 font-bold focus:outline-none flex-1 disabled:text-slate-300"
+              className="bg-transparent text-foreground font-bold focus:outline-none flex-1 disabled:opacity-40 [&>option]:bg-[var(--surface-elevated)] [&>option]:text-foreground"
             >
-              {HOUR_SLOTS.map((h) => {
-                const disabled = isHourOptionDisabled(h);
-                return (
-                  <option key={h} value={h} disabled={disabled}>
-                    {h}
-                  </option>
-                );
-              })}
+              {HOUR_SLOTS.map((h) => (
+                <option key={h} value={h} disabled={isHourOptionDisabled(h)}>
+                  {h}
+                </option>
+              ))}
             </select>
-            <span className="text-slate-400 font-bold">:</span>
+            <span className="text-muted-foreground font-bold">:</span>
             <select
               aria-label="นาทีที่ตั้งโพสต์"
               value={scheduleMinute}
               onChange={(e) => setScheduleMinute(e.target.value)}
-              className="bg-transparent text-slate-700 font-bold focus:outline-none flex-1 disabled:text-slate-300"
+              className="bg-transparent text-foreground font-bold focus:outline-none flex-1 disabled:opacity-40 [&>option]:bg-[var(--surface-elevated)] [&>option]:text-foreground"
             >
-              {MINUTE_SLOTS.map((m) => {
-                const disabled = isMinuteOptionDisabled(m);
-                return (
-                  <option key={m} value={m} disabled={disabled}>
-                    {m}
-                  </option>
-                );
-              })}
+              {MINUTE_SLOTS.map((m) => (
+                <option key={m} value={m} disabled={isMinuteOptionDisabled(m)}>
+                  {m}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -132,7 +128,7 @@ export function ScheduleDateTimePicker({
       {showPreview && (
         <div className={`text-xs border rounded-xl px-3.5 py-2.5 font-medium ${ACCENT_BANNER[accentColor]}`}>
           📌 จะโพสต์วันที่{" "}
-          <span className="font-bold text-slate-800">
+          <span className="font-bold text-foreground">
             {format(date, "EEEE d MMMM yyyy", { locale: th })}
           </span>{" "}
           เวลา{" "}

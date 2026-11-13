@@ -25,51 +25,51 @@ const CAPTION_STYLES = [
     id: "playful",
     label: "🎉 Playful",
     desc: "สนุก เป็นกันเอง",
-    gradient: "from-yellow-400 to-orange-400",
-    bg: "bg-orange-50",
-    border: "border-orange-200",
-    badge: "bg-orange-100 text-orange-700",
-    textColor: "text-orange-800",
+    gradient: "from-amber-400 to-orange-500",
+    bg: "neu-raised neu-grain bg-amber-500/5",
+    border: "border-amber-500/25",
+    badge: "bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/25",
+    textColor: "text-foreground",
   },
   {
     id: "emotional",
     label: "💖 Emotional",
     desc: "ลึกซึ้ง สัมผัสใจ",
-    gradient: "from-pink-400 to-rose-500",
-    bg: "bg-pink-50",
-    border: "border-pink-200",
-    badge: "bg-pink-100 text-pink-700",
-    textColor: "text-pink-800",
+    gradient: "from-pink-500 to-rose-500",
+    bg: "neu-raised neu-grain bg-rose-500/5",
+    border: "border-rose-500/25",
+    badge: "bg-rose-500/15 text-rose-600 dark:text-rose-300 border-rose-500/25",
+    textColor: "text-foreground",
   },
   {
     id: "promotional",
     label: "🚀 Promotional",
     desc: "โปรโมทสินค้า ยอดขายพุ่ง",
-    gradient: "from-indigo-500 to-purple-600",
-    bg: "bg-indigo-50",
-    border: "border-indigo-200",
-    badge: "bg-indigo-100 text-indigo-700",
-    textColor: "text-indigo-800",
+    gradient: "from-violet-500 to-indigo-500",
+    bg: "neu-raised neu-grain bg-primary/5",
+    border: "border-primary/25",
+    badge: "bg-primary/15 text-primary border-primary/25",
+    textColor: "text-foreground",
   },
   {
     id: "minimalist",
     label: "✨ Minimalist",
     desc: "กระชับ สั้น ทรงพลัง",
-    gradient: "from-slate-400 to-slate-600",
-    bg: "bg-slate-50",
-    border: "border-slate-200",
-    badge: "bg-slate-100 text-slate-700",
-    textColor: "text-slate-800",
+    gradient: "from-slate-400 to-slate-500",
+    bg: "neu-raised neu-grain",
+    border: "border-[var(--hairline-border)]",
+    badge: "neu-pressed text-foreground/80 border-[var(--hairline-border)]",
+    textColor: "text-foreground",
   },
   {
     id: "informative",
     label: "💡 Informative",
     desc: "ให้ข้อมูล ความรู้ สาระ",
     gradient: "from-teal-400 to-cyan-500",
-    bg: "bg-teal-50",
-    border: "border-teal-200",
-    badge: "bg-teal-100 text-teal-700",
-    textColor: "text-teal-800",
+    bg: "neu-raised neu-grain bg-teal-500/5",
+    border: "border-teal-500/25",
+    badge: "bg-teal-500/15 text-teal-600 dark:text-teal-300 border-teal-500/25",
+    textColor: "text-foreground",
   },
 ];
 
@@ -92,7 +92,6 @@ export function AICaptionClient() {
   const router = useRouter();
 
   // Upload state
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<"image" | "video">("image");
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
@@ -127,7 +126,6 @@ export function AICaptionClient() {
     }
 
     setUploadError("");
-    setUploadedFile(file);
     setCaptions(null);
     setGenError("");
 
@@ -148,8 +146,9 @@ export function AICaptionClient() {
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || "Upload failed");
       setUploadedFileUrl(data.url);
-    } catch (err: any) {
-      setUploadError("อัปโหลดไม่สำเร็จ: " + err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Upload error";
+      setUploadError("อัปโหลดไม่สำเร็จ: " + msg);
     } finally {
       setIsUploading(false);
     }
@@ -177,7 +176,6 @@ export function AICaptionClient() {
   };
 
   const handleClearMedia = () => {
-    setUploadedFile(null);
     setPreviewUrl(null);
     setUploadedFileUrl(null);
     setCaptions(null);
@@ -207,8 +205,8 @@ export function AICaptionClient() {
       } else {
         setGenError(res.error || "เกิดข้อผิดพลาด กรุณาลองใหม่");
       }
-    } catch (err: any) {
-      setGenError(err.message || "เกิดข้อผิดพลาดในการเชื่อมต่อ");
+    } catch (err: unknown) {
+      setGenError(err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการเชื่อมต่อ");
     } finally {
       setIsGenerating(false);
     }
@@ -239,13 +237,13 @@ export function AICaptionClient() {
   return (
     <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 min-h-screen w-full max-w-[1400px] mx-auto">
       {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between border-b border-slate-100 pb-5 gap-4">
+      <header className="flex flex-col md:flex-row md:items-end justify-between border-b border-[var(--hairline-border)] pb-5 gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-600 via-pink-500 to-orange-500 mb-2 tracking-tight flex items-center gap-3">
-            <Wand2 className="w-8 h-8 text-fuchsia-600 animate-pulse" />
+          <h1 className="font-display text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary via-violet-500 to-teal-400 mb-2 tracking-tight flex items-center gap-3">
+            <Wand2 className="w-8 h-8 text-primary animate-pulse" />
             AI Caption Generator
           </h1>
-          <p className="text-slate-500 font-medium">
+          <p className="text-muted-foreground font-medium">
             อัปโหลดรูปภาพหรือวิดีโอ แล้วให้ AI คิดแคปชันสไตล์ต่างๆ ให้คุณในคลิกเดียว
           </p>
         </div>
@@ -256,10 +254,10 @@ export function AICaptionClient() {
         {/* Left: Upload & Options */}
         <div className="lg:col-span-5 space-y-5">
           {/* Upload Zone */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-5">
-              <Upload className="w-5 h-5 text-fuchsia-600" />
-              <h2 className="font-extrabold text-slate-800 text-lg">1. อัปโหลดสื่อของคุณ</h2>
+          <div className="neu-raised neu-grain rounded-3xl p-6">
+            <div className="flex items-center gap-2 border-b border-[var(--hairline-border)] pb-3 mb-5">
+              <Upload className="w-5 h-5 text-primary" />
+              <h2 className="font-display font-extrabold text-foreground text-lg">1. อัปโหลดสื่อของคุณ</h2>
             </div>
 
             {!previewUrl ? (
@@ -270,26 +268,26 @@ export function AICaptionClient() {
                 onClick={() => fileInputRef.current?.click()}
                 className={`relative border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition-all min-h-[260px] p-8 group
                   ${isDragOver
-                    ? "border-fuchsia-400 bg-fuchsia-50 scale-[1.01]"
-                    : "border-slate-300 bg-slate-50 hover:border-fuchsia-300 hover:bg-fuchsia-50/40"
+                    ? "border-primary bg-primary/10 scale-[1.01]"
+                    : "border-[var(--hairline-border)] neu-pressed hover:border-primary/40 hover:bg-primary/5"
                   }`}
               >
                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all
-                  ${isDragOver ? "bg-fuchsia-100" : "bg-slate-100 group-hover:bg-fuchsia-100"}`}>
-                  <Upload className={`w-8 h-8 transition-colors ${isDragOver ? "text-fuchsia-600" : "text-slate-400 group-hover:text-fuchsia-500"}`} />
+                  ${isDragOver ? "neu-tint-primary" : "neu-raised group-hover:neu-tint-primary"}`}>
+                  <Upload className={`w-8 h-8 transition-colors ${isDragOver ? "text-primary" : "text-muted-foreground group-hover:text-primary"}`} />
                 </div>
-                <p className="font-bold text-slate-700 text-sm mb-1">
+                <p className="font-bold text-foreground text-sm mb-1">
                   ลากวางไฟล์ที่นี่ หรือคลิกเพื่อเลือก
                 </p>
-                <p className="text-xs text-slate-400 max-w-[220px]">
+                <p className="text-xs text-muted-foreground max-w-[220px]">
                   รองรับ JPG, PNG, GIF, WEBP, MP4, WEBM, MOV (สูงสุด 50MB)
                 </p>
                 <div className="flex items-center gap-3 mt-5">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs text-slate-600 font-medium shadow-xs">
-                    <ImageIcon className="w-3.5 h-3.5 text-fuchsia-500" /> รูปภาพ
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 neu-raised rounded-full text-xs text-foreground/80 font-medium">
+                    <ImageIcon className="w-3.5 h-3.5 text-primary" /> รูปภาพ
                   </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs text-slate-600 font-medium shadow-xs">
-                    <Film className="w-3.5 h-3.5 text-purple-500" /> วิดีโอ
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 neu-raised rounded-full text-xs text-foreground/80 font-medium">
+                    <Film className="w-3.5 h-3.5 text-teal-500" /> วิดีโอ
                   </div>
                 </div>
                 <input
@@ -302,7 +300,7 @@ export function AICaptionClient() {
               </div>
             ) : (
               <div className="space-y-3 animate-in zoom-in-95 duration-200">
-                <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-black group">
+                <div className="relative rounded-2xl overflow-hidden border border-[var(--hairline-border)] neu-pressed bg-black/90 group">
                   {mediaType === "video" ? (
                     <video
                       src={previewUrl}
@@ -319,26 +317,26 @@ export function AICaptionClient() {
                   )}
                   <button
                     onClick={handleClearMedia}
-                    className="absolute top-3 right-3 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-lg transition-colors opacity-0 group-hover:opacity-100"
+                    className="absolute top-3 right-3 bg-destructive hover:bg-destructive/90 text-white p-2 rounded-full shadow-lg transition-colors opacity-0 group-hover:opacity-100"
                   >
                     <X className="w-4 h-4" />
                   </button>
                   {/* Media type badge */}
                   <div className="absolute top-3 left-3">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-bold shadow-md
-                      ${mediaType === "video" ? "bg-purple-600 text-white" : "bg-fuchsia-600 text-white"}`}>
+                      ${mediaType === "video" ? "bg-violet-600 text-white" : "bg-primary text-white"}`}>
                       {mediaType === "video" ? "🎬 Video" : "🖼️ Image"}
                     </span>
                   </div>
                 </div>
 
                 {isUploading ? (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700 font-semibold flex items-center gap-2">
+                  <div className="p-3 bg-primary/10 border border-primary/25 rounded-xl text-xs text-primary font-semibold flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                     กำลังอัปโหลดไฟล์...
                   </div>
                 ) : uploadedFileUrl ? (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-xs text-green-700 font-semibold flex items-center gap-2">
+                  <div className="p-3 bg-teal-500/10 border border-teal-500/25 rounded-xl text-xs text-teal-600 dark:text-teal-300 font-semibold flex items-center gap-2">
                     <Check className="w-4 h-4 shrink-0" />
                     อัปโหลดสำเร็จ! พร้อมสำหรับการวิเคราะห์ AI
                   </div>
@@ -346,7 +344,7 @@ export function AICaptionClient() {
 
                 <button
                   onClick={handleClearMedia}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-500 transition-colors font-medium"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors font-medium"
                 >
                   <RotateCcw className="w-3.5 h-3.5" /> เปลี่ยนไฟล์
                 </button>
@@ -354,42 +352,42 @@ export function AICaptionClient() {
             )}
 
             {uploadError && (
-              <p className="mt-3 text-xs text-red-600 font-semibold bg-red-50 border border-red-200 rounded-xl p-3">
+              <p className="mt-3 text-xs text-destructive font-semibold bg-destructive/10 border border-destructive/25 rounded-xl p-3">
                 ⚠️ {uploadError}
               </p>
             )}
           </div>
 
           {/* Settings */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-5">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Sparkles className="w-5 h-5 text-fuchsia-600" />
-              <h2 className="font-extrabold text-slate-800 text-lg">2. ตั้งค่าและปรับแต่ง</h2>
+          <div className="neu-raised neu-grain rounded-3xl p-6 space-y-5">
+            <div className="flex items-center gap-2 border-b border-[var(--hairline-border)] pb-3">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h2 className="font-display font-extrabold text-foreground text-lg">2. ตั้งค่าและปรับแต่ง</h2>
             </div>
 
             <div>
-              <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
+              <Label className="text-xs font-black text-muted-foreground uppercase tracking-wider block mb-2">
                 บริบทเพิ่มเติม (Context) — ไม่บังคับ
               </Label>
               <Textarea
                 placeholder="เช่น: สินค้าคือกาแฟดริปออร์แกนิก เหมาะสำหรับคนรักสุขภาพ ราคา 299 บาท..."
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
-                className="bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400 h-20 focus-visible:ring-fuchsia-500 rounded-xl text-sm resize-none leading-relaxed"
+                className="h-20 rounded-xl text-sm resize-none leading-relaxed"
               />
-              <p className="text-[10px] text-slate-400 mt-1">
+              <p className="text-[10px] text-muted-foreground mt-1">
                 ใส่รายละเอียดสินค้า แบรนด์ หรือบริบทที่ต้องการให้ AI คำนึงถึงเมื่อสร้างแคปชัน
               </p>
             </div>
 
             <div>
-              <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
+              <Label className="text-xs font-black text-muted-foreground uppercase tracking-wider block mb-2">
                 ภาษาของแคปชัน
               </Label>
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-fuchsia-500 font-bold"
+                className="w-full neu-pressed border border-[var(--hairline-border)] text-foreground rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary/35 font-bold [&>option]:bg-[var(--surface-elevated)] [&>option]:text-foreground"
               >
                 {LANGUAGES.map((lang) => (
                   <option key={lang.id} value={lang.id}>{lang.label}</option>
@@ -398,7 +396,7 @@ export function AICaptionClient() {
             </div>
 
             {genError && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold">
+              <div className="p-3 bg-destructive/10 border border-destructive/25 text-destructive rounded-xl text-xs font-semibold">
                 ⚠️ {genError}
               </div>
             )}
@@ -406,7 +404,8 @@ export function AICaptionClient() {
             <Button
               onClick={handleGenerate}
               disabled={isGenerating || isUploading || !uploadedFileUrl}
-              className="w-full bg-gradient-to-r from-fuchsia-600 via-pink-600 to-orange-500 hover:from-fuchsia-700 hover:via-pink-700 hover:to-orange-600 text-white font-bold h-12 rounded-xl shadow-lg shadow-fuchsia-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:shadow-none"
+              variant="tactile"
+              className="w-full font-bold h-12 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isGenerating ? (
                 <>
@@ -425,28 +424,28 @@ export function AICaptionClient() {
 
         {/* Right: Caption Results */}
         <div className="lg:col-span-7">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-6">
-              <Sparkles className="w-5 h-5 text-fuchsia-600 animate-pulse" />
-              <h2 className="font-extrabold text-slate-800 text-lg">3. แคปชัน 5 สไตล์ที่ AI คิดให้</h2>
+          <div className="neu-raised neu-grain rounded-3xl p-6">
+            <div className="flex items-center gap-2 border-b border-[var(--hairline-border)] pb-3 mb-6">
+              <Sparkles className="w-5 h-5 text-primary animate-pulse" />
+              <h2 className="font-display font-extrabold text-foreground text-lg">3. แคปชัน 5 สไตล์ที่ AI คิดให้</h2>
             </div>
 
             {isGenerating ? (
               <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
                 <div className="relative mb-6">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-fuchsia-100 to-pink-100 flex items-center justify-center">
-                    <Wand2 className="w-10 h-10 text-fuchsia-600 animate-bounce" />
+                  <div className="w-20 h-20 rounded-full neu-tint-primary flex items-center justify-center">
+                    <Wand2 className="w-10 h-10 text-primary animate-bounce" />
                   </div>
-                  <div className="absolute -top-1 -right-1 w-6 h-6 bg-orange-400 rounded-full animate-ping" />
+                  <div className="absolute -top-1 -right-1 w-6 h-6 bg-teal-400 rounded-full animate-ping" />
                 </div>
-                <h4 className="font-bold text-slate-700 text-lg mb-2">AI กำลังวิเคราะห์สื่อของคุณ...</h4>
-                <p className="text-xs text-slate-400 max-w-[280px] leading-relaxed">
+                <h4 className="font-bold text-foreground text-lg mb-2">AI กำลังวิเคราะห์สื่อของคุณ...</h4>
+                <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
                   Gemini AI กำลังมองเห็นภาพ/วิดีโอของคุณและคิดแคปชันแบบ 5 สไตล์พร้อมกัน รอสักครู่
                 </p>
                 {/* Skeleton loaders */}
                 <div className="w-full max-w-md mt-8 space-y-3">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-16 bg-slate-100 rounded-2xl animate-pulse" />
+                    <div key={i} className="h-16 neu-pressed rounded-2xl animate-pulse" />
                   ))}
                 </div>
               </div>
@@ -463,18 +462,18 @@ export function AICaptionClient() {
                       {/* Style header */}
                       <div className="flex items-start justify-between mb-3 gap-2">
                         <div className="flex items-center gap-2">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-black ${style.badge}`}>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-black border ${style.badge}`}>
                             {style.label}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-medium">{style.desc}</span>
+                          <span className="text-[10px] text-muted-foreground font-medium">{style.desc}</span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <button
                             onClick={() => handleCopy(text, style.id)}
                             className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border
                               ${isCopied
-                                ? "bg-green-50 border-green-200 text-green-700"
-                                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                                ? "bg-teal-500/15 border-teal-500/30 text-teal-600 dark:text-teal-300"
+                                : "neu-raised border-[var(--hairline-border)] text-foreground/80 hover:text-primary"
                               }`}
                           >
                             {isCopied ? (
@@ -486,7 +485,7 @@ export function AICaptionClient() {
                           {uploadedFileUrl && (
                             <button
                               onClick={() => handleSendToPublisher(text)}
-                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border bg-white border-slate-200 text-slate-600 hover:bg-fuchsia-600 hover:text-white hover:border-fuchsia-600"
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border neu-raised border-[var(--hairline-border)] text-foreground/80 hover:bg-primary hover:text-white hover:border-primary"
                             >
                               <Send className="w-3.5 h-3.5" /> โพสต์
                             </button>
@@ -500,7 +499,7 @@ export function AICaptionClient() {
                           {text}
                         </p>
                       ) : (
-                        <p className="text-xs text-slate-400 italic">ไม่ได้รับแคปชันสไตล์นี้</p>
+                        <p className="text-xs text-muted-foreground italic">ไม่ได้รับแคปชันสไตล์นี้</p>
                       )}
 
                       {/* Gradient accent bar */}
@@ -512,28 +511,28 @@ export function AICaptionClient() {
                 {/* Regenerate button */}
                 <Button
                   onClick={handleGenerate}
-                  variant="outline"
-                  className="w-full border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl h-11 font-bold text-sm flex items-center gap-2 mt-2"
+                  variant="neu"
+                  className="w-full rounded-xl h-11 font-bold text-sm flex items-center gap-2 mt-2"
                 >
                   <RotateCcw className="w-4 h-4" />
                   สร้างแคปชันชุดใหม่ (Regenerate)
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center min-h-[400px] text-center text-slate-400">
+              <div className="flex flex-col items-center justify-center min-h-[400px] text-center text-muted-foreground">
                 {/* Illustration */}
                 <div className="relative mb-6">
-                  <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-fuchsia-50 to-pink-100 flex items-center justify-center shadow-inner">
-                    <Wand2 className="w-12 h-12 text-fuchsia-300" />
+                  <div className="w-24 h-24 rounded-3xl neu-pressed flex items-center justify-center">
+                    <Wand2 className="w-12 h-12 text-primary/70" />
                   </div>
-                  <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-orange-400" />
+                  <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl neu-tint-teal flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-teal-500" />
                   </div>
                 </div>
-                <p className="font-bold text-slate-500 text-base">ยังไม่มีแคปชัน</p>
-                <p className="text-xs text-slate-400 mt-2 max-w-[260px] leading-relaxed">
+                <p className="font-bold text-foreground text-base">ยังไม่มีแคปชัน</p>
+                <p className="text-xs text-muted-foreground mt-2 max-w-[260px] leading-relaxed">
                   อัปโหลดรูปภาพหรือวิดีโอของคุณแล้วกดปุ่ม{" "}
-                  <span className="font-bold text-fuchsia-500">"สร้างแคปชัน 5 สไตล์"</span>{" "}
+                  <span className="font-bold text-primary">&quot;สร้างแคปชัน 5 สไตล์&quot;</span>{" "}
                   เพื่อให้ AI วิเคราะห์และสร้างแคปชันให้ทันที
                 </p>
 
@@ -542,7 +541,7 @@ export function AICaptionClient() {
                   {CAPTION_STYLES.map((s) => (
                     <span
                       key={s.id}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold border ${s.border} ${s.badge}`}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold border ${s.badge}`}
                     >
                       {s.label}
                     </span>

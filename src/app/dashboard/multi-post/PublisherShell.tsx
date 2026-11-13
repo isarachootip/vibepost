@@ -1,126 +1,97 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PostTypePicker } from "./PostTypePicker";
 import { SinglePostWizard } from "./SinglePostWizard";
 import { MultiImageWizard } from "./MultiImageWizard";
 import { SequentialPostWizard } from "./SequentialPostWizard";
-import { Send, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Send } from "lucide-react";
 
 type PostType = "single" | "multi" | "sequential" | "video";
-type Connection = { id: string; platform: string; accountName: string; isActive: boolean };
 
-function PublisherShellInner({ connections }: { connections: Connection[] }) {
-  const [selectedType, setSelectedType] = useState<PostType | null>(null);
+export interface PublisherConnection {
+  id: string;
+  platform: string;
+  accountName: string;
+  isActive: boolean;
+}
+
+const TYPE_SUBTITLES: Record<PostType, string> = {
+  single: "📸 Single Photo Post",
+  video: "🎬 Video Clip Post",
+  sequential: "📋 Sequential Posts",
+  multi: "🖼️ Multi-Photo Album Post",
+};
+
+function EmptyConnectionsNotice() {
+  return (
+    <div className="neu-raised neu-grain rounded-2xl p-8 text-center">
+      <p className="text-muted-foreground text-sm">
+        No social connections found. Please add them in Integrations.
+      </p>
+    </div>
+  );
+}
+
+function PublisherShellInner({ connections }: { connections: PublisherConnection[] }) {
   const searchParams = useSearchParams();
+  const presetKey =
+    searchParams.get("preset") === "studio"
+      ? `${searchParams.get("mode") ?? ""}:${searchParams.get("type") ?? ""}`
+      : "";
+  const presetType: PostType | null =
+    searchParams.get("preset") === "studio"
+      ? searchParams.get("mode") === "video" || searchParams.get("type") === "video"
+        ? "video"
+        : "single"
+      : null;
 
-  // Auto-select type when redirected from AI Studio with preset params
-  useEffect(() => {
-    const preset = searchParams.get("preset");
-    if (preset === "studio") {
-      const mode = searchParams.get("mode");
-      const type = searchParams.get("type");
-      if (mode === "video" || type === "video") {
-        setSelectedType("video");
-      } else {
-        setSelectedType("single");
-      }
-    }
-  }, [searchParams]);
+  const [override, setOverride] = useState<{ key: string; value: PostType | null } | null>(null);
+  const selectedType = override && override.key === presetKey ? override.value : presetType;
 
-  const handleBack = () => setSelectedType(null);
+  const handleSelectType = (type: PostType) => setOverride({ key: presetKey, value: type });
+  const handleBack = () => setOverride({ key: presetKey, value: null });
 
   return (
-    <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 min-h-screen">
-      {/* Header */}
+    <div className="p-2 md:p-6 space-y-8 animate-in fade-in duration-500 min-h-screen">
       <header className="flex items-end justify-between">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2 tracking-tight flex items-center gap-3">
-            <Send className="w-8 h-8 text-red-600" />
-            AI Content Publisher
-          </h1>
-          <p className="text-slate-500 font-medium">
-            {!selectedType
-              ? "เลือกประเภท Post ที่ต้องการสร้าง"
-              : selectedType === "single"
-              ? "📸 Single Photo Post"
-              : selectedType === "video"
-              ? "🎬 Video Clip Post"
-              : selectedType === "sequential"
-              ? "📋 Sequential Posts"
-              : "🖼️ Multi-Photo Album Post"}
-          </p>
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-2xl neu-tint-primary flex items-center justify-center shrink-0">
+            <Send className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="font-display text-2xl md:text-4xl font-extrabold text-foreground tracking-tight">
+              AI Content Publisher
+            </h1>
+            <p className="text-muted-foreground font-medium text-sm mt-0.5">
+              {selectedType ? TYPE_SUBTITLES[selectedType] : "เลือกประเภท Post ที่ต้องการสร้าง"}
+            </p>
+          </div>
         </div>
       </header>
 
-      {/* Content */}
-      {!selectedType && (
-        <PostTypePicker onSelect={setSelectedType} />
-      )}
+      {!selectedType && <PostTypePicker onSelect={handleSelectType} />}
 
-      {selectedType === "single" && (
+      {selectedType && (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
           <div className="mb-4">
-            <button onClick={handleBack} className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1.5 transition-colors">
-              ← เปลี่ยนประเภท Post
+            <button
+              type="button"
+              onClick={handleBack}
+              className="px-3.5 py-2 rounded-xl neu-pressed text-xs font-bold text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> เปลี่ยนประเภท Post
             </button>
           </div>
           {connections.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
-              <p className="text-slate-500">No social connections found. Please add them in Integrations.</p>
-            </div>
-          ) : (
+            <EmptyConnectionsNotice />
+          ) : selectedType === "single" ? (
             <SinglePostWizard connections={connections} />
-          )}
-        </div>
-      )}
-
-      {selectedType === "multi" && (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="mb-4">
-            <button onClick={handleBack} className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1.5 transition-colors">
-              ← เปลี่ยนประเภท Post
-            </button>
-          </div>
-          {connections.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
-              <p className="text-slate-500">No social connections found. Please add them in Integrations.</p>
-            </div>
-          ) : (
+          ) : selectedType === "multi" ? (
             <MultiImageWizard connections={connections} onBack={handleBack} />
-          )}
-        </div>
-      )}
-
-      {selectedType === "sequential" && (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="mb-4">
-            <button onClick={handleBack} className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1.5 transition-colors">
-              ← เปลี่ยนประเภท Post
-            </button>
-          </div>
-          {connections.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
-              <p className="text-slate-500">No social connections found. Please add them in Integrations.</p>
-            </div>
-          ) : (
+          ) : selectedType === "sequential" ? (
             <SequentialPostWizard connections={connections} onBack={handleBack} />
-          )}
-        </div>
-      )}
-
-      {selectedType === "video" && (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="mb-4">
-            <button onClick={handleBack} className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1.5 transition-colors">
-              ← เปลี่ยนประเภท Post
-            </button>
-          </div>
-          {connections.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
-              <p className="text-slate-500">No social connections found. Please add them in Integrations.</p>
-            </div>
           ) : (
             <SinglePostWizard connections={connections} defaultMediaType="video" />
           )}
@@ -130,11 +101,16 @@ function PublisherShellInner({ connections }: { connections: Connection[] }) {
   );
 }
 
-export function PublisherShell(props: any) {
+export function PublisherShell(props: { connections: PublisherConnection[] }) {
   return (
-    <Suspense fallback={<div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-slate-400" /></div>}>
+    <Suspense
+      fallback={
+        <div className="p-8 text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+        </div>
+      }
+    >
       <PublisherShellInner {...props} />
     </Suspense>
   );
 }
-

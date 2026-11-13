@@ -136,18 +136,18 @@ export function StudioAutoPostModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto bg-white border border-slate-200 text-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl">
-        <DialogHeader className="border-b border-slate-100 pb-4">
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl p-6 md:p-8">
+        <DialogHeader className="border-b border-border/60 pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-md">
-                <Send className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-2xl neu-tint-primary flex items-center justify-center">
+                <Send className="w-5 h-5" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-                  ตั้งค่า Auto-Post & เผยแพร่ทันที
+                <DialogTitle className="font-display text-xl font-extrabold text-foreground tracking-tight flex items-center gap-2">
+                  ตั้งค่า Auto-Post &amp; เผยแพร่ทันที
                 </DialogTitle>
-                <DialogDescription className="text-xs text-slate-500 font-medium mt-0.5">
+                <DialogDescription className="text-xs text-muted-foreground font-medium mt-0.5">
                   เชื่อมโยงบทความและสื่อจาก AI Studio ส่งเข้าสู่ระบบ Auto-Publisher ได้ในคลิกเดียว
                 </DialogDescription>
               </div>
@@ -157,48 +157,49 @@ export function StudioAutoPostModal({
 
         {success ? (
           <div className="py-10 flex flex-col items-center justify-center text-center animate-in zoom-in-95 space-y-5">
-            <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center border-4 border-green-100 shadow-inner">
-              <CheckCircle2 className="w-10 h-10 text-green-500" />
+            <div className="w-20 h-20 bg-emerald-500/12 rounded-full flex items-center justify-center border-4 border-emerald-500/25">
+              <CheckCircle2 className="w-10 h-10 text-emerald-500" />
             </div>
 
             <div className="space-y-2 max-w-md">
-              <h3 className="text-2xl font-black text-slate-900">
+              <h3 className="font-display text-2xl font-extrabold text-foreground">
                 {publishMode === "instant"
                   ? "ส่งคำขอเผยแพร่เรียบร้อย! 🚀"
                   : "ตั้งเวลา Auto-Post สำเร็จ! ⏰"}
               </h3>
               {scheduledResultTime && (
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-700">
-                  <span className="text-slate-400 block mb-1">กำหนดส่งออกในวันที่</span>
-                  <span className="text-sm font-black text-purple-700">
+                <div className="p-4 neu-pressed rounded-2xl text-xs font-semibold text-foreground/85">
+                  <span className="text-muted-foreground block mb-1">กำหนดส่งออกในวันที่</span>
+                  <span className="text-sm font-extrabold text-primary">
                     {format(scheduledResultTime, "EEEE d MMMM yyyy", { locale: th })} เวลา{" "}
                     {format(scheduledResultTime, "HH:mm")} น.
                   </span>
                 </div>
               )}
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 ระบบ Auto-Publisher จะทำการดีพลอยโพสต์ของคุณไปยังช่องทางโซเชียลมีเดียที่เลือกไว้โดยอัตโนมัติ
               </p>
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
               <Button
-                variant="outline"
+                variant="neu"
                 onClick={() => router.push("/dashboard/history")}
-                className="border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs rounded-xl h-11 px-5"
+                className="font-bold text-xs rounded-xl h-11 px-5"
               >
                 📊 ดูประวัติโพสต์ (Post History)
               </Button>
               <Button
-                variant="outline"
+                variant="neu"
                 onClick={() => router.push("/dashboard/monitor")}
-                className="border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs rounded-xl h-11 px-5"
+                className="font-bold text-xs rounded-xl h-11 px-5"
               >
                 📡 ตรวจสอบคิว (Post Monitor)
               </Button>
               <Button
+                variant="tactile"
                 onClick={onClose}
-                className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl h-11 px-6 shadow-md"
+                className="font-bold text-xs rounded-xl h-11 px-6"
               >
                 ✨ สร้างเนื้อหาต่อ
               </Button>
@@ -207,32 +208,31 @@ export function StudioAutoPostModal({
         ) : (
           <div className="space-y-6 pt-2">
             {error && (
-              <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold flex items-center gap-2">
+              <div className="p-3.5 bg-destructive/12 border border-destructive/30 text-destructive rounded-xl text-xs font-semibold flex items-center gap-2">
                 <span>⚠️</span>
                 <span>{error}</span>
               </div>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left Column: Social Feed Preview (col-span 6) */}
+              {/* Left Column: Social Feed Preview */}
               <div className="lg:col-span-6 space-y-3">
-                <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block">
-                  ตัวอย่างโพสต์บนหน้าฟีด (Preview & Fine-tune)
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+                  ตัวอย่างโพสต์บนหน้าฟีด (Preview &amp; Fine-tune)
                 </Label>
 
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 shadow-inner">
-                  {/* Feed mock header */}
+                <div className="neu-pressed rounded-2xl p-4 space-y-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-purple-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground font-extrabold text-xs flex items-center justify-center shadow-xs">
                       VP
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-slate-800">
+                      <div className="text-xs font-bold text-foreground">
                         {connections.length > 0
                           ? connections.find((c) => selectedChannels.includes(c.id))?.accountName || "Vibe Post Feed"
                           : "Vibe Post Feed"}
                       </div>
-                      <div className="text-[10px] text-slate-400 flex items-center gap-1 font-medium">
+                      <div className="text-[10px] text-muted-foreground flex items-center gap-1 font-medium">
                         <span>Just now</span>
                         <span>•</span>
                         <Globe className="w-2.5 h-2.5" />
@@ -240,17 +240,15 @@ export function StudioAutoPostModal({
                     </div>
                   </div>
 
-                  {/* Caption Editor */}
                   <Textarea
                     value={postContent}
                     onChange={(e) => setPostContent(e.target.value)}
-                    className="w-full bg-white border-slate-200 text-slate-800 text-xs leading-relaxed min-h-[140px] max-h-[220px] rounded-xl focus-visible:ring-purple-500 shadow-xs"
+                    className="w-full text-xs leading-relaxed min-h-[140px] max-h-[220px] rounded-xl"
                     placeholder="พิมพ์หรือแก้ไขข้อความแคปชัน..."
                   />
 
-                  {/* Media Preview */}
                   {mediaUrl ? (
-                    <div className="rounded-xl overflow-hidden border border-slate-200 aspect-video w-full bg-black relative shadow-xs">
+                    <div className="rounded-xl overflow-hidden border border-border/60 aspect-video w-full bg-black relative shadow-xs">
                       {mediaType === "video" ? (
                         <video
                           src={mediaUrl}
@@ -264,33 +262,33 @@ export function StudioAutoPostModal({
                           className="w-full h-full object-cover"
                         />
                       )}
-                      <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <div className="absolute bottom-2 left-2 bg-black/65 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
                         {mediaType === "video" ? <Film className="w-3 h-3" /> : <ImageIcon className="w-3 h-3" />}
                         {mediaType === "video" ? "วิดีโอ AI" : "รูปภาพ AI"}
                       </div>
                     </div>
                   ) : (
-                    <div className="p-4 bg-white border border-dashed border-slate-200 rounded-xl text-center text-slate-400 text-xs font-medium">
+                    <div className="p-4 border border-dashed border-border/70 bg-[var(--surface-elevated)]/40 rounded-xl text-center text-muted-foreground text-xs font-medium">
                       ไม่มีไฟล์สื่อแนบ (จะโพสต์เฉพาะข้อความ)
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Right Column: Publishing Controls (col-span 6) */}
+              {/* Right Column: Publishing Controls */}
               <div className="lg:col-span-6 space-y-5 flex flex-col justify-between">
                 <div className="space-y-5">
                   {/* Channel Selection */}
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs font-black text-slate-600 uppercase tracking-wider">
+                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                         1. เลือกช่องทางโซเชียล (Target Channels)
                       </Label>
                       {connections.length > 0 && (
                         <button
                           type="button"
                           onClick={handleSelectAllChannels}
-                          className="text-[11px] font-bold text-purple-600 hover:text-purple-800 underline"
+                          className="text-[11px] font-bold text-primary hover:underline"
                         >
                           {selectedChannels.length === connections.length ? "ยกเลิกทั้งหมด" : "เลือกทั้งหมด"}
                         </button>
@@ -298,7 +296,7 @@ export function StudioAutoPostModal({
                     </div>
 
                     {connections.length === 0 ? (
-                      <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                      <div className="p-4 bg-amber-500/12 border border-amber-500/30 rounded-xl text-xs text-amber-700 dark:text-amber-300">
                         ยังไม่มีการเชื่อมต่อโซเชียลมีเดีย กรุณาไปที่หน้า{" "}
                         <a href="/dashboard/social" className="font-bold underline">
                           Integrations
@@ -316,21 +314,21 @@ export function StudioAutoPostModal({
                               onClick={() => toggleChannel(conn.id)}
                               className={`p-3 rounded-xl border text-left transition-all text-xs flex items-center justify-between gap-2 ${
                                 isChecked
-                                  ? "border-purple-600 bg-purple-50/60 text-purple-950 font-bold shadow-xs ring-1 ring-purple-600/20"
-                                  : "border-slate-200 bg-white hover:border-slate-300 text-slate-600"
+                                  ? "neu-tint-primary font-bold"
+                                  : "neu-pressed border-border/60 text-muted-foreground hover:text-foreground"
                               }`}
                             >
                               <div className="min-w-0 flex-1">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
                                   {conn.platform}
                                 </span>
-                                <span className="truncate block">{conn.accountName}</span>
+                                <span className="truncate block text-foreground">{conn.accountName}</span>
                               </div>
                               <div
                                 className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 text-[10px] font-black ${
                                   isChecked
-                                    ? "bg-purple-600 border-purple-600 text-white"
-                                    : "border-slate-300 bg-white text-transparent"
+                                    ? "bg-primary border-primary text-primary-foreground"
+                                    : "border-border bg-[var(--surface-recessed)] text-transparent"
                                 }`}
                               >
                                 ✓
@@ -344,18 +342,18 @@ export function StudioAutoPostModal({
 
                   {/* Publishing Mode Tabs */}
                   <div className="space-y-2.5">
-                    <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
                       2. เลือกรูปแบบการเผยแพร่ (Publishing Mode)
                     </Label>
 
-                    <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl">
+                    <div className="grid grid-cols-2 gap-1.5 neu-pressed p-1 rounded-xl">
                       <button
                         type="button"
                         onClick={() => setPublishMode("instant")}
-                        className={`py-2 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                        className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                           publishMode === "instant"
-                            ? "bg-white text-slate-900 shadow-xs"
-                            : "text-slate-500 hover:text-slate-800"
+                            ? "bg-[var(--surface-elevated)] text-foreground shadow-sm border border-border/70"
+                            : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         <Zap className="w-3.5 h-3.5 text-amber-500" /> โพสต์ทันที (Post Now)
@@ -363,19 +361,18 @@ export function StudioAutoPostModal({
                       <button
                         type="button"
                         onClick={() => setPublishMode("scheduled")}
-                        className={`py-2 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                        className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                           publishMode === "scheduled"
-                            ? "bg-white text-slate-900 shadow-xs"
-                            : "text-slate-500 hover:text-slate-800"
+                            ? "bg-[var(--surface-elevated)] text-foreground shadow-sm border border-border/70"
+                            : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
-                        <CalendarIcon className="w-3.5 h-3.5 text-purple-600" /> ตั้งเวลา Auto-Post
+                        <CalendarIcon className="w-3.5 h-3.5 text-primary" /> ตั้งเวลา Auto-Post
                       </button>
                     </div>
 
-                    {/* Schedule Date & Time Controls */}
                     {publishMode === "scheduled" && (
-                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl animate-in fade-in">
+                      <div className="p-4 neu-pressed rounded-2xl animate-in fade-in">
                         <ScheduleDateTimePicker
                           schedule={schedule}
                           accentColor="purple"
@@ -389,30 +386,31 @@ export function StudioAutoPostModal({
                 </div>
 
                 {/* Footer Actions */}
-                <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="pt-4 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-3">
                   <button
                     type="button"
                     onClick={onOpenAdvancedWizard}
-                    className="text-xs font-bold text-slate-500 hover:text-purple-600 flex items-center gap-1.5 transition-colors"
+                    className="text-xs font-bold text-muted-foreground hover:text-primary flex items-center gap-1.5 transition-colors"
                   >
                     <ExternalLink className="w-3.5 h-3.5" /> เปิดใน AI Publisher (ขั้นสูง)
                   </button>
 
                   <div className="flex items-center gap-2 w-full sm:w-auto">
                     <Button
-                      variant="outline"
+                      variant="neu"
                       type="button"
                       onClick={onClose}
                       disabled={isSubmitting}
-                      className="border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold rounded-xl h-11 px-4 flex-1 sm:flex-none"
+                      className="text-xs font-bold rounded-xl h-11 px-4 flex-1 sm:flex-none"
                     >
                       ยกเลิก
                     </Button>
                     <Button
+                      variant="tactile"
                       type="button"
                       onClick={handleSubmit}
                       disabled={isSubmitting || connections.length === 0}
-                      className="bg-gradient-to-r from-purple-600 via-indigo-600 to-red-600 hover:from-purple-700 hover:to-red-700 text-white text-xs font-black rounded-xl h-11 px-6 shadow-md flex-1 sm:flex-none flex items-center justify-center gap-2"
+                      className="text-xs font-bold rounded-xl h-11 px-6 flex-1 sm:flex-none flex items-center justify-center gap-2"
                     >
                       {isSubmitting ? (
                         <>

@@ -239,24 +239,28 @@ export function MultiImageWizard({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="neu-raised neu-grain rounded-3xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-indigo-50">
-        <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-white/60 transition-colors">
-          <ArrowLeft className="w-4 h-4 text-slate-600" />
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-border/60 bg-[var(--surface-recessed)]/70">
+        <button
+          type="button"
+          onClick={onBack}
+          className="p-2 rounded-xl neu-pressed text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <h2 className="font-bold text-slate-800 flex items-center gap-2">
-            <Images className="w-4 h-4 text-blue-500" />
+          <h2 className="font-display font-bold text-foreground flex items-center gap-2">
+            <Images className="w-4 h-4 text-teal-500" />
             Album Post
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             {filledSlots.length} รูปใน Post เดียว — ลาก ⠿ เรียงลำดับได้
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           {[1, 2, 3].map(s => (
-            <div key={s} className={`h-1.5 w-8 rounded-full transition-all ${step >= s ? "bg-blue-500" : "bg-slate-200"}`} />
+            <div key={s} className={`h-1.5 w-8 rounded-full transition-all ${step >= s ? "bg-teal-500" : "bg-border/70"}`} />
           ))}
         </div>
       </div>
@@ -274,25 +278,26 @@ export function MultiImageWizard({
               onDrop={handleDropZone}
               className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
                 isDragOver
-                  ? "border-blue-400 bg-blue-50"
-                  : "border-slate-200 hover:border-blue-300 hover:bg-blue-50/30"
+                  ? "border-teal-500/60 bg-teal-500/10"
+                  : "border-border/70 neu-pressed hover:border-teal-500/40"
               }`}
             >
-              <Upload className={`w-8 h-8 mx-auto mb-2 ${isDragOver ? "text-blue-500" : "text-slate-400"}`} />
-              <p className="text-sm font-bold text-slate-600">ลากรูปหลายรูปมาวางที่นี่</p>
-              <p className="text-xs text-slate-400 mt-1">รูปทั้งหมดจะรวมอยู่ใน Album Post เดียว (สูงสุด 10 รูป)</p>
+              <Upload className={`w-8 h-8 mx-auto mb-2 ${isDragOver ? "text-teal-500" : "text-muted-foreground"}`} />
+              <p className="text-sm font-bold text-foreground/85">ลากรูปหลายรูปมาวางที่นี่</p>
+              <p className="text-xs text-muted-foreground mt-1">รูปทั้งหมดจะรวมอยู่ใน Album Post เดียว (สูงสุด 10 รูป)</p>
             </div>
 
             {/* Image Slots with Drag Reorder */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-bold text-slate-700">
+                <label className="text-sm font-bold text-foreground">
                   🖼️ รูปใน Album ({filledSlots.length}/{slots.length} รูป)
                 </label>
                 {slots.length < 10 && (
                   <button
+                    type="button"
                     onClick={addSlot}
-                    className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-all"
+                    className="flex items-center gap-1 text-xs font-bold neu-tint-teal px-3 py-1.5 rounded-lg transition-all hover:brightness-110"
                   >
                     <Plus className="w-3 h-3" /> เพิ่มรูป
                   </button>
@@ -307,55 +312,55 @@ export function MultiImageWizard({
                     onDragStart={e => handleDragStart(e, idx)}
                     onDragOver={handleDragOver}
                     onDrop={e => handleDrop(e, idx)}
-                    className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 group hover:border-blue-200 hover:bg-blue-50/30 transition-all"
+                    className="flex items-center gap-3 p-3 neu-pressed rounded-xl group hover:border-teal-500/35 border border-border/60 transition-all"
                   >
                     {/* Drag Handle */}
-                    <div className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 shrink-0">
+                    <div className="cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground shrink-0">
                       <GripVertical className="w-5 h-5" />
                     </div>
 
                     {/* Order Badge */}
-                    <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-xs font-black flex items-center justify-center shrink-0">
+                    <div className="w-7 h-7 rounded-full neu-tint-teal text-xs font-extrabold flex items-center justify-center shrink-0">
                       {idx + 1}
                     </div>
 
                     {/* Thumbnail */}
-                    <div className="w-16 h-16 rounded-xl overflow-hidden border border-slate-200 shrink-0 relative bg-slate-100">
+                    <div className="w-16 h-16 rounded-xl overflow-hidden border border-border/60 shrink-0 relative bg-[var(--surface-recessed)]">
                       {slot.preview ? (
                         <>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={slot.preview} alt={`img-${idx + 1}`} className="w-full h-full object-cover" />
                           {slot.uploading && (
-                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                               <RefreshCcw className="w-4 h-4 text-white animate-spin" />
                             </div>
                           )}
                           {slot.url && (
-                            <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                            <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
                               <CheckCircle2 className="w-2.5 h-2.5 text-white" />
                             </div>
                           )}
                         </>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Upload className="w-5 h-5 text-slate-400" />
+                          <Upload className="w-5 h-5 text-muted-foreground" />
                         </div>
                       )}
                     </div>
 
                     {/* Status */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-slate-600">รูปที่ {idx + 1} ของ Album</div>
+                      <div className="text-xs font-bold text-foreground">รูปที่ {idx + 1} ของ Album</div>
                       {slot.error && (
-                        <p className="text-xs text-red-500 flex items-center gap-1 mt-0.5">
+                        <p className="text-xs text-destructive flex items-center gap-1 mt-0.5">
                           <AlertCircle className="w-3 h-3" /> {slot.error}
                         </p>
                       )}
                       {!slot.preview && (
-                        <p className="text-xs text-slate-400 mt-0.5">ยังไม่มีรูป</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">ยังไม่มีรูป</p>
                       )}
                       {slot.url && (
-                        <p className="text-xs text-green-600 mt-0.5 font-medium">✅ พร้อมโพสต์</p>
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5 font-medium">✅ พร้อมโพสต์</p>
                       )}
                     </div>
 
@@ -364,14 +369,16 @@ export function MultiImageWizard({
                       {!slot.preview ? (
                         <>
                           <button
+                            type="button"
                             onClick={() => fileRefs.current[idx]?.click()}
-                            className="text-[10px] font-bold bg-white border border-slate-200 hover:border-slate-300 text-slate-600 px-2 py-1 rounded-lg flex items-center gap-1 transition-all"
+                            className="text-[10px] font-bold bg-[var(--surface-elevated)] border border-border/70 hover:border-border text-foreground/85 px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-all"
                           >
                             <Upload className="w-3 h-3" /> อัปโหลด
                           </button>
                           <button
+                            type="button"
                             onClick={() => { setAiActiveSlotIndex(idx); setIsImageModalOpen(true); }}
-                            className="text-[10px] font-bold bg-purple-50 border border-purple-200 hover:border-purple-300 text-purple-700 px-2 py-1 rounded-lg flex items-center gap-1 transition-all"
+                            className="text-[10px] font-bold neu-tint-primary px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-all"
                           >
                             <Sparkles className="w-3 h-3 animate-pulse" /> AI
                           </button>
@@ -379,8 +386,9 @@ export function MultiImageWizard({
                       ) : (
                         !slot.uploading && (
                           <button
+                            type="button"
                             onClick={() => clearSlot(idx)}
-                            className="text-[10px] font-bold bg-white border border-slate-200 hover:border-red-200 text-slate-500 hover:text-red-600 px-2 py-1 rounded-lg flex items-center gap-1 transition-all"
+                            className="text-[10px] font-bold bg-[var(--surface-elevated)] border border-border/70 hover:border-destructive/40 text-muted-foreground hover:text-destructive px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-all"
                           >
                             <RefreshCcw className="w-3 h-3" /> เปลี่ยน
                           </button>
@@ -388,8 +396,9 @@ export function MultiImageWizard({
                       )}
                       {slots.length > 1 && (
                         <button
+                          type="button"
                           onClick={() => removeSlot(idx)}
-                          className="w-6 h-6 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-400 hover:text-red-600 transition-all"
+                          className="w-6 h-6 rounded-lg bg-destructive/12 hover:bg-destructive/20 flex items-center justify-center text-destructive transition-all"
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -408,8 +417,8 @@ export function MultiImageWizard({
               </div>
 
               {filledSlots.length > 0 && (
-                <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl">
-                  <p className="text-xs font-bold text-blue-700">
+                <div className="mt-3 p-3 neu-tint-teal rounded-xl">
+                  <p className="text-xs font-bold">
                     🖼️ {filledSlots.length} รูปจะรวมอยู่ใน <span className="underline">1 Post</span> แบบ Facebook Album
                   </p>
                 </div>
@@ -418,16 +427,17 @@ export function MultiImageWizard({
 
             {/* Channel Selector */}
             <div>
-              <label className="text-sm font-bold text-slate-700 mb-3 block">📡 เลือก Channel</label>
+              <label className="text-sm font-bold text-foreground mb-3 block">📡 เลือก Channel</label>
               <div className="flex flex-wrap gap-2">
                 {connections.filter(c => c.isActive).map(c => (
                   <button
                     key={c.id}
+                    type="button"
                     onClick={() => toggleChannel(c.id)}
-                    className={`px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
+                    className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
                       selectedChannels.includes(c.id)
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                        ? "neu-tint-teal"
+                        : "neu-pressed border-border/60 text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {c.platform === "FACEBOOK" ? "📘" : "📷"} {c.accountName}
@@ -440,12 +450,12 @@ export function MultiImageWizard({
             <div className="grid md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-sm font-bold text-slate-700">✏️ Topic / หัวข้อ</label>
+                  <label className="text-sm font-bold text-foreground">✏️ Topic / หัวข้อ</label>
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="neu"
                     onClick={() => setIsArticleModalOpen(true)}
-                    className="border-purple-200 text-purple-700 hover:bg-purple-50 text-[10px] font-black flex items-center gap-1 py-1 h-6 rounded-lg"
+                    className="text-primary text-[10px] font-bold flex items-center gap-1 py-1 h-7 rounded-lg"
                   >
                     <PenTool className="w-3 h-3" /> ✍️ AI Article Writer
                   </Button>
@@ -454,27 +464,28 @@ export function MultiImageWizard({
                   value={topic}
                   onChange={e => setTopic(e.target.value)}
                   placeholder="เช่น: อาหารไทยแบบครบ 4 ช่วงเวลา"
-                  className="h-20 resize-none border-slate-200 text-slate-800"
+                  className="h-20 resize-none rounded-xl"
                 />
               </div>
               <div>
-                <label className="text-sm font-bold text-slate-700 mb-2 block">🌐 ภาษา</label>
+                <label className="text-sm font-bold text-foreground mb-2 block">🌐 ภาษา</label>
                 <select
                   value={language}
                   onChange={e => setLanguage(e.target.value)}
-                  className="w-full h-20 border border-slate-200 rounded-xl px-3 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-20 neu-pressed bg-[var(--surface-recessed)] border border-border/60 rounded-xl px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 [&>option]:bg-[var(--surface-elevated)] [&>option]:text-foreground"
                 >
                   {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
               </div>
             </div>
 
-            {error && <p className="text-red-500 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">{error}</p>}
+            {error && <p className="text-destructive text-sm bg-destructive/12 border border-destructive/30 rounded-xl px-4 py-3">{error}</p>}
 
             <Button
+              variant="tactile"
               onClick={handleGenerate}
               disabled={isGenerating || anyUploading || !topic.trim() || selectedChannels.length === 0 || filledSlots.length === 0}
-              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl"
+              className="w-full h-12 font-bold rounded-xl"
             >
               {isGenerating
                 ? <><RefreshCcw className="w-5 h-5 animate-spin mr-2" /> กำลัง Generate...</>
@@ -488,26 +499,26 @@ export function MultiImageWizard({
         {step === 2 && (
           <div className="space-y-6 animate-in fade-in">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <LayoutTemplate className="w-5 h-5 text-blue-600" /> เลือก Variant ที่ชอบ
+              <h3 className="font-display font-bold text-foreground flex items-center gap-2">
+                <LayoutTemplate className="w-5 h-5 text-teal-500" /> เลือก Variant ที่ชอบ
               </h3>
-              <Button variant="outline" size="sm" onClick={() => setStep(1)}>ย้อนกลับ</Button>
+              <Button variant="neu" size="sm" onClick={() => setStep(1)}>ย้อนกลับ</Button>
             </div>
 
             {/* Image Preview Strip — shows order */}
             <div className="flex gap-2 overflow-x-auto pb-2">
               {filledSlots.map((slot, i) => (
                 <div key={slot.id} className="relative shrink-0">
-                  <div className="w-14 h-14 rounded-lg overflow-hidden border border-slate-200">
+                  <div className="w-14 h-14 rounded-lg overflow-hidden border border-border/60">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     {slot.preview && <img src={slot.preview} alt={`img-${i}`} className="w-full h-full object-cover" />}
                   </div>
-                  <div className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-blue-500 text-white text-[9px] font-black flex items-center justify-center">
+                  <div className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-teal-500 text-white text-[9px] font-black flex items-center justify-center">
                     {i + 1}
                   </div>
                 </div>
               ))}
-              <div className="w-14 h-14 rounded-lg border border-dashed border-slate-200 flex items-center justify-center text-xs text-slate-400 shrink-0">
+              <div className="w-14 h-14 rounded-lg border border-dashed border-border/70 flex items-center justify-center text-xs text-muted-foreground shrink-0">
                 {filledSlots.length} รูป
               </div>
             </div>
@@ -518,16 +529,16 @@ export function MultiImageWizard({
                 <div
                   key={i}
                   onClick={() => setSelectedContent(v)}
-                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  className={`p-4 rounded-xl border cursor-pointer transition-all ${
                     selectedContent === v
-                      ? "border-blue-500 bg-blue-50 ring-4 ring-blue-500/10"
-                      : "border-slate-200 bg-white hover:border-slate-300"
+                      ? "neu-tint-teal ring-2 ring-teal-500/25"
+                      : "neu-pressed border-border/60 hover:border-border"
                   }`}
                 >
-                  <div className="text-xs font-bold text-blue-600 mb-2 flex items-center gap-1">
+                  <div className="text-xs font-bold text-teal-600 dark:text-teal-400 mb-2 flex items-center gap-1">
                     <Sparkles className="w-3 h-3" /> Option {i + 1}
                   </div>
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{v}</p>
+                  <p className="text-sm text-foreground/85 whitespace-pre-wrap leading-relaxed">{v}</p>
                 </div>
               ))}
             </div>
@@ -537,35 +548,37 @@ export function MultiImageWizard({
                 <Textarea
                   value={selectedContent}
                   onChange={e => setSelectedContent(e.target.value)}
-                  className="h-32 resize-none border-slate-200 text-slate-800"
+                  className="h-32 resize-none rounded-xl"
                 />
 
                 {/* Scheduling */}
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-                  <h4 className="font-bold text-slate-800 text-sm">📅 กำหนดเวลาเผยแพร่</h4>
+                <div className="p-5 rounded-2xl neu-pressed space-y-4">
+                  <h4 className="font-display font-bold text-foreground text-sm">📅 กำหนดเวลาเผยแพร่</h4>
                   <ScheduleDateTimePicker schedule={schedule} accentColor="blue" />
 
                   {filledSlots.length === 0 && (
-                    <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    <div className="text-xs text-amber-700 dark:text-amber-300 bg-amber-500/12 border border-amber-500/30 rounded-lg px-3 py-2">
                       ⚠️ ต้องมีรูปอย่างน้อย 1 รูป
                     </div>
                   )}
 
-                  {error && <p className="text-red-500 text-sm">{error}</p>}
+                  {error && <p className="text-destructive text-sm">{error}</p>}
 
                   <div className="flex gap-3">
                     <Button
+                      variant="neu"
                       disabled={isPublishing || filledSlots.length === 0}
                       onClick={() => handlePublish(false)}
-                      className="flex-1 h-11 bg-white border-2 border-slate-200 text-slate-700 hover:bg-slate-50 font-bold rounded-xl"
+                      className="flex-1 h-11 font-bold rounded-xl"
                     >
-                      {isPublishing ? <RefreshCcw className="w-4 h-4 animate-spin mr-2" /> : <CalendarIcon className="w-4 h-4 mr-2 text-slate-400" />}
+                      {isPublishing ? <RefreshCcw className="w-4 h-4 animate-spin mr-2" /> : <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />}
                       Schedule
                     </Button>
                     <Button
+                      variant="tactile"
                       disabled={isPublishing || filledSlots.length === 0}
                       onClick={() => handlePublish(true)}
-                      className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl"
+                      className="flex-1 h-11 font-bold rounded-xl"
                     >
                       {isPublishing ? <RefreshCcw className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
                       Post Now
@@ -580,15 +593,15 @@ export function MultiImageWizard({
         {/* ─── STEP 3 ─── */}
         {step === 3 && publishSuccess && (
           <div className="flex flex-col items-center justify-center py-16 animate-in zoom-in-95">
-            <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6 border-8 border-blue-100">
-              <CheckCircle2 className="w-12 h-12 text-blue-500" />
+            <div className="w-24 h-24 neu-tint-teal rounded-full flex items-center justify-center mb-6">
+              <CheckCircle2 className="w-12 h-12" />
             </div>
-            <h2 className="text-3xl font-bold text-slate-800 mb-2">Album Queued! 🎉</h2>
-            <p className="text-slate-500 text-sm mb-4">{filledSlots.length} รูปจะโพสต์เป็น Album เดียว</p>
+            <h2 className="font-display text-3xl font-extrabold text-foreground mb-2">Album Queued! 🎉</h2>
+            <p className="text-muted-foreground text-sm mb-4">{filledSlots.length} รูปจะโพสต์เป็น Album เดียว</p>
             {scheduledDateTime && (
-              <div className="px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-center mb-6">
-                <p className="text-slate-500">กำหนดโพสต์วันที่</p>
-                <p className="font-bold text-slate-800 mt-0.5">
+              <div className="px-5 py-3 neu-pressed rounded-xl text-sm text-center mb-6">
+                <p className="text-muted-foreground">กำหนดโพสต์วันที่</p>
+                <p className="font-bold text-foreground mt-0.5">
                   {format(scheduledDateTime, "EEEE d MMMM yyyy", { locale: th })} เวลา {format(scheduledDateTime, "HH:mm")} น.
                 </p>
               </div>
@@ -597,27 +610,28 @@ export function MultiImageWizard({
             <div className="flex gap-2 mb-8">
               {filledSlots.slice(0, 6).map((s, i) => (
                 <div key={i} className="relative">
-                  <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-200">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden border border-border/60">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     {s.preview && <img src={s.preview} alt="" className="w-full h-full object-cover" />}
                   </div>
-                  <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-blue-500 text-white text-[8px] font-black flex items-center justify-center">
+                  <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-teal-500 text-white text-[8px] font-black flex items-center justify-center">
                     {i + 1}
                   </div>
                 </div>
               ))}
               {filledSlots.length > 6 && (
-                <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">
+                <div className="w-12 h-12 rounded-lg neu-pressed flex items-center justify-center text-xs font-bold text-muted-foreground">
                   +{filledSlots.length - 6}
                 </div>
               )}
             </div>
             <div className="flex gap-3">
-              <Button variant="outline" className="font-bold px-6 rounded-xl" onClick={() => window.location.href = "/dashboard/history"}>
+              <Button variant="neu" className="font-bold px-6 rounded-xl" onClick={() => window.location.href = "/dashboard/history"}>
                 View History
               </Button>
               <Button
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 rounded-xl"
+                variant="tactile"
+                className="font-bold px-6 rounded-xl"
                 onClick={() => {
                   setStep(1);
                   setPublishSuccess(false);

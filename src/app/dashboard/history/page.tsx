@@ -41,8 +41,7 @@ export default async function AutoPostHistoryPage() {
       <div>
         <div className="flex items-center gap-3 mb-1">
           <div
-            className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg"
-            style={{ background: "linear-gradient(135deg, #5856d6, #34aadc)" }}
+            className="w-10 h-10 rounded-2xl flex items-center justify-center neu-tint-primary"
           >
             <svg
               viewBox="0 0 24 24"
@@ -61,10 +60,10 @@ export default async function AutoPostHistoryPage() {
             </svg>
           </div>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">
+            <h1 className="font-display text-2xl font-extrabold tracking-tight text-foreground">
               Content Hub & Post History
             </h1>
-            <p className="text-slate-500 text-xs font-medium">
+            <p className="text-muted-foreground text-xs font-medium">
               คลังแบบร่างรอโพสต์ (Drafts Queue) และประวัติการเผยแพร่อัตโนมัติ
               {workspace ? ` · ${workspace.name}` : ""}
             </p>

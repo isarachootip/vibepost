@@ -121,19 +121,19 @@ export function AIImageCreatorModal({ isOpen, onClose, onSelectImage, initialPro
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-2xl bg-white border border-slate-200 text-slate-800 shadow-2xl rounded-2xl p-6 overflow-y-auto max-h-[90vh]">
+      <DialogContent className="sm:max-w-2xl rounded-3xl p-6 overflow-y-auto max-h-[90vh]">
         <DialogHeader className="mb-3">
-          <DialogTitle className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-purple-600 animate-pulse" />
+          <DialogTitle className="font-display text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-primary animate-pulse" />
             AI Image Creator
           </DialogTitle>
-          <DialogDescription className="text-slate-500 font-medium text-xs">
+          <DialogDescription className="text-muted-foreground font-medium text-xs">
             สกัด English Visual Prompt จากเนื้อหาอัตโนมัติ แก้ไขคำสั่งภาษาอังกฤษได้ก่อนกดสร้างภาพ
           </DialogDescription>
         </DialogHeader>
 
         {error && (
-          <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold">
+          <div className="p-3.5 bg-destructive/12 border border-destructive/30 text-destructive rounded-xl text-xs font-semibold">
             ⚠️ {error}
           </div>
         )}
@@ -154,30 +154,30 @@ export function AIImageCreatorModal({ isOpen, onClose, onSelectImage, initialPro
             />
 
             <div>
-              <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-1.5">2. เลือกสไตล์ภาพ (Style)</Label>
+              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">2. เลือกสไตล์ภาพ (Style)</Label>
               <div className="grid grid-cols-1 gap-1.5">
                 {STYLES.map((item) => (
                   <button key={item.id} type="button" onClick={() => setSelectedStyle(item.id)}
                     className={`p-2 text-left rounded-xl border text-xs transition-all flex flex-col ${
-                      selectedStyle === item.id ? "border-purple-600 bg-purple-50/50 text-purple-900 shadow-sm" : "border-slate-200 hover:border-slate-300 bg-white"
+                      selectedStyle === item.id ? "neu-tint-primary" : "border-border/60 bg-[var(--surface-recessed)]/65 hover:border-border text-foreground"
                     }`}>
                     <span className="font-bold">{item.label}</span>
-                    <span className="text-[10px] text-slate-400">{item.desc}</span>
+                    <span className="text-[10px] text-muted-foreground">{item.desc}</span>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-1.5">3. ผู้ให้บริการ AI (AI Engine)</Label>
+              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">3. ผู้ให้บริการ AI (AI Engine)</Label>
               <div className="space-y-1.5">
                 {PROVIDERS.map((prov) => (
                   <button key={prov.id} type="button" onClick={() => setSelectedProvider(prov.id)}
                     className={`w-full p-2 text-left rounded-xl border text-xs transition-all flex flex-col ${
-                      selectedProvider === prov.id ? "border-purple-600 bg-purple-50/50 text-purple-900 shadow-sm" : "border-slate-200 hover:border-slate-300 bg-white"
+                      selectedProvider === prov.id ? "neu-tint-primary" : "border-border/60 bg-[var(--surface-recessed)]/65 hover:border-border text-foreground"
                     }`}>
                     <span className="font-bold">{prov.label}</span>
-                    <span className="text-[10px] text-slate-400">{prov.desc}</span>
+                    <span className="text-[10px] text-muted-foreground">{prov.desc}</span>
                   </button>
                 ))}
               </div>

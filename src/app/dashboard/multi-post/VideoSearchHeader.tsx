@@ -45,7 +45,7 @@ export function VideoSearchHeader({
     <div className="space-y-4">
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label className="text-xs font-black text-slate-600 uppercase tracking-wider">
+          <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             English Video Prompt / คีย์เวิร์ดค้นหา
           </Label>
           {canReExtract && (
@@ -53,7 +53,7 @@ export function VideoSearchHeader({
               type="button"
               disabled={extracting}
               onClick={onReExtract}
-              className="text-[10px] font-bold text-purple-600 hover:text-purple-800 inline-flex items-center gap-1"
+              className="text-[10px] font-bold text-primary hover:underline inline-flex items-center gap-1"
             >
               <RefreshCw className={`w-3 h-3 ${extracting ? "animate-spin" : ""}`} />
               สกัดใหม่จากเนื้อหา
@@ -74,28 +74,29 @@ export function VideoSearchHeader({
               value={prompt}
               onChange={(e) => onPromptChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && prompt.trim() && onCategoryChange("custom")}
-              className="bg-slate-50 border-slate-200 text-slate-800 pl-9 pr-4 h-11 rounded-xl text-xs font-medium"
+              className="pl-9 pr-4 h-11 rounded-xl text-xs font-medium"
             />
             {extracting ? (
-              <Loader2 className="w-4 h-4 text-purple-600 animate-spin absolute left-3 top-3.5" />
+              <Loader2 className="w-4 h-4 text-primary animate-spin absolute left-3 top-3.5" />
             ) : (
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-3.5" />
             )}
           </div>
           <Button
             type="button"
-            variant="outline"
+            variant="neu"
             disabled={extracting || !prompt.trim()}
             onClick={() => onCategoryChange("custom")}
-            className="border-slate-200 text-slate-700 font-bold h-11 px-4 rounded-xl text-xs"
+            className="font-bold h-11 px-4 rounded-xl text-xs"
           >
             กรองสต็อก
           </Button>
           <Button
             type="button"
+            variant="tactile"
             disabled={generating || extracting || !prompt.trim()}
             onClick={onGenerateAI}
-            className="bg-purple-600 hover:bg-purple-700 text-white font-bold h-11 px-4 rounded-xl text-xs flex items-center gap-1.5"
+            className="font-bold h-11 px-4 rounded-xl text-xs flex items-center gap-1.5"
           >
             {isGeneratingCustom ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -107,7 +108,7 @@ export function VideoSearchHeader({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-3">
+      <div className="flex flex-wrap gap-2 border-b border-border/60 pb-3">
         {CATEGORIES.map((cat) => (
           <button
             key={cat.id}
@@ -115,8 +116,8 @@ export function VideoSearchHeader({
             onClick={() => onCategoryChange(cat.id)}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
               selectedCategory === cat.id
-                ? "bg-purple-600 text-white shadow-sm"
-                : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/50"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "neu-pressed text-muted-foreground hover:text-foreground"
             }`}
           >
             {cat.label}

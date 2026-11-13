@@ -72,8 +72,8 @@ export function AIArticleWriterModal({ isOpen, onClose, onUseArticle }: Props) {
       } else {
         setError(res.error || "เกิดข้อผิดพลาดในการเขียนบทความ กรุณาตรวจสอบคีย์เวิร์ดหรือ API Key");
       }
-    } catch (err: any) {
-      setError(err.message || "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     } finally {
       setLoading(false);
     }
@@ -91,20 +91,20 @@ export function AIArticleWriterModal({ isOpen, onClose, onUseArticle }: Props) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-3xl bg-white border border-slate-200 text-slate-800 shadow-2xl rounded-2xl p-6 overflow-y-auto max-h-[90vh]">
+      <DialogContent className="sm:max-w-3xl rounded-3xl p-6 overflow-y-auto max-h-[90vh]">
         <DialogHeader className="mb-4">
-          <DialogTitle className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <PenTool className="w-6 h-6 text-purple-600 animate-pulse" />
+          <DialogTitle className="font-display text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+            <PenTool className="w-6 h-6 text-primary animate-pulse" />
             AI Article Writer
           </DialogTitle>
-          <DialogDescription className="text-slate-500 font-medium">
+          <DialogDescription className="text-muted-foreground font-medium">
             เขียนบทความขนาดยาวที่มีโครงสร้างน่าอ่านและมีเสน่ห์ด้วยขุมพลัง AI
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {error && (
-            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-semibold">
+            <div className="p-4 bg-destructive/12 border border-destructive/30 text-destructive rounded-xl text-sm font-semibold">
               ⚠️ {error}
             </div>
           )}
@@ -113,34 +113,35 @@ export function AIArticleWriterModal({ isOpen, onClose, onUseArticle }: Props) {
             {/* Left side: Inputs */}
             <div className="space-y-5">
               <div>
-                <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-2">
                   1. หัวข้อ / ประเด็นหลัก
                 </Label>
                 <Textarea
                   placeholder="เช่น 5 เคล็ดลับการชงกาแฟ Cold Brew ดื่มเองที่บ้านอย่างไรให้อร่อยและประหยัด..."
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
-                  className="bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400 h-24 focus-visible:ring-purple-500 rounded-xl text-sm resize-none leading-relaxed"
+                  className="h-24 rounded-xl text-sm resize-none leading-relaxed"
                 />
               </div>
 
               <div>
-                <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-2">
                   2. เลือกโทนน้ำเสียง (Tone)
                 </Label>
                 <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1">
                   {TONES.map((tone) => (
                     <button
                       key={tone.id}
+                      type="button"
                       onClick={() => setSelectedTone(tone.id)}
                       className={`p-3 text-left rounded-xl border text-xs transition-all duration-200 flex flex-col ${
                         selectedTone === tone.id
-                          ? "border-purple-600 bg-purple-50/50 text-purple-900 shadow-sm"
-                          : "border-slate-200 hover:border-slate-300 bg-white"
+                          ? "neu-tint-primary"
+                          : "border-border/60 bg-[var(--surface-recessed)]/65 hover:border-border text-foreground"
                       }`}
                     >
                       <span className="font-bold">{tone.label}</span>
-                      <span className="text-[10px] text-slate-400 mt-0.5">{tone.desc}</span>
+                      <span className="text-[10px] text-muted-foreground mt-0.5">{tone.desc}</span>
                     </button>
                   ))}
                 </div>
@@ -148,13 +149,13 @@ export function AIArticleWriterModal({ isOpen, onClose, onUseArticle }: Props) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-2">
                     3. ความยาว (Length)
                   </Label>
                   <select
                     value={selectedLength}
                     onChange={(e) => setSelectedLength(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold"
+                    className="w-full neu-pressed bg-[var(--surface-recessed)] border border-border/60 text-foreground rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 font-bold [&>option]:bg-[var(--surface-elevated)] [&>option]:text-foreground"
                   >
                     {LENGTHS.map((len) => (
                       <option key={len.id} value={len.id}>
@@ -165,13 +166,13 @@ export function AIArticleWriterModal({ isOpen, onClose, onUseArticle }: Props) {
                 </div>
 
                 <div>
-                  <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-2">
                     4. ภาษา (Language)
                   </Label>
                   <select
                     value={selectedLanguage}
                     onChange={(e) => setSelectedLanguage(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold"
+                    className="w-full neu-pressed bg-[var(--surface-recessed)] border border-border/60 text-foreground rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 font-bold [&>option]:bg-[var(--surface-elevated)] [&>option]:text-foreground"
                   >
                     {LANGUAGES.map((lang) => (
                       <option key={lang.id} value={lang.id}>
@@ -184,29 +185,29 @@ export function AIArticleWriterModal({ isOpen, onClose, onUseArticle }: Props) {
             </div>
 
             {/* Right side: Preview area */}
-            <div className="flex flex-col justify-between border border-slate-100 rounded-2xl p-4 bg-slate-50 min-h-[350px]">
+            <div className="flex flex-col justify-between neu-pressed rounded-2xl p-4 min-h-[350px]">
               <div className="flex-1 flex flex-col">
-                <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-3">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-3">
                   พรีวิวเนื้อหาบทความ
                 </Label>
 
                 {loading ? (
-                  <div className="flex-1 bg-white border border-slate-200 rounded-xl flex flex-col items-center justify-center p-6 text-center shadow-inner min-h-[250px]">
-                    <Loader2 className="w-12 h-12 text-purple-600 animate-spin mb-4" />
-                    <h4 className="font-bold text-slate-800">กำลังร่างบทความของคุณ...</h4>
-                    <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                  <div className="flex-1 neu-raised rounded-xl flex flex-col items-center justify-center p-6 text-center min-h-[250px]">
+                    <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+                    <h4 className="font-display font-bold text-foreground">กำลังร่างบทความของคุณ...</h4>
+                    <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
                       ระบบ AI กำลังค้นคว้าข้อมูล วางโครงสร้างประโยค และแต่งบทความยาวตามโทนเสียงที่เลือก
                     </p>
                   </div>
                 ) : generatedArticle ? (
-                  <div className="flex-1 bg-white border border-slate-200 rounded-xl p-4 shadow-inner overflow-y-auto max-h-[300px] text-slate-700 text-sm whitespace-pre-wrap leading-relaxed font-serif">
+                  <div className="flex-1 neu-raised rounded-xl p-4 overflow-y-auto max-h-[300px] text-foreground/90 text-sm whitespace-pre-wrap leading-relaxed">
                     {generatedArticle}
                   </div>
                 ) : (
-                  <div className="flex-1 border-2 border-dashed border-slate-300 bg-white rounded-xl flex flex-col items-center justify-center p-6 text-center text-slate-400 min-h-[250px]">
-                    <BookOpen className="w-12 h-12 text-slate-300 mb-3" />
-                    <p className="font-semibold text-slate-500 text-sm">ยังไม่มีการสร้างบทความ</p>
-                    <p className="text-xs text-slate-400 mt-1 max-w-[200px]">
+                  <div className="flex-1 border-2 border-dashed border-border/70 bg-[var(--surface-elevated)]/40 rounded-xl flex flex-col items-center justify-center p-6 text-center text-muted-foreground min-h-[250px]">
+                    <BookOpen className="w-12 h-12 opacity-40 mb-3" />
+                    <p className="font-semibold text-foreground/80 text-sm">ยังไม่มีการสร้างบทความ</p>
+                    <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
                       กำหนดหัวข้อทางด้านซ้ายและสั่งเจน เพื่อพรีวิวเนื้อหาตรงนี้
                     </p>
                   </div>
@@ -215,16 +216,18 @@ export function AIArticleWriterModal({ isOpen, onClose, onUseArticle }: Props) {
 
               {generatedArticle ? (
                 <Button
+                  variant="tactile"
                   onClick={handleApply}
-                  className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold h-12 rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                  className="w-full mt-4 font-bold h-12 rounded-xl flex items-center justify-center gap-2"
                 >
                   <Check className="w-5 h-5" /> นำบทความนี้ไปใส่ในโพสต์
                 </Button>
               ) : (
                 <Button
+                  variant="tactile"
                   onClick={handleGenerate}
                   disabled={loading}
-                  className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold h-12 rounded-xl shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full mt-4 font-bold h-12 rounded-xl flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>

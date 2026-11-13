@@ -238,108 +238,122 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 min-h-screen w-full max-w-[1600px] mx-auto">
+    <div className="p-2 md:p-6 space-y-8 animate-in fade-in duration-500 min-h-screen w-full max-w-[1600px] mx-auto">
       {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between border-b border-slate-100 pb-5 gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-indigo-600 to-red-600 mb-2 tracking-tight flex items-center gap-3">
-            <Sparkles className="w-8 h-8 text-purple-600 animate-pulse" />
-            AI Creator Studio
-          </h1>
-          <p className="text-slate-500 font-medium">
-            แต่งบทความระดับคุณภาพด้วย AI และเนรมิตรูปภาพหรือวิดีโอประกอบอย่างเสร็จสรรพในที่เดียว
-          </p>
+      <header className="flex flex-col md:flex-row md:items-end justify-between border-b border-border/60 pb-5 gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-2xl neu-tint-primary flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5 animate-pulse" />
+          </div>
+          <div>
+            <h1 className="font-display text-3xl md:text-4xl font-extrabold text-foreground tracking-tight">
+              AI Creator <span className="text-primary">Studio</span>
+            </h1>
+            <p className="text-muted-foreground font-medium text-sm mt-0.5">
+              แต่งบทความระดับคุณภาพด้วย AI และเนรมิตรูปภาพหรือวิดีโอประกอบอย่างเสร็จสรรพในที่เดียว
+            </p>
+          </div>
         </div>
       </header>
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-sm font-semibold max-w-7xl mx-auto shadow-xs">
+        <div className="p-4 bg-destructive/12 border border-destructive/30 text-destructive rounded-2xl text-sm font-semibold max-w-7xl mx-auto">
           ⚠️ {error}
         </div>
       )}
 
       {/* AI Usage stats */}
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 bg-gradient-to-br from-purple-50/70 via-slate-50 to-indigo-50/70 border border-slate-200 p-6 rounded-3xl shadow-sm">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 neu-raised neu-mesh-card neu-grain p-6 rounded-3xl">
           <div className="space-y-1">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">ค่าใช้จ่ายสะสม (Est. Cost)</span>
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight flex items-baseline gap-1">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+              ค่าใช้จ่ายสะสม (Est. Cost)
+            </span>
+            <h3 className="font-display text-xl md:text-2xl font-extrabold text-foreground tracking-tight flex items-baseline gap-1">
               ${stats.totalCost.toFixed(5)}
-              <span className="text-xs font-bold text-slate-400">USD</span>
+              <span className="text-xs font-bold text-muted-foreground">USD</span>
             </h3>
-            <span className="text-[10px] text-purple-600 font-black block">
+            <span className="text-[11px] text-primary font-bold block">
               ≈ {(stats.totalCost * 34.5).toFixed(2)} บาท (THB)
             </span>
           </div>
 
-          <div className="space-y-1 border-l border-slate-200/80 pl-5">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Token ทั้งหมดที่ใช้งาน</span>
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight flex items-baseline gap-1">
+          <div className="space-y-1 border-l border-border/60 pl-5">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+              Token ทั้งหมดที่ใช้งาน
+            </span>
+            <h3 className="font-display text-xl md:text-2xl font-extrabold text-foreground tracking-tight flex items-baseline gap-1">
               {stats.totalTokens.toLocaleString()}
-              <span className="text-xs font-bold text-slate-400">Tokens</span>
+              <span className="text-xs font-bold text-muted-foreground">Tokens</span>
             </h3>
-            <span className="text-[10px] text-indigo-600 font-black block">
+            <span className="text-[11px] text-teal-600 dark:text-teal-400 font-bold block">
               เรียกใช้งาน AI รวม {stats.totalCalls} ครั้ง
             </span>
           </div>
 
-          <div className="space-y-1 border-l border-slate-200/80 pl-5">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">โมดูลเขียนข้อความ (Article)</span>
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+          <div className="space-y-1 border-l border-border/60 pl-5">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+              โมดูลเขียนข้อความ (Article)
+            </span>
+            <h3 className="font-display text-xl md:text-2xl font-extrabold text-foreground tracking-tight">
               {stats.articleCalls}{" "}
-              <span className="text-xs font-bold text-slate-400">ครั้ง</span>
+              <span className="text-xs font-bold text-muted-foreground">ครั้ง</span>
             </h3>
-            <span className="text-[10px] text-slate-400 font-bold block">
-              Gemini & GPT-3.5
+            <span className="text-[11px] text-muted-foreground font-medium block">
+              Gemini &amp; LLM
             </span>
           </div>
 
-          <div className="space-y-1 border-l border-slate-200/80 pl-5">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">โมดูลสร้างสื่อภาพ/วิดีโอ (Media)</span>
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+          <div className="space-y-1 border-l border-border/60 pl-5">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+              โมดูลสร้างสื่อภาพ/วิดีโอ (Media)
+            </span>
+            <h3 className="font-display text-xl md:text-2xl font-extrabold text-foreground tracking-tight">
               {stats.imageCalls + stats.videoCalls}{" "}
-              <span className="text-xs font-bold text-slate-400">ครั้ง</span>
+              <span className="text-xs font-bold text-muted-foreground">ครั้ง</span>
             </h3>
-            <span className="text-[10px] text-slate-400 font-bold block">
-              Imagen 4, DALL-E & Pexels
+            <span className="text-[11px] text-muted-foreground font-medium block">
+              Imagen, Veo &amp; Stock
             </span>
           </div>
         </div>
       )}
 
-      {/* Main Grid - Redesigned to utilize wide screen space */}
+      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
         {/* Left Column: Article Writer (col-span 7) */}
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6 flex flex-col justify-between">
+        <div className="lg:col-span-7 neu-raised neu-grain rounded-3xl p-6 space-y-6 flex flex-col justify-between">
           <div className="space-y-6">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <PenTool className="w-5 h-5 text-purple-600" />
-              <h2 className="font-extrabold text-slate-800 text-lg">1. เขียนบทความและข้อความโพสต์</h2>
+            <div className="flex items-center gap-2.5 border-b border-border/60 pb-3">
+              <PenTool className="w-5 h-5 text-primary" />
+              <h2 className="font-display font-bold text-foreground text-lg">
+                1. เขียนบทความและข้อความโพสต์
+              </h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-2">
                   หัวข้อหรือคำอธิบายเนื้อหาที่ต้องการ
                 </Label>
                 <Textarea
                   placeholder="เช่น แนะนำผลิตภัณฑ์อาหารเสริมคอลลาเจนตัวใหม่ ช่วยเรื่องผิวพรรณสดใสภายใน 14 วัน..."
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
-                  className="bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400 h-24 focus-visible:ring-purple-500 rounded-xl text-sm resize-none leading-relaxed"
+                  className="h-24 rounded-xl text-sm resize-none leading-relaxed"
                 />
               </div>
 
               {/* Configs */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-2">
                     น้ำเสียง (Tone)
                   </Label>
                   <select
                     value={selectedTone}
                     onChange={(e) => setSelectedTone(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold"
+                    className="w-full neu-pressed bg-[var(--surface-recessed)] border border-border/60 text-foreground rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 font-bold [&>option]:bg-[var(--surface-elevated)] [&>option]:text-foreground"
                   >
                     {TONES.map((t) => (
                       <option key={t.id} value={t.id}>
@@ -350,13 +364,13 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
                 </div>
 
                 <div>
-                  <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-2">
                     ความยาวบทความ
                   </Label>
                   <select
                     value={selectedLength}
                     onChange={(e) => setSelectedLength(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold"
+                    className="w-full neu-pressed bg-[var(--surface-recessed)] border border-border/60 text-foreground rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 font-bold [&>option]:bg-[var(--surface-elevated)] [&>option]:text-foreground"
                   >
                     {LENGTHS.map((len) => (
                       <option key={len.id} value={len.id}>
@@ -367,13 +381,13 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
                 </div>
 
                 <div>
-                  <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-2">
                     ภาษา
                   </Label>
                   <select
                     value={selectedLanguage}
                     onChange={(e) => setSelectedLanguage(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold"
+                    className="w-full neu-pressed bg-[var(--surface-recessed)] border border-border/60 text-foreground rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 font-bold [&>option]:bg-[var(--surface-elevated)] [&>option]:text-foreground"
                   >
                     {LANGUAGES.map((lang) => (
                       <option key={lang.id} value={lang.id}>
@@ -385,9 +399,10 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
               </div>
 
               <Button
+                variant="tactile"
                 onClick={handleGenerateArticle}
                 disabled={loadingArticle || !topic.trim()}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold h-12 rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                className="w-full font-bold h-12 rounded-xl flex items-center justify-center gap-2"
               >
                 {loadingArticle ? (
                   <>
@@ -403,46 +418,48 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
 
             {/* Generated Text Area with 3 Formats Ticks */}
             <div className="space-y-3 pt-2">
-              <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block">
+              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
                 ผลลัพธ์บทความ (เลือกรูปแบบที่ต้องการและพิมพ์แก้ไขได้โดยตรง)
               </Label>
-              
-              {/* 3 Formats Card selectors (ticks) */}
-              <div className="grid grid-cols-3 gap-2">
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {FORMAT_OPTIONS.map((fmt) => {
                   const hasContent = Boolean(formats[fmt.id]);
+                  const isSelected = selectedFormat === fmt.id;
                   return (
                     <button
                       key={fmt.id}
                       type="button"
                       onClick={() => setSelectedFormat(fmt.id)}
                       className={`p-3 text-left rounded-xl border text-xs transition-all duration-200 flex flex-col relative ${
-                        selectedFormat === fmt.id
-                          ? "border-purple-600 bg-purple-50/50 text-purple-900 shadow-xs"
-                          : "border-slate-200 hover:border-slate-300 bg-white text-slate-600"
-                      } ${!hasContent ? "opacity-60" : ""}`}
+                        isSelected
+                          ? "neu-tint-primary"
+                          : "neu-pressed border-border/60 text-muted-foreground hover:text-foreground"
+                      } ${!hasContent ? "opacity-65" : ""}`}
                     >
                       <span className="font-bold flex items-center gap-1.5">
-                        <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[8px] font-black ${
-                          selectedFormat === fmt.id 
-                            ? "bg-purple-600 border-purple-600 text-white" 
-                            : "border-slate-300 bg-white text-transparent"
-                        }`}>
+                        <span
+                          className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[8px] font-black ${
+                            isSelected
+                              ? "bg-primary border-primary text-primary-foreground"
+                              : "border-border bg-[var(--surface-recessed)] text-transparent"
+                          }`}
+                        >
                           ✓
                         </span>
                         {fmt.label}
                       </span>
-                      <span className="text-[10px] text-slate-400 mt-1">{fmt.desc}</span>
+                      <span className="text-[10px] text-muted-foreground mt-1">{fmt.desc}</span>
                     </button>
                   );
                 })}
               </div>
 
               {loadingArticle ? (
-                <div className="border border-slate-200 rounded-2xl p-6 bg-slate-50/50 flex flex-col items-center justify-center min-h-[300px] text-center">
-                  <Loader2 className="w-10 h-10 text-purple-600 animate-spin mb-4" />
-                  <h4 className="font-bold text-slate-700">กำลังแต่งบทความ 3 สไตล์...</h4>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed max-w-[280px]">
+                <div className="neu-pressed rounded-2xl p-6 flex flex-col items-center justify-center min-h-[300px] text-center">
+                  <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
+                  <h4 className="font-display font-bold text-foreground">กำลังแต่งบทความ 3 สไตล์...</h4>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed max-w-[280px]">
                     AI กำลังวิเคราะห์หัวข้อเพื่อประมวลผลบทความยาว แคปชันกระชับ และคำโฆษณาโครงสร้าง AIDA
                   </p>
                 </div>
@@ -451,17 +468,17 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
                   <Textarea
                     value={formats[selectedFormat]}
                     onChange={(e) => handleEditorChange(e.target.value)}
-                    className="bg-white border-slate-200 text-slate-700 h-[320px] focus-visible:ring-purple-500 rounded-2xl text-sm leading-relaxed p-4 font-sans shadow-inner resize-none"
+                    className="h-[320px] rounded-2xl text-sm leading-relaxed p-4 resize-none"
                   />
-                  <div className="text-[10px] text-slate-400 text-right font-medium">
+                  <div className="text-[10px] text-muted-foreground text-right font-mono">
                     ความยาวของรูปแบบที่เลือก: {formats[selectedFormat].length} ตัวอักษร
                   </div>
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 bg-slate-50/30 flex flex-col items-center justify-center min-h-[300px] text-center text-slate-400">
-                  <BookOpen className="w-10 h-10 text-slate-300 mb-2" />
-                  <p className="font-semibold text-slate-500 text-xs">ยังไม่มีการสร้างบทความ</p>
-                  <p className="text-[10px] text-slate-400 mt-1 max-w-[220px]">
+                <div className="border-2 border-dashed border-border/70 neu-pressed rounded-2xl p-6 flex flex-col items-center justify-center min-h-[300px] text-center text-muted-foreground">
+                  <BookOpen className="w-10 h-10 opacity-40 mb-2" />
+                  <p className="font-semibold text-foreground/80 text-xs">ยังไม่มีการสร้างบทความ</p>
+                  <p className="text-[10px] text-muted-foreground mt-1 max-w-[220px]">
                     ป้อนหัวข้อหลักด้านบนและกดสั่งเจน เพื่อแต่งบทความของคุณในคราวเดียว
                   </p>
                 </div>
@@ -471,16 +488,18 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
         </div>
 
         {/* Right Column: Media Studio (col-span 5) */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6 flex flex-col justify-between">
+        <div className="lg:col-span-5 neu-raised neu-grain rounded-3xl p-6 space-y-6 flex flex-col justify-between">
           <div className="space-y-6">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Film className="w-5 h-5 text-purple-600" />
-              <h2 className="font-extrabold text-slate-800 text-lg">2. ออกแบบรูปภาพหรือคลิปวิดีโอ</h2>
+            <div className="flex items-center gap-2.5 border-b border-border/60 pb-3">
+              <Film className="w-5 h-5 text-teal-500" />
+              <h2 className="font-display font-bold text-foreground text-lg">
+                2. ออกแบบรูปภาพหรือคลิปวิดีโอ
+              </h2>
             </div>
 
             {mediaUrl ? (
               <div className="space-y-4 animate-in zoom-in-95">
-                <div className="relative aspect-square w-full rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-black group">
+                <div className="relative aspect-square w-full rounded-2xl overflow-hidden border border-border/60 shadow-md bg-black group">
                   {mediaType === "video" ? (
                     <video
                       src={mediaUrl}
@@ -503,27 +522,28 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
                       setMediaUrl(null);
                       setMediaMeta(null);
                     }}
-                    className="absolute top-3 right-3 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-lg transition-colors"
+                    className="absolute top-3 right-3 bg-destructive hover:brightness-110 text-destructive-foreground p-2 rounded-full shadow-lg transition-colors"
+                    aria-label="ลบสื่อที่แนบ"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 {mediaMeta?.usedFallback && (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-semibold flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="p-3 bg-amber-500/12 border border-amber-500/30 rounded-xl text-xs text-amber-700 dark:text-amber-300 font-semibold flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-black block">
+                      <span className="font-bold block">
                         ใช้โมเดลสำรอง: {mediaMeta.actualModel}
                       </span>
-                      <span className="text-[11px] text-amber-700">
+                      <span className="text-[11px] opacity-90">
                         {mediaMeta.fallbackReason}
                       </span>
                     </div>
                   </div>
                 )}
 
-                <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-xs text-green-700 font-semibold flex items-center gap-2">
+                <div className="p-3 bg-emerald-500/12 border border-emerald-500/30 rounded-xl text-xs text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-2">
                   <Check className="w-4 h-4 shrink-0" />
                   แนบไฟล์{mediaType === "video" ? "วิดีโอ" : "รูปภาพ"} AI สำเร็จแล้ว! พร้อมส่งออกเพื่อดีพลอย
                 </div>
@@ -531,42 +551,44 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="neu"
                     onClick={() => handleOpenMediaCreator("image")}
-                    className="border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs h-10 rounded-xl flex items-center justify-center gap-1.5"
+                    className="font-bold text-xs h-10 rounded-xl flex items-center justify-center gap-1.5"
                   >
-                    <RefreshCw className="w-3.5 h-3.5 text-purple-600" /> แก้ Prompt / เจนรูปใหม่
+                    <RefreshCw className="w-3.5 h-3.5 text-primary" /> แก้ Prompt / เจนรูปใหม่
                   </Button>
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="neu"
                     onClick={() => handleOpenMediaCreator("video")}
-                    className="border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs h-10 rounded-xl flex items-center justify-center gap-1.5"
+                    className="font-bold text-xs h-10 rounded-xl flex items-center justify-center gap-1.5"
                   >
-                    <Film className="w-3.5 h-3.5 text-purple-600" /> สลับเป็นวิดีโอ AI
+                    <Film className="w-3.5 h-3.5 text-teal-500" /> สลับเป็นวิดีโอ AI
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 bg-slate-50 flex flex-col items-center justify-center text-center text-slate-400 min-h-[350px]">
-                <ImageIcon className="w-12 h-12 text-slate-300 mb-3 animate-pulse" />
-                <p className="font-bold text-slate-600 text-sm">เนรมิตสื่อประกอบบทความ</p>
-                <p className="text-xs text-slate-400 mt-1 max-w-[260px] mb-5">
+              <div className="border-2 border-dashed border-border/70 rounded-2xl p-8 neu-pressed flex flex-col items-center justify-center text-center text-muted-foreground min-h-[350px]">
+                <ImageIcon className="w-12 h-12 opacity-40 mb-3 animate-pulse" />
+                <p className="font-display font-bold text-foreground/85 text-sm">เนรมิตสื่อประกอบบทความ</p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-[260px] mb-5">
                   เลือกสร้างรูปภาพด้วย AI หรือค้นหาคลิปวิดีโอภาพยนตร์เพื่อนำมาประกบบทความนี้
                 </p>
 
                 <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
                   <Button
+                    variant="neu"
                     onClick={() => handleOpenMediaCreator("image")}
-                    className="bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-bold text-xs h-11 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+                    className="font-bold text-xs h-11 rounded-xl flex items-center justify-center gap-1.5"
                   >
-                    <Sparkles className="w-4 h-4 text-purple-500 animate-pulse" /> 🎨 เจนรูป AI
+                    <Sparkles className="w-4 h-4 text-primary animate-pulse" /> 🎨 เจนรูป AI
                   </Button>
                   <Button
+                    variant="neu"
                     onClick={() => handleOpenMediaCreator("video")}
-                    className="bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-bold text-xs h-11 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+                    className="font-bold text-xs h-11 rounded-xl flex items-center justify-center gap-1.5"
                   >
-                    <Film className="w-4 h-4 text-purple-500" /> 🎬 เลือกวิดีโอ AI
+                    <Film className="w-4 h-4 text-teal-500" /> 🎬 เลือกวิดีโอ AI
                   </Button>
                 </div>
               </div>
@@ -575,63 +597,60 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
 
           {/* Export / Launch Zone */}
           {formats[selectedFormat].trim() && (
-            <div className="pt-6 border-t border-slate-100 space-y-4 animate-in slide-in-from-bottom-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-black text-slate-600 uppercase tracking-wider block">
-                  3. ส่งออกเพื่อเผยแพร่ (Publish & Auto-Post)
+            <div className="pt-6 border-t border-border/60 space-y-4 animate-in slide-in-from-bottom-3">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+                  3. ส่งออกเพื่อเผยแพร่ (Publish &amp; Auto-Post)
                 </Label>
-                <span className="text-[11px] font-bold text-green-600 bg-green-50 px-2.5 py-0.5 rounded-md border border-green-200">
+                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-300 bg-emerald-500/12 px-2.5 py-0.5 rounded-md border border-emerald-500/25">
                   ✨ แคปชันและสื่อพร้อมแล้ว
                 </span>
               </div>
 
-              {/* Main Action Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                {/* 1-Click Fast AutoPost Action */}
                 <Button
+                  variant="tactile"
                   onClick={() => setIsAutoPostModalOpen(true)}
-                  className="sm:col-span-7 bg-gradient-to-r from-purple-600 via-indigo-600 to-red-600 hover:from-purple-700 hover:to-red-700 text-white font-extrabold h-13 rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-xs group"
+                  className="sm:col-span-7 font-bold h-12 rounded-2xl flex items-center justify-center gap-2 text-xs group"
                 >
-                  <Rocket className="w-4 h-4 text-yellow-300 animate-bounce" />
+                  <Rocket className="w-4 h-4 text-amber-300 animate-bounce" />
                   <span>🚀 เผยแพร่ทันที / ตั้งเวลา Auto-Post</span>
                 </Button>
 
-                {/* Save as Draft Button */}
                 <Button
-                  variant="outline"
+                  variant="neu"
                   onClick={handleSaveDraft}
                   disabled={savingDraft}
-                  className="sm:col-span-5 border-purple-200 bg-purple-50/50 hover:bg-purple-100/60 text-purple-800 font-black h-13 rounded-2xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all"
+                  className="sm:col-span-5 text-primary font-bold h-12 rounded-2xl text-xs flex items-center justify-center gap-1.5"
                 >
                   {savingDraft ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin text-purple-600" /> กำลังบันทึก...
+                      <Loader2 className="w-4 h-4 animate-spin" /> กำลังบันทึก...
                     </>
                   ) : (
                     <>
-                      <BookmarkPlus className="w-4 h-4 text-purple-600" /> 💾 บันทึกเป็นแบบร่าง (Draft)
+                      <BookmarkPlus className="w-4 h-4" /> 💾 บันทึกเป็นแบบร่าง (Draft)
                     </>
                   )}
                 </Button>
               </div>
 
-              {/* Advanced / Alternative Options */}
               <div className="pt-1 flex flex-col sm:flex-row gap-2">
                 <Button
-                  variant="outline"
+                  variant="neu"
                   onClick={() => handleSendToPublisher("single")}
-                  className="flex-1 border-slate-200 hover:bg-slate-50 text-slate-700 font-bold h-10 rounded-xl text-xs flex items-center justify-center gap-1.5"
+                  className="flex-1 font-bold h-10 rounded-xl text-xs flex items-center justify-center gap-1.5"
                 >
-                  <Settings2 className="w-3.5 h-3.5 text-slate-400" /> เปิดใน AI Publisher (ขั้นสูง)
+                  <Settings2 className="w-3.5 h-3.5 text-muted-foreground" /> เปิดใน AI Publisher (ขั้นสูง)
                 </Button>
 
                 {mediaType === "video" && mediaUrl && (
                   <Button
-                    variant="outline"
+                    variant="neu"
                     onClick={() => handleSendToPublisher("video")}
-                    className="flex-1 border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100/50 text-indigo-700 font-bold h-10 rounded-xl text-xs flex items-center justify-center gap-1.5"
+                    className="flex-1 text-teal-600 dark:text-teal-400 font-bold h-10 rounded-xl text-xs flex items-center justify-center gap-1.5"
                   >
-                    <Film className="w-3.5 h-3.5 text-indigo-500" /> โพสต์วิดีโอบรรยายคลิป
+                    <Film className="w-3.5 h-3.5" /> โพสต์วิดีโอบรรยายคลิป
                   </Button>
                 )}
               </div>
@@ -642,30 +661,31 @@ export function AIStudioClient({ connections = [] }: { connections?: Connection[
 
       {/* Draft Success Dialog */}
       <Dialog open={isDraftSuccessOpen} onOpenChange={setIsDraftSuccessOpen}>
-        <DialogContent className="sm:max-w-md bg-white border border-slate-200 text-slate-800 rounded-3xl p-6 shadow-2xl text-center">
+        <DialogContent className="sm:max-w-md rounded-3xl p-6 text-center">
           <div className="py-4 flex flex-col items-center justify-center space-y-4">
-            <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center border-4 border-purple-100 shadow-inner">
-              <BookmarkPlus className="w-8 h-8 text-purple-600" />
+            <div className="w-16 h-16 neu-tint-primary rounded-full flex items-center justify-center">
+              <BookmarkPlus className="w-8 h-8" />
             </div>
             <div className="space-y-1">
-              <DialogTitle className="text-xl font-black text-slate-900">
+              <DialogTitle className="font-display text-xl font-extrabold text-foreground">
                 บันทึกเข้าคลังแบบร่างเรียบร้อย! 🎉
               </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+              <DialogDescription className="text-xs text-muted-foreground leading-relaxed max-w-xs mx-auto">
                 คอนเทนต์ถูกเก็บไว้ใน <strong>&ldquo;คลังแบบร่างรอโพสต์ (Drafts Queue)&rdquo;</strong> คุณสามารถเปิดดูและคลิกสั่งโพสต์ได้ทุกเมื่อ
               </DialogDescription>
             </div>
             <div className="flex gap-3 pt-3 w-full">
               <Button
-                variant="outline"
+                variant="neu"
                 onClick={() => setIsDraftSuccessOpen(false)}
-                className="flex-1 border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold rounded-xl h-11"
+                className="flex-1 text-xs font-bold rounded-xl h-11"
               >
                 ✨ สร้างเนื้อหาต่อ
               </Button>
               <Button
+                variant="tactile"
                 onClick={() => router.push("/dashboard/history")}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-black rounded-xl h-11 shadow-md flex items-center justify-center gap-1.5"
+                className="flex-1 text-xs font-bold rounded-xl h-11 flex items-center justify-center gap-1.5"
               >
                 <Layers className="w-4 h-4" /> ไปดูคลังแบบร่าง
               </Button>

@@ -109,20 +109,20 @@ export function AIVideoStudioModal({ isOpen, onClose, onSelectVideo, initialProm
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-4xl bg-white border border-slate-200 text-slate-800 shadow-2xl rounded-2xl p-6 overflow-y-auto max-h-[90vh]">
+      <DialogContent className="sm:max-w-4xl rounded-3xl p-6 overflow-y-auto max-h-[90vh]">
         <DialogHeader className="mb-3">
-          <DialogTitle className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <Clapperboard className="w-6 h-6 text-purple-600 animate-pulse" />
+          <DialogTitle className="font-display text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+            <Clapperboard className="w-6 h-6 text-primary animate-pulse" />
             AI Video Studio
           </DialogTitle>
-          <DialogDescription className="text-slate-500 font-medium text-xs">
-            สกัด English Video Prompt & หมวดหมู่จากเนื้อหาอัตโนมัติ แก้ไขได้ก่อนค้นหาหรือเจนวิดีโอ
+          <DialogDescription className="text-muted-foreground font-medium text-xs">
+            สกัด English Video Prompt &amp; หมวดหมู่จากเนื้อหาอัตโนมัติ แก้ไขได้ก่อนค้นหาหรือเจนวิดีโอ
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
           {error && (
-            <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold">
+            <div className="p-3.5 bg-destructive/12 border border-destructive/30 text-destructive rounded-xl text-xs font-semibold">
               ⚠️ {error}
             </div>
           )}

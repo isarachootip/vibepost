@@ -25,7 +25,7 @@ export function DisconnectSocialButton({ connectionId, accountName }: Disconnect
       onClick={handleDisconnect}
       disabled={isLoading}
       title="Disconnect account"
-      className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-md transition-colors"
+      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-1.5 rounded-lg transition-colors disabled:opacity-50"
     >
       <Trash2 className="w-4 h-4" />
     </button>

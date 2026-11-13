@@ -148,19 +148,29 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in">
       {/* Progress Bar */}
       <div className="flex items-center justify-between mb-8 px-4 relative">
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-200 -z-10 rounded-full"></div>
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-red-600 -z-10 rounded-full transition-all duration-500" style={{ width: `${(step / 4) * 100}%` }}></div>
-        
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-border/70 -z-10 rounded-full" />
+        <div
+          className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-primary -z-10 rounded-full transition-all duration-500"
+          style={{ width: `${(step / 4) * 100}%` }}
+        />
+
         {[1, 2, 3, 4].map((num) => (
-          <div key={num} className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors duration-500 border-2 ${step >= num ? 'bg-red-600 text-white border-red-600 shadow-md' : 'bg-white text-slate-400 border-slate-200'}`}>
+          <div
+            key={num}
+            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors duration-500 border ${
+              step >= num
+                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                : "neu-pressed text-muted-foreground border-border/70"
+            }`}
+          >
             {num}
           </div>
         ))}
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm relative overflow-hidden min-h-[400px]">
+      <div className="neu-raised neu-grain rounded-3xl p-6 md:p-8 relative overflow-hidden min-h-[400px]">
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm font-medium">
+          <div className="mb-4 p-4 bg-destructive/12 border border-destructive/30 text-destructive rounded-xl text-sm font-medium">
             {error}
           </div>
         )}
@@ -169,47 +179,58 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
         {step === 1 && (
           <div className="space-y-8 animate-in slide-in-from-right-8">
             <div>
-              <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">1. Select Target Channels</h3>
+              <h3 className="font-display text-lg font-bold text-foreground mb-4 border-b border-border/60 pb-2">
+                1. Select Target Channels
+              </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {connections.map((conn) => {
                   const isActive = selectedChannels.includes(conn.id);
                   return (
                     <button
                       key={conn.id}
+                      type="button"
                       onClick={() => toggleChannel(conn.id)}
-                      className={`p-4 rounded-xl border-2 text-left transition-all ${
-                        isActive 
-                          ? 'border-red-600 bg-red-50 shadow-sm' 
-                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      className={`p-4 rounded-xl border text-left transition-all ${
+                        isActive
+                          ? "neu-tint-primary"
+                          : "neu-pressed border-border/60 hover:border-border text-foreground"
                       }`}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{conn.platform}</span>
-                        {isActive && <CheckCircle2 className="w-5 h-5 text-red-600" />}
+                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          {conn.platform}
+                        </span>
+                        {isActive && <CheckCircle2 className="w-5 h-5 text-primary" />}
                       </div>
-                      <div className="text-sm font-semibold text-slate-800 truncate">{conn.accountName}</div>
+                      <div className="text-sm font-semibold text-foreground truncate">
+                        {conn.accountName}
+                      </div>
                     </button>
-                  )
+                  );
                 })}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">2. Topic & Instructions</h3>
-                <Textarea 
-                  placeholder="e.g. โปรโมชั่นหน้าร้อน ซื้อ 1 แถม 1..." 
+                <h3 className="font-display text-lg font-bold text-foreground mb-4 border-b border-border/60 pb-2">
+                  2. Topic &amp; Instructions
+                </h3>
+                <Textarea
+                  placeholder="e.g. โปรโมชั่นหน้าร้อน ซื้อ 1 แถม 1..."
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
-                  className="bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400 h-32 resize-none focus-visible:ring-red-600"
+                  className="h-32 resize-none rounded-xl"
                 />
-                
+
                 <div className="mt-4">
-                  <label className="text-xs font-bold text-slate-600 mb-2 block uppercase tracking-wide">Variations to Generate</label>
-                  <select 
-                    value={variantCount} 
+                  <label className="text-xs font-bold text-muted-foreground mb-2 block uppercase tracking-wide">
+                    Variations to Generate
+                  </label>
+                  <select
+                    value={variantCount}
                     onChange={(e) => setVariantCount(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent font-medium"
+                    className="w-full neu-pressed bg-[var(--surface-recessed)] border border-border/60 text-foreground rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 font-medium [&>option]:bg-[var(--surface-elevated)] [&>option]:text-foreground"
                   >
                     <option value="1">1 Option</option>
                     <option value="3">3 Options</option>
@@ -218,11 +239,13 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
                 </div>
 
                 <div className="mt-4">
-                  <label className="text-xs font-bold text-slate-600 mb-2 block uppercase tracking-wide">🌐 Language / ภาษา</label>
-                  <select 
-                    value={language} 
+                  <label className="text-xs font-bold text-muted-foreground mb-2 block uppercase tracking-wide">
+                    🌐 Language / ภาษา
+                  </label>
+                  <select
+                    value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent font-medium"
+                    className="w-full neu-pressed bg-[var(--surface-recessed)] border border-border/60 text-foreground rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 font-medium [&>option]:bg-[var(--surface-elevated)] [&>option]:text-foreground"
                   >
                     <option value="Thai">🇹🇭 ภาษาไทย</option>
                     <option value="English">🇬🇧 English</option>
@@ -240,43 +263,53 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
               </div>
 
               <div>
-                <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">3. Attach Media</h3>
-                <label className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors h-32 flex flex-col items-center justify-center bg-slate-50 cursor-pointer block ${isUploading ? 'border-blue-300 bg-blue-50' : imageUrl ? 'border-green-300 bg-green-50' : 'border-slate-200 hover:border-slate-300'}`}>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
+                <h3 className="font-display text-lg font-bold text-foreground mb-4 border-b border-border/60 pb-2">
+                  3. Attach Media
+                </h3>
+                <label
+                  className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors h-32 flex flex-col items-center justify-center cursor-pointer block ${
+                    isUploading
+                      ? "border-sky-500/40 bg-sky-500/10"
+                      : imageUrl
+                      ? "border-emerald-500/40 bg-emerald-500/10"
+                      : "border-border/70 neu-pressed hover:border-primary/40"
+                  }`}
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
                     onChange={handleImageUpload}
                     disabled={isUploading}
                   />
                   {isUploading ? (
                     <>
-                      <div className="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mb-2" />
-                      <p className="text-sm font-medium text-blue-600">Uploading to server...</p>
+                      <div className="w-8 h-8 border-4 border-sky-400 border-t-transparent rounded-full animate-spin mb-2" />
+                      <p className="text-sm font-medium text-sky-600 dark:text-sky-300">Uploading to server...</p>
                     </>
                   ) : imageUrl ? (
                     <>
-                      <ImageIcon className="w-8 h-8 text-green-500 mb-2" />
-                      <p className="text-sm font-medium text-green-600">✅ Image uploaded successfully!</p>
-                      <p className="text-xs text-slate-400 mt-1">Click to change image</p>
+                      <ImageIcon className="w-8 h-8 text-emerald-500 mb-2" />
+                      <p className="text-sm font-medium text-emerald-600 dark:text-emerald-300">
+                        ✅ Image uploaded successfully!
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">Click to change image</p>
                     </>
                   ) : (
                     <>
-                      <ImageIcon className="w-8 h-8 text-slate-400 mb-2" />
-                      <p className="text-sm font-medium text-slate-600">Click to upload image/video</p>
-                      <p className="text-xs text-slate-400 mt-1">(Select a file from your computer)</p>
+                      <ImageIcon className="w-8 h-8 text-muted-foreground mb-2" />
+                      <p className="text-sm font-medium text-foreground/80">Click to upload image/video</p>
+                      <p className="text-xs text-muted-foreground mt-1">(Select a file from your computer)</p>
                     </>
                   )}
                 </label>
-                {uploadError && (
-                  <p className="mt-2 text-sm text-red-500">{uploadError}</p>
-                )}
+                {uploadError && <p className="mt-2 text-sm text-destructive">{uploadError}</p>}
                 {imagePreview && (
-                  <div className="mt-4 relative w-full h-24 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                  <div className="mt-4 relative w-full h-24 rounded-xl overflow-hidden border border-border/60 shadow-sm">
                     <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                     {isUploading && (
-                      <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-                        <div className="w-6 h-6 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                      <div className="absolute inset-0 bg-background/60 backdrop-blur-xs flex items-center justify-center">
+                        <div className="w-6 h-6 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                       </div>
                     )}
                   </div>
@@ -284,10 +317,11 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
               </div>
             </div>
 
-            <div className="pt-6 flex justify-end border-t border-slate-100">
-              <Button 
-                onClick={handleGenerate} 
-                className="bg-red-600 hover:bg-red-700 text-white px-8 py-6 rounded-xl font-bold text-lg shadow-md"
+            <div className="pt-6 flex justify-end border-t border-border/60">
+              <Button
+                variant="tactile"
+                onClick={handleGenerate}
+                className="px-8 py-6 rounded-xl font-bold text-lg"
               >
                 <Bot className="w-5 h-5 mr-2" /> Generate Magic Content
               </Button>
@@ -299,76 +333,92 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
         {step === 2 && isGenerating && (
           <div className="h-[400px] flex flex-col items-center justify-center animate-in fade-in">
             <div className="relative w-24 h-24 mb-8">
-              <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
-              <div className="absolute inset-0 border-4 border-red-600 rounded-full border-t-transparent animate-spin"></div>
-              <Bot className="absolute inset-0 m-auto w-10 h-10 text-slate-400 animate-pulse" />
+              <div className="absolute inset-0 border-4 border-border/50 rounded-full" />
+              <div className="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin" />
+              <Bot className="absolute inset-0 m-auto w-10 h-10 text-muted-foreground animate-pulse" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">AI is drafting your content...</h2>
-            <p className="text-slate-500 font-medium">Analyzing topic and generating {variantCount} variations.</p>
+            <h2 className="font-display text-2xl font-bold text-foreground mb-2">
+              AI is drafting your content...
+            </h2>
+            <p className="text-muted-foreground font-medium">
+              Analyzing topic and generating {variantCount} variations.
+            </p>
           </div>
         )}
 
         {/* STEP 3: Selection Phase */}
         {step === 3 && (
           <div className="space-y-8 animate-in slide-in-from-right-8">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <LayoutTemplate className="text-red-600" /> Choose the Best Variant
+            <div className="flex items-center justify-between border-b border-border/60 pb-4">
+              <h3 className="font-display text-xl font-bold text-foreground flex items-center gap-2">
+                <LayoutTemplate className="text-primary" /> Choose the Best Variant
               </h3>
-              <Button variant="outline" className="border-slate-200 text-slate-600 hover:bg-slate-50 font-medium" onClick={() => setStep(1)}>
+              <Button variant="neu" className="font-medium" onClick={() => setStep(1)}>
                 ย้อนกลับ to Edit
               </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {variants.map((variant, idx) => (
-                <div 
+                <div
                   key={idx}
                   onClick={() => setถูกเลือกแล้วContent(variant)}
-                  className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
-                    selectedContent === variant 
-                      ? 'border-red-600 bg-red-50 shadow-md ring-4 ring-red-600/10' 
-                      : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                  className={`p-5 rounded-2xl border cursor-pointer transition-all ${
+                    selectedContent === variant
+                      ? "neu-tint-primary ring-2 ring-primary/25"
+                      : "neu-pressed border-border/60 hover:border-border"
                   }`}
                 >
-                  <div className="text-xs font-bold text-red-600 mb-3 uppercase tracking-wider flex items-center gap-2">
+                  <div className="text-xs font-bold text-primary mb-3 uppercase tracking-wider flex items-center gap-2">
                     <Sparkles className="w-4 h-4" /> Option {idx + 1}
                   </div>
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{variant}</p>
+                  <p className="text-sm text-foreground/85 whitespace-pre-wrap leading-relaxed">{variant}</p>
                 </div>
               ))}
             </div>
 
             {selectedContent && (
               <div className="mt-8 animate-in fade-in slide-in-from-bottom-4">
-                <h4 className="text-sm font-bold text-slate-800 mb-3 uppercase tracking-wider border-b border-slate-100 pb-2">Fine-tune your selected content:</h4>
-                <Textarea 
+                <h4 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider border-b border-border/60 pb-2">
+                  Fine-tune your selected content:
+                </h4>
+                <Textarea
                   value={selectedContent}
                   onChange={(e) => setถูกเลือกแล้วContent(e.target.value)}
-                  className="bg-white border-slate-200 text-slate-800 h-40 resize-none text-lg leading-relaxed focus-visible:ring-red-600 shadow-inner"
+                  className="h-40 resize-none text-lg leading-relaxed rounded-2xl"
                 />
-                
-                <div className="mt-8 p-6 rounded-2xl bg-slate-50 border border-slate-200">
-                  <h4 className="text-base font-bold text-slate-800 mb-4">📅 กำหนดเวลาเผยแพร่</h4>
+
+                <div className="mt-8 p-6 rounded-2xl neu-pressed">
+                  <h4 className="font-display text-base font-bold text-foreground mb-4">📅 กำหนดเวลาเผยแพร่</h4>
                   <div className="flex flex-col gap-4">
-                    <ScheduleDateTimePicker schedule={schedule} accentColor="red" />
+                    <ScheduleDateTimePicker schedule={schedule} accentColor="purple" />
 
                     {/* Action Buttons */}
                     <div className="flex gap-3 pt-2">
-                      <Button 
+                      <Button
+                        variant="neu"
                         disabled={isPublishing}
                         onClick={() => handlePublish(false)}
-                        className="flex-1 h-12 bg-white hover:bg-slate-50 text-slate-700 border-2 border-slate-200 font-bold px-6 rounded-xl"
+                        className="flex-1 h-12 font-bold px-6 rounded-xl"
                       >
-                        {isPublishing ? <RefreshCcw className="w-5 h-5 animate-spin mr-2" /> : <CalendarIcon className="w-5 h-5 mr-2 text-slate-400" />}
+                        {isPublishing ? (
+                          <RefreshCcw className="w-5 h-5 animate-spin mr-2" />
+                        ) : (
+                          <CalendarIcon className="w-5 h-5 mr-2 text-muted-foreground" />
+                        )}
                         Schedule
                       </Button>
-                      <Button 
+                      <Button
+                        variant="tactile"
                         disabled={isPublishing}
                         onClick={() => handlePublish(true)}
-                        className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold px-8 rounded-xl shadow-md"
+                        className="flex-1 h-12 font-bold px-8 rounded-xl"
                       >
-                        {isPublishing ? <RefreshCcw className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
+                        {isPublishing ? (
+                          <RefreshCcw className="w-5 h-5 animate-spin mr-2" />
+                        ) : (
+                          <Send className="w-5 h-5 mr-2" />
+                        )}
                         Post Now
                       </Button>
                     </div>
@@ -382,35 +432,44 @@ export function MultiPostWizard({ connections }: { connections: Connection[] }) 
         {/* STEP 4: Success Phase */}
         {step === 4 && publishSuccess && (
           <div className="h-[400px] flex flex-col items-center justify-center animate-in zoom-in-95">
-            <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mb-6 border-8 border-green-100">
-              <CheckCircle2 className="w-12 h-12 text-green-500" />
+            <div className="w-24 h-24 bg-emerald-500/12 border-4 border-emerald-500/25 rounded-full flex items-center justify-center mb-6">
+              <CheckCircle2 className="w-12 h-12 text-emerald-500" />
             </div>
-            <h2 className="text-3xl font-bold text-slate-800 mb-3">Content Queued! 🎉</h2>
+            <h2 className="font-display text-3xl font-bold text-foreground mb-3">Content Queued! 🎉</h2>
             {scheduledDateTime && (
-              <div className="mt-2 mb-4 px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-center">
-                <p className="text-slate-500">กำหนดโพสต์วันที่</p>
-                <p className="font-bold text-slate-800 text-base mt-0.5">
-                  {format(scheduledDateTime, "EEEE d MMMM yyyy", { locale: th })} เวลา {format(scheduledDateTime, "HH:mm")} น.
+              <div className="mt-2 mb-4 px-5 py-3 neu-pressed rounded-xl text-sm text-center">
+                <p className="text-muted-foreground text-xs">กำหนดโพสต์วันที่</p>
+                <p className="font-bold text-foreground text-base mt-0.5">
+                  {format(scheduledDateTime, "EEEE d MMMM yyyy", { locale: th })} เวลา{" "}
+                  {format(scheduledDateTime, "HH:mm")} น.
                 </p>
               </div>
             )}
-            <p className="text-slate-500 text-center max-w-md font-medium">
+            <p className="text-muted-foreground text-center max-w-md font-medium">
               โพสต์ถูกบันทึกแล้ว รอ Auto-Publisher ส่งตามเวลาที่กำหนด
             </p>
             <div className="mt-8 flex gap-4">
-              <Button variant="outline" className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-bold px-6 py-6 rounded-xl" onClick={() => window.location.href='/dashboard/history'}>
+              <Button
+                variant="neu"
+                className="font-bold px-6 py-6 rounded-xl"
+                onClick={() => (window.location.href = "/dashboard/history")}
+              >
                 View History
               </Button>
-              <Button className="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-6 rounded-xl shadow-md" onClick={() => {
-                setStep(1);
-                setPublishSuccess(false);
-                setTopic("");
-                setถูกเลือกแล้วContent("");
-                setImageUrl(null);
-                setImagePreview(null);
-                setScheduledDateTime(null);
-                schedule.resetSchedule();
-              }}>
+              <Button
+                variant="tactile"
+                className="font-bold px-6 py-6 rounded-xl"
+                onClick={() => {
+                  setStep(1);
+                  setPublishSuccess(false);
+                  setTopic("");
+                  setถูกเลือกแล้วContent("");
+                  setImageUrl(null);
+                  setImagePreview(null);
+                  setScheduledDateTime(null);
+                  schedule.resetSchedule();
+                }}
+              >
                 Create Another Post
               </Button>
             </div>

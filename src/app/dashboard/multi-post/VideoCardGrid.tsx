@@ -35,18 +35,18 @@ export function VideoCardGrid({
   if (loadingList) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
-        <Loader2 className="w-10 h-10 text-purple-600 animate-spin mb-3" />
-        <p className="font-semibold text-slate-500 text-sm">กำลังโหลดรายการวิดีโอ...</p>
+        <Loader2 className="w-10 h-10 text-primary animate-spin mb-3" />
+        <p className="font-semibold text-muted-foreground text-sm">กำลังโหลดรายการวิดีโอ...</p>
       </div>
     );
   }
 
   if (videos.length === 0) {
     return (
-      <div className="text-center py-14 text-slate-400">
-        <Film className="w-14 h-14 text-slate-300 mx-auto mb-3" />
-        <p className="font-semibold text-slate-500 text-sm">ไม่พบวิดีโอสต็อกที่ตรงกับคำค้น</p>
-        <p className="text-xs text-slate-400 mt-1">
+      <div className="text-center py-14 text-muted-foreground">
+        <Film className="w-14 h-14 opacity-40 mx-auto mb-3" />
+        <p className="font-semibold text-foreground/80 text-sm">ไม่พบวิดีโอสต็อกที่ตรงกับคำค้น</p>
+        <p className="text-xs text-muted-foreground mt-1">
           สามารถกดปุ่ม &ldquo;เจนวิดีโอ AI จาก Prompt&rdquo; ด้านบน หรือลองคีย์เวิร์ดเช่น travel, beach, coffee, office
         </p>
       </div>
@@ -62,9 +62,9 @@ export function VideoCardGrid({
         return (
           <div
             key={video.id}
-            className="border border-slate-200 bg-slate-50 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col group"
+            className="neu-raised neu-grain rounded-2xl overflow-hidden transition-all flex flex-col group"
           >
-            <div className="relative aspect-video w-full bg-black overflow-hidden border-b border-slate-100">
+            <div className="relative aspect-video w-full bg-black overflow-hidden border-b border-border/60">
               {isPreviewing ? (
                 <video
                   src={video.videoUrl}
@@ -106,14 +106,14 @@ export function VideoCardGrid({
 
             <div className="p-3.5 flex-1 flex flex-col justify-between">
               <div className="mb-3">
-                <h4 className="font-bold text-slate-800 text-xs line-clamp-1 group-hover:text-purple-600 transition-colors">
+                <h4 className="font-bold text-foreground text-xs line-clamp-1 group-hover:text-primary transition-colors">
                   {video.title}
                 </h4>
                 <div className="flex flex-wrap gap-1 mt-1.5">
                   {video.tags.slice(0, 3).map((tag) => (
                     <span
                       key={tag}
-                      className="text-[10px] bg-slate-100 text-slate-500 font-semibold px-2 py-0.5 rounded-full"
+                      className="text-[10px] neu-pressed text-muted-foreground font-semibold px-2 py-0.5 rounded-full"
                     >
                       #{tag}
                     </span>
@@ -123,13 +123,10 @@ export function VideoCardGrid({
 
               <Button
                 type="button"
+                variant={isGeneratingThis ? "tactile" : "neu"}
                 onClick={() => onSelectVideoItem(video)}
                 disabled={generating}
-                className={`w-full font-bold text-xs h-9 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 ${
-                  isGeneratingThis
-                    ? "bg-purple-600 text-white"
-                    : "bg-white border-2 border-slate-200 text-slate-700 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200"
-                }`}
+                className="w-full font-bold text-xs h-9 rounded-xl flex items-center justify-center gap-1.5"
               >
                 {isGeneratingThis ? (
                   <>
@@ -137,7 +134,7 @@ export function VideoCardGrid({
                   </>
                 ) : (
                   <>
-                    <Check className="w-3.5 h-3.5 text-purple-600" /> เลือกคลิปวิดีโอนี้
+                    <Check className="w-3.5 h-3.5 text-primary" /> เลือกคลิปวิดีโอนี้
                   </>
                 )}
               </Button>

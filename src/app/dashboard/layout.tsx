@@ -20,15 +20,15 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full selection:bg-indigo-500/20 overflow-hidden text-foreground bg-[#f9fafd] dark:bg-[#10141d]">
+      <div className="flex h-screen w-full overflow-hidden bg-[var(--sheet)] text-foreground selection:bg-violet-500/25">
         <SidebarWrapper>
           <Sidebar session={session} />
         </SidebarWrapper>
-        
-        <main className="flex-1 flex flex-col min-w-0 relative">
+
+        <main className="flex-1 flex flex-col min-w-0 relative bg-[var(--sheet)]">
           <Header />
-          
-          <div className="flex-1 overflow-auto p-3.5 sm:p-5 md:p-8 pb-24 md:pb-8">
+
+          <div className="flex-1 overflow-auto p-3.5 sm:p-5 md:p-8 pb-24 md:pb-8 custom-scrollbar">
             {children}
           </div>
 
@@ -38,4 +38,3 @@ export default async function DashboardLayout({
     </SidebarProvider>
   );
 }
-
