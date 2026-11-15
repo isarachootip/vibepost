@@ -2,6 +2,7 @@ import type {
   AIImageProvider,
   MediaGenerationMetadata,
 } from "@/lib/validations/ai-media.schema";
+import { generateGeminiImageWithFallback } from "./gemini-client.service";
 
 export interface ExecuteImageGenInput {
   englishPrompt: string;
@@ -32,7 +33,7 @@ export async function executeImageGeneration(
   const enhancedPrompt = `${input.englishPrompt}, style: ${input.style}, high resolution, realistic details, no text watermark`;
   const fallbackReasons: string[] = [];
 
-  // 1. Determine whether to attempt Gemini Imagen 4
+  // 1. Determine whether to attempt Gemini native image / Imagen fallback
   const shouldTryGemini =
     input.requestedProvider === "GEMINI" ||
     (input.requestedProvider === "FREE" && Boolean(input.geminiApiKey));
@@ -41,31 +42,13 @@ export async function executeImageGeneration(
     fallbackReasons.push("ไม่ได้ตั้งค่า Gemini API Key จึงสลับมาใช้โมเดลสำรองฟรี");
   } else if (shouldTryGemini && input.geminiApiKey) {
     try {
-      const response = await fetchFn(
-        `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${input.geminiApiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            instances: [{ prompt: enhancedPrompt }],
-            parameters: {
-              sampleCount: 1,
-              aspectRatio: "1:1",
-              outputMimeType: "image/jpeg",
-            },
-          }),
-        }
-      );
-      const data = (await response.json()) as {
-        predictions?: Array<{ bytesBase64Encoded?: string }>;
-        error?: { message?: string };
-      };
-      const base64Bytes = data.predictions?.[0]?.bytesBase64Encoded;
-      if (!response.ok || !base64Bytes) {
-        throw new Error(data.error?.message ?? "Gemini Imagen 4 API error");
-      }
+      const generated = await generateGeminiImageWithFallback({
+        apiKey: input.geminiApiKey,
+        prompt: enhancedPrompt,
+        fetchFn,
+      });
 
-      const imageUrl = await adapters.saveBase64Jpg(base64Bytes);
+      const imageUrl = await adapters.saveBase64Jpg(generated.base64Bytes);
       return {
         imageUrl,
         estimatedCost: 0.03,
@@ -74,17 +57,17 @@ export async function executeImageGeneration(
           keywords: input.keywords,
           requestedProvider: input.requestedProvider,
           actualProvider: "GEMINI",
-          actualModel: "imagen-4.0-fast-generate-001",
+          actualModel: generated.model,
           usedFallback: false,
         },
       };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Imagen error";
+      const msg = err instanceof Error ? err.message : "Gemini image error";
       console.warn("Gemini Imagen failed, falling back to free model:", msg);
       fallbackReasons.push(
         input.requestedProvider === "GEMINI"
-          ? "Gemini Imagen เรียกไม่สำเร็จ (โควตาหรือสิทธิ์คีย์ไม่รองรับ) จึงสลับไปใช้โมเดลสำรองฟรี"
-          : "คีย์ Gemini ไม่รองรับ Imagen 4 จึงสลับไปใช้โมเดลสำรองฟรี (Pollinations.ai)"
+          ? "Gemini สร้างรูปไม่สำเร็จ (โควตา Free Tier เต็มหรือยังไม่ผูก Billing) จึงสลับไปใช้โมเดลสำรองฟรี"
+          : "คีย์ Gemini ยังไม่เปิดโควต้าสร้างรูป จึงสลับไปใช้โมเดลสำรองฟรี (Pollinations.ai)"
       );
     }
   }

@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { runGeminiContentWithFallback } from "@/lib/services/gemini-client.service";
 
 export type PublishedPostForGallery = {
   id: string;
@@ -162,52 +163,11 @@ export async function generateAIPost(topic: string, variantCount: number, langua
     let textContent = "";
 
     if (promptConfig.provider === "GEMINI") {
-      // Priority order based on confirmed available models for this API key
-      const geminiModels = [
-        "gemini-2.5-flash",
-        "gemini-2.5-pro",
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-001",
-      ];
-
-      let geminiSuccess = false;
-      let lastError = "";
-
-      for (const modelName of geminiModels) {
-        try {
-          const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${promptConfig.apiKey}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                contents: [{
-                  parts: [{ text: systemPrompt + "\n\n" + userPrompt }]
-                }]
-              }),
-            }
-          );
-          const data = await response.json();
-          if (!response.ok) {
-            lastError = data.error?.message || `Model ${modelName} failed`;
-            continue; // Try next model
-          }
-          const candidate = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (candidate) {
-            textContent = candidate;
-            geminiSuccess = true;
-            console.log(`Gemini: successfully used model ${modelName}`);
-            break;
-          }
-        } catch (e: any) {
-          lastError = e.message;
-          continue;
-        }
-      }
-
-      if (!geminiSuccess) {
-        throw new Error(`All Gemini models failed. Last error: ${lastError}`);
-      }
+      const out = await runGeminiContentWithFallback({
+        apiKey: promptConfig.apiKey,
+        parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
+      });
+      textContent = out.text;
     } else {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",

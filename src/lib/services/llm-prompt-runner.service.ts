@@ -1,4 +1,5 @@
 import type { LLMRunOutput, WorkspaceLLMConfig } from "@/lib/validations/ai-media.schema";
+import { runGeminiContentWithFallback } from "./gemini-client.service";
 
 export type LLMRunnerFn = (systemPrompt: string, userPrompt: string) => Promise<LLMRunOutput>;
 
@@ -21,52 +22,21 @@ export function createWorkspaceLLMRunner(config: WorkspaceLLMConfig | null): LLM
 
   return async (systemPrompt: string, userPrompt: string): Promise<LLMRunOutput> => {
     if (config.provider === "GEMINI") {
-      const models = ["gemini-2.5-flash", "gemini-2.0-flash"];
-      let lastErr = "Gemini visual prompt extraction failed";
-
-      for (const model of models) {
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.apiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
-              generationConfig: { temperature: 0.4, maxOutputTokens: 400 },
-            }),
-            signal: AbortSignal.timeout(12_000),
-          }
-        );
-        const data = (await res.json()) as {
-          candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-          usageMetadata?: {
-            promptTokenCount?: number;
-            candidatesTokenCount?: number;
-            totalTokenCount?: number;
-          };
-          error?: { message?: string };
-        };
-        if (!res.ok) {
-          lastErr = data.error?.message ?? `Model ${model} failed`;
-          continue;
-        }
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) {
-          const pTokens = data.usageMetadata?.promptTokenCount ?? 0;
-          const cTokens = data.usageMetadata?.candidatesTokenCount ?? 0;
-          const tTokens = data.usageMetadata?.totalTokenCount ?? pTokens + cTokens;
-          return {
-            text,
-            provider: "GEMINI",
-            modelName: model,
-            promptTokens: pTokens,
-            completionTokens: cTokens,
-            totalTokens: tTokens,
-            estimatedCost: estimateTokenCost(model, pTokens, cTokens),
-          };
-        }
-      }
-      throw new Error(lastErr);
+      const out = await runGeminiContentWithFallback({
+        apiKey: config.apiKey,
+        parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
+        generationConfig: { temperature: 0.4, maxOutputTokens: 1024 },
+        timeoutMs: 12_000,
+      });
+      return {
+        text: out.text,
+        provider: "GEMINI",
+        modelName: out.model,
+        promptTokens: out.promptTokens,
+        completionTokens: out.completionTokens,
+        totalTokens: out.totalTokens,
+        estimatedCost: estimateTokenCost(out.model, out.promptTokens, out.completionTokens),
+      };
     }
 
     const isKimi = config.provider === "KIMI";

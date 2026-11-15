@@ -70,5 +70,46 @@ export async function runImageProviderTests(): Promise<void> {
     assert.equal(loremUrl.includes("business,marketing"), false);
   }
 
-  console.log("  ✓ image-provider.test.ts passed (2 assertions)");
+  // 3. GEMINI succeeds with new gemini-3.1-flash-image inlineData response
+  {
+    let savedBytes = "";
+    const res = await executeImageGeneration(
+      {
+        englishPrompt: "Car battery studio shot",
+        keywords: ["battery", "car"],
+        style: "photo",
+        requestedProvider: "GEMINI",
+        geminiApiKey: "valid-paid-key",
+        openaiApiKey: null,
+      },
+      {
+        fetchFn: (async () =>
+          new Response(
+            JSON.stringify({
+              candidates: [
+                {
+                  content: {
+                    parts: [{ inlineData: { mimeType: "image/jpeg", data: "IMG_B64" } }],
+                  },
+                },
+              ],
+            }),
+            { status: 200 }
+          )) as typeof fetch,
+        saveBase64Jpg: async (b64: string) => {
+          savedBytes = b64;
+          return "https://vibepost.online/api/files/gemini-31.jpg";
+        },
+        downloadRemoteJpg: async () => "https://vibepost.online/api/files/unused.jpg",
+      }
+    );
+
+    assert.equal(savedBytes, "IMG_B64");
+    assert.equal(res.imageUrl, "https://vibepost.online/api/files/gemini-31.jpg");
+    assert.equal(res.meta.usedFallback, false);
+    assert.equal(res.meta.actualProvider, "GEMINI");
+    assert.equal(res.meta.actualModel, "gemini-3.1-flash-image");
+  }
+
+  console.log("  ✓ image-provider.test.ts passed (3 assertions)");
 }

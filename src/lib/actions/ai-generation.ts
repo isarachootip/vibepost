@@ -19,6 +19,7 @@ import {
 } from "@/lib/services/media-translator.service";
 import { inferVideoCategoryFromEnglish } from "@/lib/services/visual-prompt.service";
 import { executeImageGeneration } from "@/lib/services/image-provider.service";
+import { runGeminiContentWithFallback, type GeminiPart } from "@/lib/services/gemini-client.service";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "/app/uploads";
 const PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://vibepost.online";
@@ -808,52 +809,22 @@ Do NOT wrap the entire response in markdown block tags like \`\`\``;
         throw e;
       }
     } else if (promptConfig.provider === "GEMINI") {
-      const geminiModels = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"];
-      let success = false;
-      let lastError = "";
-
-      for (const model of geminiModels) {
-        try {
-          const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${promptConfig.apiKey}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                contents: [{ parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }]
-              }),
-            }
-          );
-          const data = await response.json();
-          if (!response.ok) {
-            lastError = data.error?.message || `Model ${model} failed`;
-            continue;
-          }
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) {
-            textContent = text;
-            
-            // Record token usage & cost
-            const usage = data.usageMetadata;
-            const promptTokens = usage?.promptTokenCount || 0;
-            const completionTokens = usage?.candidatesTokenCount || 0;
-            const totalTokens = usage?.totalTokenCount || 0;
-            const cost = calculateArticleCost(model, promptTokens, completionTokens);
-            
-            await recordAIUsage(workspace.id, "ARTICLE", "GEMINI", model, promptTokens, completionTokens, totalTokens, cost);
-            
-            success = true;
-            break;
-          }
-        } catch (e: any) {
-          lastError = e.message;
-          continue;
-        }
-      }
-
-      if (!success) {
-        throw new Error(`All Gemini models failed. Last error: ${lastError}`);
-      }
+      const out = await runGeminiContentWithFallback({
+        apiKey: promptConfig.apiKey,
+        parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
+      });
+      textContent = out.text;
+      const cost = calculateArticleCost(out.model, out.promptTokens, out.completionTokens);
+      await recordAIUsage(
+        workspace.id,
+        "ARTICLE",
+        "GEMINI",
+        out.model,
+        out.promptTokens,
+        out.completionTokens,
+        out.totalTokens,
+        cost
+      );
     } else {
       // Fallback/Default call (OpenRouter / OpenAI)
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -1098,63 +1069,34 @@ Style instructions:
 
 Do NOT add any text before the first delimiter or after the last caption.`;
 
-    let textContent = "";
-    const geminiModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
-
-    for (const model of geminiModels) {
-      try {
-        // Build the request parts — multimodal if we have base64, text-only if not
-        let parts: any[];
-        if (mediaBase64) {
-          parts = [
-            { text: systemInstruction },
-            { inlineData: { mimeType, data: mediaBase64 } }
-          ];
-        } else {
-          // Text-only fallback (e.g. video files too large or unreadable)
-          parts = [{ text: systemInstruction + `\n\n[Media file could not be read. Generate captions based on the context provided by the user and the media type: ${fileType}]` }];
-        }
-
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiConfig.apiKey}`,
+    const parts: GeminiPart[] = mediaBase64
+      ? [
+          { text: systemInstruction },
+          { inlineData: { mimeType, data: mediaBase64 } },
+        ]
+      : [
           {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ parts }],
-              generationConfig: { temperature: 0.9, maxOutputTokens: 2048 }
-            }),
-          }
-        );
+            text: `${systemInstruction}\n\n[Media file could not be read. Generate captions based on the context provided by the user and the media type: ${fileType}]`,
+          },
+        ];
 
-        const data = await response.json();
-        if (!response.ok) {
-          console.warn(`Gemini ${model} failed for caption:`, data.error?.message);
-          continue;
-        }
-
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) {
-          textContent = text;
-
-          // Record token usage
-          const usage = data.usageMetadata;
-          const promptTokens = usage?.promptTokenCount || 0;
-          const completionTokens = usage?.candidatesTokenCount || 0;
-          const totalTokens = usage?.totalTokenCount || 0;
-          const cost = calculateArticleCost(model, promptTokens, completionTokens);
-          await recordAIUsage(workspace.id, "ARTICLE", "GEMINI", model, promptTokens, completionTokens, totalTokens, cost);
-          break;
-        }
-      } catch (e: any) {
-        console.warn(`Gemini ${model} error:`, e.message);
-        continue;
-      }
-    }
-
-    if (!textContent) {
-      return { success: false, error: "ไม่สามารถสร้างแคปชันได้ กรุณาลองใหม่หรือตรวจสอบ API Key" };
-    }
+    const out = await runGeminiContentWithFallback({
+      apiKey: geminiConfig.apiKey,
+      parts,
+      generationConfig: { temperature: 0.9, maxOutputTokens: 4096 },
+    });
+    const textContent = out.text;
+    const cost = calculateArticleCost(out.model, out.promptTokens, out.completionTokens);
+    await recordAIUsage(
+      workspace.id,
+      "ARTICLE",
+      "GEMINI",
+      out.model,
+      out.promptTokens,
+      out.completionTokens,
+      out.totalTokens,
+      cost
+    );
 
     // Parse captions from delimited text
     const captionIds = ["PLAYFUL", "EMOTIONAL", "PROMOTIONAL", "MINIMALIST", "INFORMATIVE"];
