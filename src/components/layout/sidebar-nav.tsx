@@ -11,6 +11,7 @@ import {
   History,
   Layers,
   LayoutDashboard,
+  CalendarRange,
   Send,
   Settings,
   Share2,
@@ -50,6 +51,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     groupTitle: "Operations",
     items: [
+      { label: "Content Planner", href: "/dashboard/planner", icon: CalendarRange },
       { label: "Post Monitor", href: "/dashboard/monitor", icon: Activity },
       { label: "Post History", href: "/dashboard/history", icon: History },
       { label: "Automation", href: "/dashboard/automation", icon: Zap },

@@ -37,6 +37,7 @@ model Workspace {
   promptConfigs     PromptConfig[]
   posts             Post[]
   aiUsageLogs       AIUsageLog[]
+  contentTopics     ContentTopic[]
 }
 
 enum WorkspaceRole {
@@ -139,8 +140,13 @@ model Post {
   media          PostMedia[]
   targets        PostTarget[]
   isDeleted      Boolean   @default(false)
+  topicId        String?
+  topic          ContentTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  plannedPost    PlannedPost?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
+  @@index([topicId])
 }
 
 enum PostStatus {
@@ -198,3 +204,109 @@ model AIUsageLog {
   createdAt        DateTime    @default(now())
 }
 
+
+// ─── Content Planner (Brand → Topic → Campaign → PlannedPost → Post) ───
+
+enum TopicStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum CampaignStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum CampaignGoal {
+  AWARENESS
+  ENGAGEMENT
+  TRAFFIC
+}
+
+enum KpiSource {
+  MANUAL
+  AI_SUGGESTED
+  LEARNING
+}
+
+enum PlannedPostStatus {
+  IDEA
+  APPROVED
+  GENERATED
+  SCHEDULED
+  PUBLISHED
+  FAILED
+  SKIPPED
+}
+
+enum PlannedFormat {
+  TEXT
+  IMAGE
+  CAROUSEL
+  VIDEO
+}
+
+model ContentTopic {
+  id            String      @id @default(cuid())
+  workspaceId   String
+  name          String
+  color         String      @default("#6366f1")
+  audience      String?
+  sellingPoints String?
+  keywords      String[]    @default([])
+  forbidden     String?
+  tone          String?
+  status        TopicStatus @default(ACTIVE)
+  workspace     Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  campaigns     Campaign[]
+  posts         Post[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([workspaceId, status])
+}
+
+model Campaign {
+  id           String         @id @default(cuid())
+  topicId      String
+  name         String
+  startDate    DateTime
+  endDate      DateTime
+  status       CampaignStatus @default(DRAFT)
+  goal         CampaignGoal   @default(AWARENESS)
+  kpiTarget    Float?
+  kpiBaseline  Float?
+  kpiSource    KpiSource      @default(MANUAL)
+  budget       Float?
+  currency     String         @default("THB")
+  approvedById String?
+  approvedAt   DateTime?
+  topic        ContentTopic   @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  plannedPosts PlannedPost[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([topicId, status])
+}
+
+model PlannedPost {
+  id         String            @id @default(cuid())
+  campaignId String
+  slotAt     DateTime
+  angle      String
+  format     PlannedFormat     @default(IMAGE)
+  platforms  Platform[]
+  notes      String?
+  status     PlannedPostStatus @default(IDEA)
+  postId     String?           @unique
+  campaign   Campaign          @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  post       Post?             @relation(fields: [postId], references: [id], onDelete: SetNull)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([campaignId, slotAt])
+}

@@ -1,12 +1,18 @@
 import { runScheduleTimeTests } from "./schedule-time.test";
 import { runVisualPromptTests } from "./visual-prompt.test";
 import { runImageProviderTests } from "./image-provider.test";
+import { runPlannerSchemaTests } from "./planner-schema.test";
+import { runCampaignStatusTests } from "./campaign-status.test";
+import { runPlannerOverviewTests } from "./planner-overview.test";
 
 async function main(): Promise<void> {
   console.log("Running test suite...");
   await runScheduleTimeTests();
   await runVisualPromptTests();
   await runImageProviderTests();
+  await runPlannerSchemaTests();
+  await runCampaignStatusTests();
+  await runPlannerOverviewTests();
   console.log("All tests passed!");
 }
 
