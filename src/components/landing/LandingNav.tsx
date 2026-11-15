@@ -5,6 +5,8 @@ import Link from "next/link";
 import { LogIn, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import type { LandingLang } from "./landing-types";
+import { LANDING_DOCK_ITEMS } from "./landing-studio-data";
+import { StudioFeatureIcon } from "./LandingStudioBento";
 
 interface LandingNavProps {
   lang: LandingLang;
@@ -19,29 +21,60 @@ const LANG_OPTIONS: Array<{ id: LandingLang; label: string }> = [
 ];
 
 export function LandingNav({ lang, onChangeLang, loginLabel }: LandingNavProps) {
+  const dockItems = LANDING_DOCK_ITEMS[lang];
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-[var(--border)] bg-[var(--sheet)]/90 backdrop-blur-xl transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
-        <Link href="/" className="flex items-center gap-3 group outline-none">
-          <div className="neu-tint-primary size-9 sm:size-10 rounded-xl grid place-items-center transition-transform duration-200 group-hover:scale-105">
-            <Sparkles className="size-4 sm:size-5" />
+    <header className="sticky top-0 z-40 w-full pt-3 sm:pt-4 px-3 sm:px-6 lg:px-8 pointer-events-none">
+      <div className="pointer-events-auto max-w-7xl mx-auto neu-raised neu-grain rounded-[1.5rem] border border-[var(--border)] px-3 sm:px-5 py-2.5 backdrop-blur-xl flex items-center justify-between gap-3">
+        <Link href="/" className="flex items-center gap-3 group outline-none shrink-0">
+          <div className="neu-tint-primary size-10 rounded-2xl grid place-items-center transition-transform duration-200 group-hover:scale-105">
+            <Sparkles className="size-5" />
           </div>
           <div className="flex flex-col leading-none">
-            <div className="flex items-center gap-2">
-              <span className="font-display text-sm sm:text-base text-foreground tracking-tight">
-                VibePost
-              </span>
-              <span className="neu-pressed hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-primary-ink">
-                AI Studio
-              </span>
-            </div>
-            <span className="text-[10px] font-medium text-muted-foreground tracking-wide mt-0.5">
-              Omni-Channel Publisher
+            <span className="font-display text-sm sm:text-base text-foreground tracking-tight">
+              VibePost
+            </span>
+            <span className="text-[11px] font-bold text-primary-ink tracking-wide mt-0.5">
+              AI Studio
             </span>
           </div>
         </Link>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Center Floating Studio Dock matching Neramit */}
+        <nav
+          aria-label="Studio Quick Dock"
+          className="hidden lg:flex items-center gap-1 neu-pressed rounded-2xl px-1.5 py-1 border border-[var(--border)]"
+        >
+          {dockItems.map((item) => {
+            const inner = (
+              <span
+                className={`flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all min-w-[68px] ${
+                  item.active
+                    ? "neu-raised text-foreground border border-[var(--border)]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-[var(--surface-elevated)]/40"
+                }`}
+              >
+                <StudioFeatureIcon
+                  icon={item.icon}
+                  className={`size-3.5 ${item.active ? "text-primary-ink" : ""}`}
+                />
+                <span className="leading-tight whitespace-nowrap">{item.label}</span>
+              </span>
+            );
+
+            return item.href.startsWith("#") ? (
+              <a key={item.id} href={item.href}>
+                {inner}
+              </a>
+            ) : (
+              <Link key={item.id} href={item.href}>
+                {inner}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="flex items-center gap-2 shrink-0">
           <div
             role="group"
             aria-label="Language switcher"

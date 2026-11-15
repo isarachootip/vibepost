@@ -3,9 +3,11 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Globe2, Layers, Sparkles } from "lucide-react";
-import { PLATFORM_CONFIG, type LandingCopy } from "./landing-types";
+import { PLATFORM_CONFIG, type LandingCopy, type LandingLang } from "./landing-types";
+import { LandingStudioBento } from "./LandingStudioBento";
 
 interface LandingHeroProps {
+  lang: LandingLang;
   copy: LandingCopy;
   isDemo: boolean;
   totalPosts: number;
@@ -15,6 +17,7 @@ interface LandingHeroProps {
 }
 
 export function LandingHero({
+  lang,
   copy,
   isDemo,
   totalPosts,
@@ -41,14 +44,16 @@ export function LandingHero({
       label: copy.success,
       value: totalSuccess,
       icon: CheckCircle2,
-      iconClass: "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-[0_6px_18px_-4px_rgba(16,185,129,0.45)]",
+      iconClass:
+        "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-[0_6px_18px_-4px_rgba(16,185,129,0.45)]",
       pill: "Auto-Sync",
     },
   ];
 
   return (
-    <section className="space-y-6 sm:space-y-8">
-      <div className="neu-raised neu-mesh-card neu-grain rounded-3xl border border-[var(--border)] p-6 sm:p-10 flex flex-col items-start gap-5">
+    <section className="space-y-6 sm:space-y-7">
+      {/* Main Hero Gradient Mesh Panel */}
+      <div className="neu-raised neu-mesh-card neu-grain rounded-[2rem] border border-primary/20 p-6 sm:p-10 flex flex-col items-start gap-5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="neu-pressed inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-xs font-bold text-foreground border border-[var(--border)]">
             <Sparkles className="size-3.5 text-primary-ink" />
@@ -62,14 +67,14 @@ export function LandingHero({
           )}
         </div>
 
-        <div className="space-y-3 max-w-3xl">
-          <h1 className="font-display text-3xl sm:text-5xl text-foreground leading-[1.12]">
+        <div className="space-y-3 max-w-4xl">
+          <h1 className="font-display text-3xl sm:text-5xl text-foreground leading-[1.14]">
             {copy.heroTitleLine1}{" "}
             <span className="bg-gradient-to-r from-violet-400 via-indigo-400 to-teal-400 bg-clip-text text-transparent">
               {copy.heroTitleAccent}
             </span>
           </h1>
-          <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground max-w-2xl">
+          <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground max-w-3xl">
             {copy.desc}
           </p>
         </div>
@@ -91,13 +96,17 @@ export function LandingHero({
         </div>
       </div>
 
+      {/* 4 Bento Studio Launcher Cards (Neramit Pattern) */}
+      <LandingStudioBento lang={lang} />
+
+      {/* Real-time Telemetry KPI Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
             <div
               key={stat.label}
-              className="neu-raised neu-grain rounded-3xl border border-[var(--border)] p-5 flex items-center justify-between gap-4 transition-all hover:-translate-y-0.5"
+              className="neu-raised neu-grain rounded-3xl border border-[var(--border)] p-4 sm:p-5 flex items-center justify-between gap-4 transition-all hover:-translate-y-0.5"
             >
               <div className="flex items-center gap-4 min-w-0">
                 <div className={`grid size-11 shrink-0 place-items-center rounded-2xl ${stat.iconClass}`}>
@@ -112,7 +121,7 @@ export function LandingHero({
                   </div>
                 </div>
               </div>
-              <span className="neu-pressed rounded-full px-2.5 py-0.5 text-[10px] font-bold text-muted-foreground shrink-0">
+              <span className="neu-pressed rounded-full px-2.5 py-0.5 text-[10px] font-bold text-muted-foreground shrink-0 border border-[var(--border)]">
                 {stat.pill}
               </span>
             </div>
