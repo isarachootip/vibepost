@@ -1,469 +1,114 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { runGeminiContentWithFallback } from "@/lib/services/gemini-client.service";
+import { revalidatePath } from "next/cache";
+import { getActiveWorkspaceContext } from "./workspace";
+import type { PublishMode } from "@/lib/validations/post-schedule.schema";
+import {
+  fetchPublishedPostsForLanding,
+  fetchTrashPostsForWorkspace,
+  type PublishedPostForGallery as GalleryPostRecord,
+} from "@/lib/repositories/posts/post-gallery.repository";
+import {
+  permanentlyDeletePost,
+  resolveUserWorkspaceRole,
+  restoreSoftDeletedPost,
+  softDeletePostInWorkspace,
+  type WorkspaceAccessRole,
+} from "@/lib/repositories/posts/post-trash.repository";
+import {
+  fetchDraftPostsForWorkspace,
+  insertDraftPost,
+  scheduleDraftAndMaybePublish,
+  type DraftPostItem as DraftPostRecord,
+} from "@/lib/repositories/posts/post-drafts.repository";
+import {
+  createAndPublishScheduledPost,
+  generateAICaptionVariants,
+} from "@/lib/services/post-scheduling.service";
 
-export type PublishedPostForGallery = {
-  id: string;
-  content: string;
-  publishedTime: Date | null;
-  workspace: string;
-  images: { url: string; fileName: string }[];
-  channels: {
-    platform: string;
-    accountName: string;
-    status: string;
-  }[];
-};
+export type PublishedPostForGallery = GalleryPostRecord;
+export type DraftPostItem = DraftPostRecord;
 
 export async function getPublishedPostsForLanding(): Promise<{
   posts: PublishedPostForGallery[];
   totalPosts: number;
   totalChannels: number;
 }> {
-  try {
-    // Optional allow-list of workspaces shown on the public landing page.
-    // Unset = all workspaces (previous behaviour). Set it in production to avoid exposing clients' posts.
-    const showcaseIds = (process.env.PUBLIC_SHOWCASE_WORKSPACE_IDS || "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    const posts = await prisma.post.findMany({
-      where: {
-        isDeleted: false,
-        ...(showcaseIds.length ? { workspaceId: { in: showcaseIds } } : {}),
-        targets: {
-          some: {
-            status: "PUBLISHED",
-          },
-        },
-      },
-      orderBy: [
-        { publishedTime: "desc" },
-        { createdAt: "desc" },
-      ],
-      take: 60,
-      include: {
-        media: {
-          include: {
-            mediaAsset: {
-              select: { fileUrl: true, fileType: true, fileName: true },
-            },
-          },
-        },
-        targets: {
-          where: {
-            status: "PUBLISHED",
-          },
-          include: {
-            socialConnection: {
-              select: { platform: true, accountName: true },
-            },
-          },
-        },
-        workspace: { select: { name: true } },
-      },
-    });
-
-    const data: PublishedPostForGallery[] = posts.map((post) => ({
-      id: post.id,
-      content: post.content,
-      publishedTime: post.publishedTime || post.createdAt,
-      workspace: post.workspace.name,
-      images: post.media
-        .filter((m) => m.mediaAsset.fileType === "IMAGE")
-        .map((m) => ({
-          url: m.mediaAsset.fileUrl,
-          fileName: m.mediaAsset.fileName,
-        })),
-      channels: post.targets.map((t) => ({
-        platform: t.socialConnection.platform,
-        accountName: t.socialConnection.accountName,
-        status: t.status,
-        externalPostId: t.externalPostId,
-      })),
-    }));
-
-    // Count unique platforms across all posts with published channels
-    const platformSet = new Set<string>();
-    data.forEach((post) => {
-      post.channels.forEach((c) =>
-        platformSet.add(c.platform)
-      );
-    });
-
-    return {
-      posts: data,
-      totalPosts: data.length,
-      totalChannels: platformSet.size,
-    };
-  } catch {
-    return { posts: [], totalPosts: 0, totalChannels: 0 };
-  }
+  return fetchPublishedPostsForLanding();
 }
 
-import { getActiveWorkspaceContext } from "./workspace";
-import { auth } from "@/auth";
-import { revalidatePath } from "next/cache";
-import {
-  createScheduledPostInputSchema,
-  publishDraftPostInputSchema,
-  type PublishMode,
-} from "@/lib/validations/post-schedule.schema";
-import { validateScheduledTime } from "@/lib/services/schedule-time.service";
-
-/**
- * Returns the user's role in the given workspace.
- * Super Admin (User.role=ADMIN) is treated as workspace ADMIN.
- * Returns null if not a member.
- */
-export async function getUserWorkspaceRole(workspaceId: string): Promise<"ADMIN" | "MEMBER" | "VIEWER" | null> {
-  const session = await auth();
-  if (!session?.user?.email) return null;
-
-  const dbUser = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    select: { id: true, role: true },
-  });
-  if (!dbUser) return null;
-
-  if (dbUser.role === "ADMIN") return "ADMIN"; // Super Admin
-
-  const member = await prisma.workspaceMember.findUnique({
-    where: { userId_workspaceId: { userId: dbUser.id, workspaceId } },
-    select: { role: true },
-  });
-
-  return (member?.role as "ADMIN" | "MEMBER" | "VIEWER") ?? null;
+export async function getUserWorkspaceRole(
+  workspaceId: string
+): Promise<WorkspaceAccessRole> {
+  return resolveUserWorkspaceRole(workspaceId);
 }
 
-export async function generateAIPost(topic: string, variantCount: number, language: string = "Thai") {
+export async function generateAIPost(
+  topic: string,
+  variantCount: number,
+  language: string = "Thai"
+) {
   const workspace = await getActiveWorkspaceContext();
   if (!workspace) throw new Error("Workspace not found");
-
-  // 🔒 VIEWER cannot generate posts
-  const role = await getUserWorkspaceRole(workspace.id);
-  if (role === "VIEWER") {
-    return { success: false, error: "สิทธิ์ไม่เพียงพอ — Viewer ไม่สามารถสร้าง Post ได้", variants: [] };
-  }
-
-  const promptConfig = await prisma.promptConfig.findFirst({
-    where: { workspaceId: workspace.id, isActive: true },
-  });
-
-  if (!promptConfig) {
-    throw new Error("No active AI Prompt Configuration found. Please set it up in Settings.");
-  }
-
-  const systemPrompt = `You are an expert social media manager. Generate engaging social media captions based on the user's topic. IMPORTANT: Write ALL content in ${language} language only. Do NOT wrap the response in markdown blocks. Output exactly the requested number of variations separated by '|||'. Example: variation 1 ||| variation 2`;
-  const userPrompt = `Topic: ${topic}\nLanguage: ${language}\nPlease generate ${variantCount} different variations of a social media caption for this topic in ${language}. Separate each variation strictly with '|||'.`;
-
-  try {
-    let textContent = "";
-
-    if (promptConfig.provider === "GEMINI") {
-      const out = await runGeminiContentWithFallback({
-        apiKey: promptConfig.apiKey,
-        parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
-      });
-      textContent = out.text;
-    } else {
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${promptConfig.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-3.5-turbo",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
-          ]
-        })
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error?.message || "Failed to call OpenRouter API");
-      }
-      textContent = data.choices[0].message.content;
-    }
-
-    const variants = textContent.split("|||").map((s: string) => s.trim()).filter((s: string) => s.length > 0);
-    
-    return { success: true, variants };
-  } catch (error: any) {
-    console.error("AI Generation Error:", error);
-    return { success: false, error: error.message, variants: [] };
-  }
+  return generateAICaptionVariants(workspace.id, topic, variantCount, language);
 }
 
 export async function createScheduledPost(data: {
   content: string;
   scheduledTime: Date | null;
   targetConnectionIds: string[];
-  imageUrls?: string[];     // multiple images (multi-photo) — replaces imageUrl
-  imageUrl?: string;         // legacy single-image compat
+  imageUrls?: string[];
+  imageUrl?: string;
   publishMode?: PublishMode;
 }) {
   const workspace = await getActiveWorkspaceContext();
   if (!workspace) throw new Error("Workspace not found");
 
-  // 🔒 Non-members and VIEWER cannot create or schedule posts
-  const role = await getUserWorkspaceRole(workspace.id);
-  if (!role || role === "VIEWER") {
-    return { success: false, error: "สิทธิ์ไม่เพียงพอ — Viewer ไม่สามารถสร้าง Post ได้" };
-  }
-
-  const normalizedInput = {
-    ...data,
-    scheduledTime: data.scheduledTime ? new Date(data.scheduledTime) : null,
-  };
-  const parsed = createScheduledPostInputSchema.safeParse(normalizedInput);
-  if (!parsed.success) {
-    return {
-      success: false,
-      error: parsed.error.issues[0]?.message ?? "ข้อมูลการตั้งโพสต์ไม่ถูกต้อง",
-    };
-  }
-
-  const mode: PublishMode =
-    parsed.data.publishMode ?? (parsed.data.scheduledTime ? "SCHEDULE" : "NOW");
-  const timeValidation = validateScheduledTime(parsed.data.scheduledTime, mode);
-  if (!timeValidation.valid) {
-    return { success: false, error: timeValidation.error };
-  }
-
-  const uniqueTargetIds = Array.from(new Set(parsed.data.targetConnectionIds));
-  const validTargetsCount = await prisma.socialConnection.count({
-    where: { id: { in: uniqueTargetIds }, workspaceId: workspace.id },
-  });
-  if (validTargetsCount !== uniqueTargetIds.length) {
-    return { success: false, error: "ช่องทางโซเชียลที่เลือกไม่ถูกต้องหรือไม่ได้อยู่ใน Workspace นี้" };
-  }
-
-  // Merge imageUrls and legacy imageUrl into one array
-  const allImageUrls: string[] = [
-    ...(parsed.data.imageUrls ?? []),
-    ...(parsed.data.imageUrl ? [parsed.data.imageUrl] : []),
-  ].filter(Boolean);
-
-  try {
-    const { isPostNow, finalTime: finalScheduledTime } = timeValidation;
-
-    const newPost = await prisma.post.create({
-      data: {
-        workspaceId: workspace.id,
-        content: parsed.data.content,
-        status: "SCHEDULED",
-        scheduledTime: finalScheduledTime,
-        targets: {
-          create: uniqueTargetIds.map((id) => ({
-            socialConnectionId: id,
-            status: "SCHEDULED",
-          })),
-        },
-      },
-    });
-
-    if (allImageUrls.length > 0) {
-      for (const url of allImageUrls) {
-        const ext = url.split(".").pop()?.toLowerCase() || "";
-        const isVideo = ["mp4", "webm", "mov", "quicktime"].includes(ext);
-        
-        const asset = await prisma.mediaAsset.create({
-          data: {
-            workspaceId: workspace.id,
-            fileName: url.split("/").pop() || (isVideo ? "video.mp4" : "image.jpg"),
-            fileUrl: url,
-            fileType: isVideo ? "VIDEO" : "IMAGE",
-            status: "APPROVED",
-          },
-        });
-        await prisma.postMedia.create({
-          data: { postId: newPost.id, mediaAssetId: asset.id },
-        });
-      }
-    }
-
+  const result = await createAndPublishScheduledPost(workspace.id, data);
+  if (result.success) {
     revalidatePath("/dashboard/multi-post");
     revalidatePath("/dashboard/history");
-
-    return { success: true, isPostNow };
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "ไม่สามารถบันทึกโพสต์ได้";
-    console.error("Create Post Error:", message);
-    return { success: false, error: message };
+    revalidatePath("/dashboard/monitor");
   }
+  return result;
 }
 
 export async function movePostToTrash(postId: string) {
-  try {
-    const session = await auth();
-    if (!session?.user) throw new Error("Unauthorized");
-
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
-      select: { workspaceId: true }
-    });
-    if (!post) throw new Error("Post not found");
-
-    const role = await getUserWorkspaceRole(post.workspaceId);
-    if (!role || role === "VIEWER") {
-      throw new Error("สิทธิ์ไม่เพียงพอ — เฉพาะสมาชิกที่มีสิทธิ์แก้ไขเท่านั้นที่สามารถย้ายโพสต์ลงถังขยะได้");
-    }
-
-    await prisma.post.update({
-      where: { id: postId },
-      data: { isDeleted: true }
-    });
-
+  const result = await softDeletePostInWorkspace(postId);
+  if (result.success) {
     revalidatePath("/dashboard/history");
     revalidatePath("/dashboard/trash");
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+    revalidatePath("/dashboard/monitor");
   }
+  return result;
 }
 
 export async function restorePostFromTrash(postId: string) {
-  try {
-    const session = await auth();
-    if (!session?.user) throw new Error("Unauthorized");
-
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
-      select: { workspaceId: true }
-    });
-    if (!post) throw new Error("Post not found");
-
-    const role = await getUserWorkspaceRole(post.workspaceId);
-    if (!role || role === "VIEWER") {
-      throw new Error("สิทธิ์ไม่เพียงพอ — เฉพาะสมาชิกที่มีสิทธิ์แก้ไขเท่านั้นที่สามารถกู้คืนโพสต์ได้");
-    }
-
-    await prisma.post.update({
-      where: { id: postId },
-      data: { isDeleted: false }
-    });
-
+  const result = await restoreSoftDeletedPost(postId);
+  if (result.success) {
     revalidatePath("/dashboard/history");
     revalidatePath("/dashboard/trash");
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
   }
+  return result;
 }
 
 export async function deletePostPermanently(postId: string) {
-  try {
-    const session = await auth();
-    if (!session?.user) throw new Error("Unauthorized");
-
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
-      select: { workspaceId: true }
-    });
-    if (!post) throw new Error("Post not found");
-
-    const role = await getUserWorkspaceRole(post.workspaceId);
-    if (role !== "ADMIN") {
-      throw new Error("สิทธิ์ไม่เพียงพอ — เฉพาะ Admin เท่านั้นที่สามารถลบโพสต์ถาวรได้");
-    }
-
-    await prisma.postTarget.deleteMany({
-      where: { postId }
-    });
-
-    await prisma.postMedia.deleteMany({
-      where: { postId }
-    });
-
-    await prisma.post.delete({
-      where: { id: postId }
-    });
-
+  const result = await permanentlyDeletePost(postId);
+  if (result.success) {
     revalidatePath("/dashboard/history");
     revalidatePath("/dashboard/trash");
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
   }
+  return result;
 }
 
 export async function getTrashPosts(): Promise<{
   posts: PublishedPostForGallery[];
   totalPosts: number;
 }> {
-  try {
-    const workspace = await getActiveWorkspaceContext();
-    if (!workspace) return { posts: [], totalPosts: 0 };
-
-    const posts = await prisma.post.findMany({
-      where: {
-        workspaceId: workspace.id,
-        isDeleted: true
-      },
-      orderBy: { updatedAt: "desc" },
-      include: {
-        media: {
-          include: {
-            mediaAsset: {
-              select: { fileUrl: true, fileType: true, fileName: true },
-            },
-          },
-        },
-        targets: {
-          include: {
-            socialConnection: {
-              select: { platform: true, accountName: true },
-            },
-          },
-        },
-        workspace: { select: { name: true } },
-      },
-    });
-
-    const data: PublishedPostForGallery[] = posts.map((post) => ({
-      id: post.id,
-      content: post.content,
-      publishedTime: post.publishedTime || post.updatedAt,
-      workspace: post.workspace.name,
-      images: post.media
-        .filter((m) => m.mediaAsset.fileType === "IMAGE")
-        .map((m) => ({
-          url: m.mediaAsset.fileUrl,
-          fileName: m.mediaAsset.fileName,
-        })),
-      channels: post.targets.map((t) => ({
-        platform: t.socialConnection.platform,
-        accountName: t.socialConnection.accountName,
-        status: t.status,
-      })),
-    }));
-
-    return {
-      posts: data,
-      totalPosts: data.length
-    };
-  } catch {
-    return { posts: [], totalPosts: 0 };
-  }
+  const workspace = await getActiveWorkspaceContext();
+  if (!workspace) return { posts: [], totalPosts: 0 };
+  return fetchTrashPostsForWorkspace(workspace.id);
 }
-
-export type DraftPostItem = {
-  id: string;
-  content: string;
-  createdAt: Date;
-  updatedAt: Date;
-  media: {
-    url: string;
-    fileName: string;
-    fileType: "IMAGE" | "VIDEO";
-  }[];
-  targetConnectionIds: string[];
-};
 
 export async function createDraftPost(data: {
   content: string;
@@ -474,61 +119,13 @@ export async function createDraftPost(data: {
   const workspace = await getActiveWorkspaceContext();
   if (!workspace) throw new Error("Workspace not found");
 
-  const role = await getUserWorkspaceRole(workspace.id);
-  if (role === "VIEWER") {
-    return { success: false, error: "สิทธิ์ไม่เพียงพอ — Viewer ไม่สามารถสร้างแบบร่างได้" };
-  }
-
-  const allImageUrls: string[] = [
-    ...(data.imageUrls ?? []),
-    ...(data.imageUrl ? [data.imageUrl] : []),
-  ].filter(Boolean);
-
-  try {
-    const newPost = await prisma.post.create({
-      data: {
-        workspaceId: workspace.id,
-        content: data.content,
-        status: "DRAFT",
-        scheduledTime: null,
-        targets: data.targetConnectionIds && data.targetConnectionIds.length > 0 ? {
-          create: data.targetConnectionIds.map((id) => ({
-            socialConnectionId: id,
-            status: "DRAFT",
-          })),
-        } : undefined,
-      },
-    });
-
-    if (allImageUrls.length > 0) {
-      for (const url of allImageUrls) {
-        const ext = url.split(".").pop()?.toLowerCase() || "";
-        const isVideo = ["mp4", "webm", "mov", "quicktime"].includes(ext);
-        
-        const asset = await prisma.mediaAsset.create({
-          data: {
-            workspaceId: workspace.id,
-            fileName: url.split("/").pop() || (isVideo ? "video.mp4" : "image.jpg"),
-            fileUrl: url,
-            fileType: isVideo ? "VIDEO" : "IMAGE",
-            status: "PENDING",
-          },
-        });
-        await prisma.postMedia.create({
-          data: { postId: newPost.id, mediaAssetId: asset.id },
-        });
-      }
-    }
-
+  const result = await insertDraftPost(workspace.id, data);
+  if (result.success) {
     revalidatePath("/dashboard/history");
     revalidatePath("/dashboard/monitor");
     revalidatePath("/dashboard/ai-studio");
-
-    return { success: true, postId: newPost.id };
-  } catch (error: any) {
-    console.error("Create Draft Error:", error);
-    return { success: false, error: error.message };
   }
+  return result;
 }
 
 export async function getDraftPostsAction(): Promise<{
@@ -536,44 +133,9 @@ export async function getDraftPostsAction(): Promise<{
   drafts: DraftPostItem[];
   error?: string;
 }> {
-  try {
-    const workspace = await getActiveWorkspaceContext();
-    if (!workspace) return { success: false, drafts: [], error: "Workspace not found" };
-
-    const posts = await prisma.post.findMany({
-      where: {
-        workspaceId: workspace.id,
-        status: "DRAFT",
-        isDeleted: false,
-      },
-      orderBy: { createdAt: "desc" },
-      include: {
-        media: {
-          include: {
-            mediaAsset: true,
-          },
-        },
-        targets: true,
-      },
-    });
-
-    const drafts: DraftPostItem[] = posts.map((p) => ({
-      id: p.id,
-      content: p.content,
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
-      media: p.media.map((m) => ({
-        url: m.mediaAsset.fileUrl,
-        fileName: m.mediaAsset.fileName,
-        fileType: m.mediaAsset.fileType as "IMAGE" | "VIDEO",
-      })),
-      targetConnectionIds: p.targets.map((t) => t.socialConnectionId),
-    }));
-
-    return { success: true, drafts };
-  } catch (err: any) {
-    return { success: false, drafts: [], error: err.message };
-  }
+  const workspace = await getActiveWorkspaceContext();
+  if (!workspace) return { success: false, drafts: [], error: "Workspace not found" };
+  return fetchDraftPostsForWorkspace(workspace.id);
 }
 
 export async function publishDraftPostAction(data: {
@@ -586,83 +148,10 @@ export async function publishDraftPostAction(data: {
   const workspace = await getActiveWorkspaceContext();
   if (!workspace) throw new Error("Workspace not found");
 
-  const role = await getUserWorkspaceRole(workspace.id);
-  if (!role || role === "VIEWER") {
-    return { success: false, error: "สิทธิ์ไม่เพียงพอ — Viewer หรือผู้ที่ไม่ได้เป็นสมาชิกไม่สามารถเผยแพร่โพสต์ได้" };
-  }
-
-  const normalizedInput = {
-    ...data,
-    scheduledTime: data.scheduledTime ? new Date(data.scheduledTime) : null,
-  };
-  const parsed = publishDraftPostInputSchema.safeParse(normalizedInput);
-  if (!parsed.success) {
-    return {
-      success: false,
-      error: parsed.error.issues[0]?.message ?? "ข้อมูลการเผยแพร่แบบร่างไม่ถูกต้อง",
-    };
-  }
-
-  const mode: PublishMode =
-    parsed.data.publishMode ?? (parsed.data.scheduledTime ? "SCHEDULE" : "NOW");
-  const timeValidation = validateScheduledTime(parsed.data.scheduledTime, mode);
-  if (!timeValidation.valid) {
-    return { success: false, error: timeValidation.error };
-  }
-
-  try {
-    // 🔒 Verify the post belongs to the active workspace to prevent IDOR
-    const draftPost = await prisma.post.findFirst({
-      where: {
-        id: parsed.data.postId,
-        workspaceId: workspace.id,
-        isDeleted: false,
-      },
-    });
-
-    if (!draftPost) {
-      return { success: false, error: "ไม่พบโพสต์แบบร่างใน Workspace นี้" };
-    }
-
-    const uniqueTargetIds = Array.from(new Set(parsed.data.targetConnectionIds));
-    const validTargetsCount = await prisma.socialConnection.count({
-      where: { id: { in: uniqueTargetIds }, workspaceId: workspace.id },
-    });
-    if (validTargetsCount !== uniqueTargetIds.length) {
-      return { success: false, error: "ช่องทางโซเชียลที่เลือกไม่ถูกต้องหรือไม่ได้อยู่ใน Workspace นี้" };
-    }
-
-    const { isPostNow, finalTime: finalScheduledTime } = timeValidation;
-
-    // Atomically replace old targets and schedule draft post
-    await prisma.$transaction([
-      prisma.postTarget.deleteMany({
-        where: { postId: draftPost.id },
-      }),
-      prisma.post.update({
-        where: { id: draftPost.id },
-        data: {
-          content: parsed.data.content,
-          status: "SCHEDULED",
-          scheduledTime: finalScheduledTime,
-          targets: {
-            create: uniqueTargetIds.map((id) => ({
-              socialConnectionId: id,
-              status: "SCHEDULED",
-            })),
-          },
-        },
-      }),
-    ]);
-
+  const result = await scheduleDraftAndMaybePublish(workspace.id, data);
+  if (result.success) {
     revalidatePath("/dashboard/history");
     revalidatePath("/dashboard/monitor");
-
-    return { success: true, isPostNow, scheduledTime: finalScheduledTime };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "ไม่สามารถเผยแพร่โพสต์ได้";
-    return { success: false, error: message };
   }
+  return result;
 }
-
-
