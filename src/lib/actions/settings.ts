@@ -5,9 +5,10 @@ import { getActiveWorkspaceContext } from "@/lib/actions/workspace";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { AIProvider } from "@prisma/client";
+import { updateDailyVideoQuotaSchema } from "@/lib/validations/veo-video.schema";
 
 /** Check if the current user has admin rights for the active workspace */
-async function requireWorkspaceAdmin(workspaceId: string) {
+async function requireWorkspaceAdmin(workspaceId: string): Promise<boolean> {
   const session = await auth();
   if (!session?.user?.email) return false;
 
@@ -17,10 +18,8 @@ async function requireWorkspaceAdmin(workspaceId: string) {
   });
   if (!dbUser) return false;
 
-  // Super Admin always allowed
   if (dbUser.role === "ADMIN") return true;
 
-  // Check workspace-level role
   const member = await prisma.workspaceMember.findUnique({
     where: { userId_workspaceId: { userId: dbUser.id, workspaceId } },
     select: { role: true },
@@ -35,7 +34,6 @@ export async function saveAIProviderKey(provider: AIProvider, apiKey: string) {
     return { success: false, error: "No active workspace found." };
   }
 
-  // 🔒 Role Guard: only workspace ADMIN or Super Admin can save keys
   const isAdmin = await requireWorkspaceAdmin(workspace.id);
   if (!isAdmin) {
     return { success: false, error: "Permission denied. Only Workspace Admins can manage API keys." };
@@ -47,36 +45,26 @@ export async function saveAIProviderKey(provider: AIProvider, apiKey: string) {
 
   try {
     const existing = await prisma.promptConfig.findFirst({
-      where: {
-        workspaceId: workspace.id,
-        provider: provider,
-      },
+      where: { workspaceId: workspace.id, provider },
     });
 
     if (existing) {
       await prisma.promptConfig.update({
         where: { id: existing.id },
-        data: {
-          apiKey: apiKey.trim(),
-          isActive: true,
-        },
+        data: { apiKey: apiKey.trim(), isActive: true },
       });
     } else {
       await prisma.promptConfig.create({
-        data: {
-          workspaceId: workspace.id,
-          provider: provider,
-          apiKey: apiKey.trim(),
-          isActive: true,
-        },
+        data: { workspaceId: workspace.id, provider, apiKey: apiKey.trim(), isActive: true },
       });
     }
 
     revalidatePath("/dashboard/settings");
     return { success: true };
-  } catch (error: any) {
-    console.error("Error saving API Key:", error);
-    return { success: false, error: error.message || "Failed to save API Key." };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to save API Key.";
+    console.error("Error saving API Key:", message);
+    return { success: false, error: message };
   }
 }
 
@@ -86,7 +74,6 @@ export async function deleteAIProviderKey(provider: AIProvider) {
     return { success: false, error: "No active workspace found." };
   }
 
-  // 🔒 Role Guard: only workspace ADMIN or Super Admin can delete keys
   const isAdmin = await requireWorkspaceAdmin(workspace.id);
   if (!isAdmin) {
     return { success: false, error: "Permission denied. Only Workspace Admins can manage API keys." };
@@ -94,22 +81,56 @@ export async function deleteAIProviderKey(provider: AIProvider) {
 
   try {
     const existing = await prisma.promptConfig.findFirst({
-      where: {
-        workspaceId: workspace.id,
-        provider: provider,
-      },
+      where: { workspaceId: workspace.id, provider },
     });
 
     if (existing) {
-      await prisma.promptConfig.delete({
-        where: { id: existing.id },
-      });
+      await prisma.promptConfig.delete({ where: { id: existing.id } });
     }
 
     revalidatePath("/dashboard/settings");
     return { success: true };
-  } catch (error: any) {
-    console.error("Error deleting API Key:", error);
-    return { success: false, error: error.message || "Failed to delete API Key." };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to delete API Key.";
+    console.error("Error deleting API Key:", message);
+    return { success: false, error: message };
+  }
+}
+
+export async function updateWorkspaceVideoQuotaAction(rawQuota: unknown) {
+  const workspace = await getActiveWorkspaceContext();
+  if (!workspace) {
+    return { success: false, error: "ไม่พบ Workspace ที่กำลังใช้งาน" };
+  }
+
+  const isAdmin = await requireWorkspaceAdmin(workspace.id);
+  if (!isAdmin) {
+    return {
+      success: false,
+      error: "สิทธิ์ไม่เพียงพอ — เฉพาะ Workspace Admin เท่านั้นที่ตั้งเพดานโควตาวิดีโอได้",
+    };
+  }
+
+  const parsed = updateDailyVideoQuotaSchema.safeParse({ dailyVideoQuota: rawQuota });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "ค่าโควตาวิดีโอไม่ถูกต้อง",
+    };
+  }
+
+  try {
+    await prisma.workspace.update({
+      where: { id: workspace.id },
+      data: { dailyVideoQuota: parsed.data.dailyVideoQuota },
+    });
+
+    revalidatePath("/dashboard/settings");
+    revalidatePath("/dashboard/ai-studio");
+    revalidatePath("/dashboard/multi-post");
+    return { success: true, dailyVideoQuota: parsed.data.dailyVideoQuota };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "ไม่สามารถบันทึกโควตาวิดีโอได้";
+    return { success: false, error: message };
   }
 }

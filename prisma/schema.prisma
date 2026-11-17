@@ -27,9 +27,10 @@ enum Role {
 model Workspace {
   id            String    @id @default(cuid())
   name          String
-  ownerId       String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  ownerId         String
+  dailyVideoQuota Int       @default(5)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   members           WorkspaceMember[]
   socialConnections SocialConnection[]
@@ -38,6 +39,7 @@ model Workspace {
   posts             Post[]
   aiUsageLogs       AIUsageLog[]
   contentTopics     ContentTopic[]
+  videoJobs         VideoGenerationJob[]
 }
 
 enum WorkspaceRole {
@@ -309,4 +311,36 @@ model PlannedPost {
   updatedAt  DateTime          @updatedAt
 
   @@index([campaignId, slotAt])
+}
+
+// ─── Google Flow / Veo 3.1 Background Video Generation ───
+
+enum VideoJobStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model VideoGenerationJob {
+  id              String         @id @default(cuid())
+  workspaceId     String
+  createdById     String?
+  prompt          String
+  englishPrompt   String
+  modelName       String
+  aspectRatio     String         @default("9:16")
+  durationSeconds Int            @default(6)
+  sourceImageUrl  String?
+  operationName   String?
+  status          VideoJobStatus @default(PROCESSING)
+  errorMessage    String?
+  mediaAssetId    String?
+  mediaFileUrl    String?
+  estimatedCost   Float          @default(0.0)
+  workspace       Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, status])
 }

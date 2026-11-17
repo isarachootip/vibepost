@@ -3,7 +3,12 @@ export async function register(): Promise<void> {
     process.env.NEXT_RUNTIME === "nodejs" &&
     process.env.NEXT_PHASE !== "phase-production-build"
   ) {
-    const { ensureSchedulerStarted } = await import("./lib/services/scheduler.service");
+    const [{ ensureSchedulerStarted }, { ensureVeoBackgroundPollerStarted }] =
+      await Promise.all([
+        import("./lib/services/scheduler.service"),
+        import("./lib/services/veo-job-runner.service"),
+      ]);
     ensureSchedulerStarted();
+    ensureVeoBackgroundPollerStarted();
   }
 }

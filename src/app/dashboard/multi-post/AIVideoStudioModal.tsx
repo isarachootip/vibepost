@@ -2,12 +2,16 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { generateAIVideoAction, getCuratedVideosListAction } from "@/lib/actions/ai-generation";
+import { getCuratedVideosListAction } from "@/lib/actions/ai-generation";
+import { saveCuratedStockVideoAction } from "@/lib/actions/veo-video.actions";
 import { extractVisualPromptAction } from "@/lib/actions/visual-prompt";
 import type { MediaGenerationMetadata } from "@/lib/validations/ai-media.schema";
+import { useVeoStudioJobs } from "@/hooks/use-veo-studio-jobs";
 import { VideoCardGrid, type VideoItem } from "./VideoCardGrid";
 import { VideoSearchHeader } from "./VideoSearchHeader";
-import { Clapperboard } from "lucide-react";
+import { VeoFlowGeneratorPanel } from "./VeoFlowGeneratorPanel";
+import { VeoActiveJobsList } from "./VeoActiveJobsList";
+import { Clapperboard, Film, Sparkles } from "lucide-react";
 
 type Props = {
   isOpen: boolean;
@@ -15,33 +19,40 @@ type Props = {
   onSelectVideo: (url: string, meta?: MediaGenerationMetadata) => void;
   initialPrompt?: string;
   sourceContent?: string;
+  initialSourceImageUrl?: string | null;
 };
 
-export function AIVideoStudioModal({ isOpen, onClose, onSelectVideo, initialPrompt, sourceContent }: Props) {
+export function AIVideoStudioModal({
+  isOpen,
+  onClose,
+  onSelectVideo,
+  initialPrompt,
+  sourceContent,
+  initialSourceImageUrl = null,
+}: Props) {
+  const [studioTab, setStudioTab] = useState<"veo" | "stock">("veo");
   const [prompt, setPrompt] = useState("");
+  const [sourceImageUrl, setSourceImageUrl] = useState<string | null>(initialSourceImageUrl);
   const [selectedCategory, setSelectedCategory] = useState("trending");
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [extracting, setExtracting] = useState(false);
-  const [generating, setGenerating] = useState(false);
-  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [savingStockId, setSavingStockId] = useState<string | null>(null);
   const [previewingVideoId, setPreviewingVideoId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
+  const veo = useVeoStudioJobs(isOpen, setError);
   const rawContext = sourceContent?.trim() || initialPrompt?.trim() || "";
 
   const runVideoPromptExtraction = useCallback(async (textToExtract: string) => {
     if (!textToExtract.trim()) return;
     setExtracting(true);
-    setError("");
     try {
       const res = await extractVisualPromptAction({ content: textToExtract, mediaType: "video" });
       if (res.success) {
         setPrompt(res.englishPrompt);
         setSelectedCategory(res.suggestedCategory || "trending");
       }
-    } catch {
-      // Keep manual input on extraction error
     } finally {
       setExtracting(false);
     }
@@ -50,106 +61,139 @@ export function AIVideoStudioModal({ isOpen, onClose, onSelectVideo, initialProm
   useEffect(() => {
     if (isOpen) {
       setError("");
+      setStudioTab("veo");
+      setSourceImageUrl(initialSourceImageUrl ?? null);
       if (rawContext) void runVideoPromptExtraction(rawContext);
     }
-  }, [isOpen, rawContext, runVideoPromptExtraction]);
+  }, [isOpen, initialSourceImageUrl, rawContext, runVideoPromptExtraction]);
 
   useEffect(() => {
-    async function loadVideos() {
-      try {
-        const res = await getCuratedVideosListAction();
+    void getCuratedVideosListAction()
+      .then((res) => {
         if (res.success && res.videos) setVideos(res.videos);
-      } catch (err) {
-        console.error("Failed to load curated videos", err);
-      } finally {
-        setLoadingList(false);
-      }
-    }
-    void loadVideos();
+      })
+      .finally(() => setLoadingList(false));
   }, []);
 
-  const filteredVideos = videos.filter((video) => {
-    if (selectedCategory === "custom") {
-      const tokens = prompt
-        .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, " ")
-        .split(/\s+/)
-        .filter((t) => t.length >= 3);
-      if (tokens.length === 0) return true;
-      const haystack = `${video.title} ${video.category} ${video.tags.join(" ")}`.toLowerCase();
-      return tokens.some((tok) => haystack.includes(tok));
-    }
-    if (selectedCategory === "trending") return true;
-    return video.category === selectedCategory;
-  });
-
-  const handleRunVideoGeneration = async (targetPrompt: string, cat: string, vidId: string | null) => {
-    if (!targetPrompt.trim()) {
-      setError("กรุณาระบุ English Prompt หรือคีย์เวิร์ดวิดีโอ");
-      return;
-    }
-    setGenerating(true);
-    setActiveVideoId(vidId);
+  const handleSelectStockVideo = async (vid: VideoItem) => {
+    setSavingStockId(vid.id);
     setError("");
     try {
-      const res = await generateAIVideoAction(targetPrompt, cat);
-      if (res.success && res.asset) {
-        onSelectVideo(res.asset.fileUrl, res.meta);
+      const res = await saveCuratedStockVideoAction(vid.videoUrl);
+      if (res.success && res.fileUrl) {
+        onSelectVideo(res.fileUrl, {
+          resolvedEnglishPrompt: vid.title,
+          keywords: vid.tags,
+          requestedProvider: "FREE",
+          actualProvider: "FREE",
+          actualModel: "pexels-stock-video",
+          usedFallback: false,
+        });
         onClose();
-        setActiveVideoId(null);
       } else {
-        setError(res.error || "เกิดข้อผิดพลาดในการสร้างหรือดาวน์โหลดวิดีโอ");
+        setError(res.error || "เลือกวิดีโอสต็อกไม่สำเร็จ");
       }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาดด้านการเชื่อมต่อเครือข่าย");
     } finally {
-      setGenerating(false);
+      setSavingStockId(null);
     }
   };
+
+  const filteredVideos = videos.filter((v) =>
+    selectedCategory === "trending" || selectedCategory === "custom" ? true : v.category === selectedCategory
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-4xl rounded-3xl p-6 overflow-y-auto max-h-[90vh]">
-        <DialogHeader className="mb-3">
+        <DialogHeader className="mb-2">
           <DialogTitle className="font-display text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-            <Clapperboard className="w-6 h-6 text-primary animate-pulse" />
-            AI Video Studio
+            <Clapperboard className="w-6 h-6 text-primary" />
+            Google Flow &amp; AI Video Studio
           </DialogTitle>
           <DialogDescription className="text-muted-foreground font-medium text-xs">
-            สกัด English Video Prompt &amp; หมวดหมู่จากเนื้อหาอัตโนมัติ แก้ไขได้ก่อนค้นหาหรือเจนวิดีโอ
+            สร้างคลิปพร้อมเสียงด้วยโมเดล Google Veo 3.1 (Text / Image-to-Video) แบบทำงานเบื้องหลัง หรือเลือกคลิปสต็อกฟรีด้วยตนเอง
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5">
-          {error && (
-            <div className="p-3.5 bg-destructive/12 border border-destructive/30 text-destructive rounded-xl text-xs font-semibold">
-              ⚠️ {error}
-            </div>
-          )}
-
-          <VideoSearchHeader
-            prompt={prompt}
-            onPromptChange={setPrompt}
-            selectedCategory={selectedCategory}
-            onCategoryChange={setSelectedCategory}
-            extracting={extracting}
-            generating={generating}
-            isGeneratingCustom={generating && activeVideoId === "custom-ai"}
-            canReExtract={Boolean(rawContext)}
-            onReExtract={() => void runVideoPromptExtraction(rawContext)}
-            onGenerateAI={() => void handleRunVideoGeneration(prompt, selectedCategory, "custom-ai")}
-          />
-
-          <VideoCardGrid
-            loadingList={loadingList}
-            videos={filteredVideos}
-            generating={generating}
-            activeVideoId={activeVideoId}
-            previewingVideoId={previewingVideoId}
-            onTogglePreview={(vidId) => setPreviewingVideoId((prev) => (prev === vidId ? null : vidId))}
-            onSelectVideoItem={(vid) => void handleRunVideoGeneration(vid.title, vid.category, vid.id)}
-          />
+        <div className="grid grid-cols-2 gap-2 p-1 rounded-xl neu-pressed">
+          <button
+            type="button"
+            onClick={() => setStudioTab("veo")}
+            className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+              studioTab === "veo" ? "bg-[var(--surface-elevated)] text-foreground shadow-xs border border-border/70" : "text-muted-foreground"
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-primary" /> 🎬 Google Flow (Veo 3.1 AI)
+          </button>
+          <button
+            type="button"
+            onClick={() => setStudioTab("stock")}
+            className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+              studioTab === "stock" ? "bg-[var(--surface-elevated)] text-foreground shadow-xs border border-border/70" : "text-muted-foreground"
+            }`}
+          >
+            <Film className="w-3.5 h-3.5 text-teal-500" /> 📼 คลังวิดีโอสต็อกฟรี (Pexels)
+          </button>
         </div>
+
+        {error && (
+          <div className="p-3.5 bg-destructive/12 border border-destructive/30 text-destructive rounded-xl text-xs font-semibold">
+            ⚠️ {error}
+          </div>
+        )}
+
+        {studioTab === "veo" ? (
+          <div className="space-y-5">
+            <VeoFlowGeneratorPanel
+              prompt={prompt}
+              onPromptChange={setPrompt}
+              sourceImageUrl={sourceImageUrl}
+              onSourceImageChange={setSourceImageUrl}
+              extracting={extracting}
+              submitting={veo.submittingVeo}
+              canReExtract={Boolean(rawContext)}
+              hasGeminiKey={veo.hasGeminiKey}
+              quota={veo.quota}
+              onReExtract={() => void runVideoPromptExtraction(rawContext)}
+              onSubmitJob={(opts) =>
+                void veo.startVeoJob({ prompt, sourceImageUrl, ...opts })
+              }
+            />
+            <VeoActiveJobsList
+              jobs={veo.veoJobs}
+              polling={veo.polling}
+              onRefresh={() => void veo.refreshVeoJobs()}
+              onSelectCompletedVideo={(url, meta) => {
+                onSelectVideo(url, meta);
+                onClose();
+              }}
+            />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <VideoSearchHeader
+              prompt={prompt}
+              onPromptChange={setPrompt}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              extracting={extracting}
+              generating={Boolean(savingStockId)}
+              isGeneratingCustom={false}
+              canReExtract={Boolean(rawContext)}
+              onReExtract={() => void runVideoPromptExtraction(rawContext)}
+              onGenerateAI={() => setStudioTab("veo")}
+            />
+            <VideoCardGrid
+              loadingList={loadingList}
+              videos={filteredVideos}
+              generating={Boolean(savingStockId)}
+              activeVideoId={savingStockId}
+              previewingVideoId={previewingVideoId}
+              onTogglePreview={(id) => setPreviewingVideoId((p) => (p === id ? null : id))}
+              onSelectVideoItem={(vid) => void handleSelectStockVideo(vid)}
+            />
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
