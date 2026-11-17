@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import type { AIProvider } from "@prisma/client";
 import { APIKeyRow } from "./APIKeyRow";
 import { DailyVideoQuotaCard } from "./DailyVideoQuotaCard";
+import { WorkspaceShowcaseCard } from "./WorkspaceShowcaseCard";
+import { SettingsSummaryBanner } from "./SettingsSummaryBanner";
 import { getBangkokDayRange } from "@/lib/services/veo-quota.service";
 
 interface ProviderMeta {
@@ -62,36 +64,23 @@ export default async function SettingsPage() {
   ]);
 
   const isAdmin = userInfo?.role === "ADMIN";
+  const isSuperAdmin = Boolean(userInfo?.isSuper);
   const roleColors: Record<string, string> = {
     ADMIN: "bg-rose-500/15 text-rose-500 dark:text-rose-300 border-rose-500/30",
     MEMBER: "bg-primary/15 text-primary-ink border-primary/30",
     VIEWER: "bg-muted text-muted-foreground border-[var(--border)]",
   };
   const roleLabels: Record<string, string> = {
-    ADMIN: userInfo?.isSuper ? "⭐ Super Admin" : "🔑 Workspace Admin",
+    ADMIN: isSuperAdmin ? "⭐ Super Admin" : "🔑 Workspace Admin",
     MEMBER: "👤 Member",
     VIEWER: "👁️ Viewer",
   };
 
   const configs = workspace.promptConfigs || [];
-  const activeTextProvider = AI_PROVIDERS.find(
-    (p) => p.category === "text" && configs.some((c) => c.provider === p.id && c.isActive)
-  );
-  const activeMediaProvider = AI_PROVIDERS.find(
-    (p) => p.category === "media" && configs.some((c) => c.provider === p.id && c.isActive)
-  );
+  const activeText = AI_PROVIDERS.find((p) => p.category === "text" && configs.some((c) => c.provider === p.id && c.isActive));
+  const activeMedia = AI_PROVIDERS.find((p) => p.category === "media" && configs.some((c) => c.provider === p.id && c.isActive));
   const hasGeminiKey = configs.some((c) => c.provider === "GEMINI" && c.isActive);
   const hasOpenAIKey = configs.some((c) => c.provider === "OPENAI" && c.isActive);
-  const activeImageEngine = hasGeminiKey
-    ? "Google Imagen 4.0 / Gemini Image"
-    : hasOpenAIKey
-    ? "OpenAI DALL-E 3"
-    : "Free Stable Diffusion";
-  const activeVideoLabel = hasGeminiKey
-    ? "🎬 Google Flow (Veo 3.1)"
-    : activeMediaProvider
-    ? `${activeMediaProvider.icon} ${activeMediaProvider.name}`
-    : "📼 Curated Stock (Pexels)";
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto pb-12">
@@ -99,7 +88,7 @@ export default async function SettingsPage() {
         <div>
           <h1 className="font-display text-2xl text-foreground mb-1">⚙️ Settings — {workspace.name}</h1>
           <p className="text-muted-foreground text-xs sm:text-sm">
-            ตั้งค่า API Key Vault, Google Flow (Veo 3.1) และโควตา AI สำหรับ Workspace นี้
+            ตั้งค่า API Key Vault, Google Flow (Veo 3.1), โควตา AI และการแสดงผลหน้าแรก
           </p>
         </div>
         {userInfo && (
@@ -114,36 +103,16 @@ export default async function SettingsPage() {
           <span className="text-xl">🔒</span>
           <div>
             <p className="font-bold">สิทธิ์อ่านอย่างเดียว</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              เฉพาะ Workspace Admin เท่านั้นที่แก้ไข API Key และโควตารายวันได้
-            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">เฉพาะ Workspace Admin เท่านั้นที่แก้ไขการตั้งค่าได้</p>
           </div>
         </div>
       )}
 
-      <div className="neu-raised neu-mesh-card neu-grain rounded-3xl border border-[var(--border)] p-6">
-        <h3 className="font-display text-foreground text-sm mb-3">✨ Workspace Configuration Summary</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-          <div className="neu-pressed p-3.5 border border-[var(--border)] rounded-2xl space-y-1.5">
-            <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider block">✍️ Text Generator</span>
-            <span className="text-xs font-bold px-2.5 py-1 rounded-lg inline-block bg-primary/15 text-primary-ink border border-primary/30">
-              {activeTextProvider ? `${activeTextProvider.icon} ${activeTextProvider.name}` : "⚠️ ยังไม่ได้ตั้งค่า"}
-            </span>
-          </div>
-          <div className="neu-pressed p-3.5 border border-[var(--border)] rounded-2xl space-y-1.5">
-            <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider block">🎨 Image Engine</span>
-            <span className="text-xs font-bold px-2.5 py-1 rounded-lg inline-block bg-teal-500/15 text-teal-500 dark:text-teal-300 border border-teal-500/30">
-              🖼️ {activeImageEngine}
-            </span>
-          </div>
-          <div className="neu-pressed p-3.5 border border-[var(--border)] rounded-2xl space-y-1.5">
-            <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider block">🎬 Video Studio</span>
-            <span className="text-xs font-bold px-2.5 py-1 rounded-lg inline-block bg-rose-500/15 text-rose-400 border border-rose-500/30">
-              {activeVideoLabel}
-            </span>
-          </div>
-        </div>
-      </div>
+      <SettingsSummaryBanner
+        activeTextLabel={activeText ? `${activeText.icon} ${activeText.name}` : "⚠️ ยังไม่ได้ตั้งค่า"}
+        activeImageLabel={hasGeminiKey ? "Google Imagen 4.0 / Gemini Image" : hasOpenAIKey ? "OpenAI DALL-E 3" : "Free Stable Diffusion"}
+        activeVideoLabel={hasGeminiKey ? "🎬 Google Flow (Veo 3.1)" : activeMedia ? `${activeMedia.icon} ${activeMedia.name}` : "📼 Curated Stock (Pexels)"}
+      />
 
       <section className="neu-raised rounded-3xl border border-[var(--border)] p-6 space-y-4">
         <h2 className="font-display text-base text-foreground">✍️ 1. เครื่องมือเขียนบทความ &amp; Google Gemini / Flow</h2>
@@ -187,6 +156,14 @@ export default async function SettingsPage() {
         initialQuota={workspace.dailyVideoQuota ?? 5}
         usedToday={usedVideosToday}
         isReadOnly={!isAdmin}
+      />
+
+      <WorkspaceShowcaseCard
+        workspaceId={workspace.id}
+        workspaceName={workspace.name}
+        initialShowOnLanding={workspace.showOnLanding ?? true}
+        isAdmin={isAdmin}
+        isSuperAdmin={isSuperAdmin}
       />
     </div>
   );

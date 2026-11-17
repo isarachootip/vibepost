@@ -22,6 +22,10 @@ export interface LandingPost {
   content: string;
   publishedTime: Date | string | null;
   workspace?: string;
+  workspaceShowOnLanding?: boolean;
+  showOnLanding?: boolean;
+  isPinnedOnLanding?: boolean;
+  effectivelyVisible?: boolean;
   images: LandingMediaItem[];
   channels: LandingChannelItem[];
 }

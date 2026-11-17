@@ -7,6 +7,7 @@ import { runPlannerOverviewTests } from "./planner-overview.test";
 import { runGeminiClientTests } from "./gemini-client.test";
 import { runPublisherSweepTests } from "./publisher-sweep.test";
 import { runVeoFlowTests } from "./veo-flow.test";
+import { runShowcaseCurationTests } from "./showcase-curation.test";
 
 async function main(): Promise<void> {
   console.log("Running test suite...");
@@ -19,6 +20,7 @@ async function main(): Promise<void> {
   await runGeminiClientTests();
   await runPublisherSweepTests();
   await runVeoFlowTests();
+  await runShowcaseCurationTests();
   console.log("All tests passed!");
 }
 

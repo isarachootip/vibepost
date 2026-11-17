@@ -1,11 +1,19 @@
 import { prisma } from "@/lib/prisma";
+import {
+  curateShowcaseFeed,
+  type RawShowcasePost,
+} from "@/lib/services/showcase-visibility.service";
 
 export type PublishedPostForGallery = {
   id: string;
   content: string;
   publishedTime: Date | null;
   workspace: string;
-  images: { url: string; fileName: string }[];
+  workspaceShowOnLanding?: boolean;
+  showOnLanding?: boolean;
+  isPinnedOnLanding?: boolean;
+  effectivelyVisible?: boolean;
+  images: { url: string; fileName: string; type?: string }[];
   channels: {
     platform: string;
     accountName: string;
@@ -14,29 +22,37 @@ export type PublishedPostForGallery = {
   }[];
 };
 
-export async function fetchPublishedPostsForLanding(): Promise<{
+export interface LandingShowcasePayload {
   posts: PublishedPostForGallery[];
   totalPosts: number;
   totalChannels: number;
-}> {
+  totalSuccessfulReposts: number;
+  uniquePlatforms: string[];
+  hiddenCount: number;
+}
+
+export async function fetchPublishedPostsForLanding(options?: {
+  includeHidden?: boolean;
+}): Promise<LandingShowcasePayload> {
   try {
     const showcaseIds = (process.env.PUBLIC_SHOWCASE_WORKSPACE_IDS || "")
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const posts = await prisma.post.findMany({
+    const rows = await prisma.post.findMany({
       where: {
         isDeleted: false,
-        ...(showcaseIds.length ? { workspaceId: { in: showcaseIds } } : {}),
         targets: {
-          some: {
-            status: "PUBLISHED",
-          },
+          some: { status: "PUBLISHED" },
         },
       },
-      orderBy: [{ publishedTime: "desc" }, { createdAt: "desc" }],
-      take: 60,
+      orderBy: [
+        { isPinnedOnLanding: "desc" },
+        { publishedTime: "desc" },
+        { createdAt: "desc" },
+      ],
+      take: 100,
       include: {
         media: {
           include: {
@@ -53,21 +69,26 @@ export async function fetchPublishedPostsForLanding(): Promise<{
             },
           },
         },
-        workspace: { select: { name: true } },
+        workspace: {
+          select: { id: true, name: true, showOnLanding: true },
+        },
       },
     });
 
-    const data: PublishedPostForGallery[] = posts.map((post) => ({
+    const rawPosts: RawShowcasePost[] = rows.map((post) => ({
       id: post.id,
+      workspaceId: post.workspace.id,
+      workspaceName: post.workspace.name,
+      workspaceShowOnLanding: post.workspace.showOnLanding,
       content: post.content,
       publishedTime: post.publishedTime || post.createdAt,
-      workspace: post.workspace.name,
-      images: post.media
-        .filter((m) => m.mediaAsset.fileType === "IMAGE")
-        .map((m) => ({
-          url: m.mediaAsset.fileUrl,
-          fileName: m.mediaAsset.fileName,
-        })),
+      showOnLanding: post.showOnLanding,
+      isPinnedOnLanding: post.isPinnedOnLanding,
+      images: post.media.map((m) => ({
+        url: m.mediaAsset.fileUrl,
+        fileName: m.mediaAsset.fileName,
+        type: m.mediaAsset.fileType === "VIDEO" ? "video" : "image",
+      })),
       channels: post.targets.map((t) => ({
         platform: t.socialConnection.platform,
         accountName: t.socialConnection.accountName,
@@ -76,71 +97,40 @@ export async function fetchPublishedPostsForLanding(): Promise<{
       })),
     }));
 
-    const platformSet = new Set<string>();
-    data.forEach((post) => {
-      post.channels.forEach((c) => platformSet.add(c.platform));
+    const curated = curateShowcaseFeed(rawPosts, {
+      includeHidden: options?.includeHidden ?? false,
+      allowlistWorkspaceIds: showcaseIds,
     });
 
-    return {
-      posts: data,
-      totalPosts: data.length,
-      totalChannels: platformSet.size,
-    };
-  } catch {
-    return { posts: [], totalPosts: 0, totalChannels: 0 };
-  }
-}
-
-export async function fetchTrashPostsForWorkspace(workspaceId: string): Promise<{
-  posts: PublishedPostForGallery[];
-  totalPosts: number;
-}> {
-  try {
-    const posts = await prisma.post.findMany({
-      where: {
-        workspaceId,
-        isDeleted: true,
-      },
-      orderBy: { updatedAt: "desc" },
-      include: {
-        media: {
-          include: {
-            mediaAsset: {
-              select: { fileUrl: true, fileType: true, fileName: true },
-            },
-          },
-        },
-        targets: {
-          include: {
-            socialConnection: {
-              select: { platform: true, accountName: true },
-            },
-          },
-        },
-        workspace: { select: { name: true } },
-      },
-    });
-
-    const data: PublishedPostForGallery[] = posts.map((post) => ({
-      id: post.id,
-      content: post.content,
-      publishedTime: post.publishedTime || post.updatedAt,
-      workspace: post.workspace.name,
-      images: post.media
-        .filter((m) => m.mediaAsset.fileType === "IMAGE")
-        .map((m) => ({
-          url: m.mediaAsset.fileUrl,
-          fileName: m.mediaAsset.fileName,
-        })),
-      channels: post.targets.map((t) => ({
-        platform: t.socialConnection.platform,
-        accountName: t.socialConnection.accountName,
-        status: t.status,
-      })),
+    const posts: PublishedPostForGallery[] = curated.posts.slice(0, 60).map((p) => ({
+      id: p.id,
+      content: p.content,
+      publishedTime: p.publishedTime,
+      workspace: p.workspaceName,
+      workspaceShowOnLanding: p.workspaceShowOnLanding,
+      showOnLanding: p.showOnLanding,
+      isPinnedOnLanding: p.isPinnedOnLanding,
+      effectivelyVisible: p.effectivelyVisible,
+      images: p.images,
+      channels: p.channels,
     }));
 
-    return { posts: data, totalPosts: data.length };
+    return {
+      posts,
+      totalPosts: curated.heroStats.totalPosts,
+      totalChannels: curated.heroStats.totalChannels,
+      totalSuccessfulReposts: curated.heroStats.totalSuccessfulReposts,
+      uniquePlatforms: curated.heroStats.uniquePlatforms,
+      hiddenCount: curated.hiddenCount,
+    };
   } catch {
-    return { posts: [], totalPosts: 0 };
+    return {
+      posts: [],
+      totalPosts: 0,
+      totalChannels: 0,
+      totalSuccessfulReposts: 0,
+      uniquePlatforms: [],
+      hiddenCount: 0,
+    };
   }
 }

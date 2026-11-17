@@ -1,4 +1,5 @@
 import { getPublishedPostsForLanding } from "@/lib/actions/posts";
+import { getIsSuperAdminSession } from "@/lib/actions/showcase.actions";
 import LandingClient from "./LandingClient";
 
 export const dynamic = "force-dynamic";
@@ -10,13 +11,20 @@ export const metadata = {
 };
 
 export default async function LandingPage() {
-  const { posts, totalPosts, totalChannels } = await getPublishedPostsForLanding();
+  const isSuperAdmin = await getIsSuperAdminSession();
+  const showcase = await getPublishedPostsForLanding({
+    includeHidden: isSuperAdmin,
+  });
 
   return (
-    <LandingClient 
-      dbPosts={posts} 
-      initialTotal={totalPosts} 
-      initialChannels={totalChannels} 
+    <LandingClient
+      dbPosts={showcase.posts}
+      initialTotal={showcase.totalPosts}
+      initialChannels={showcase.totalChannels}
+      initialSuccessCount={showcase.totalSuccessfulReposts}
+      initialPlatforms={showcase.uniquePlatforms}
+      hiddenCount={showcase.hiddenCount}
+      isSuperAdmin={isSuperAdmin}
     />
   );
 }

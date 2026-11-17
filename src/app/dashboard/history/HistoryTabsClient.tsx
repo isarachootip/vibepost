@@ -17,6 +17,8 @@ type Props = {
   successCount: number;
   aiStats?: AIUsageStats | null;
   workspaceName?: string;
+  canManageShowcase?: boolean;
+  isSuperAdmin?: boolean;
 };
 
 export function HistoryTabsClient({
@@ -28,6 +30,8 @@ export function HistoryTabsClient({
   successCount,
   aiStats,
   workspaceName,
+  canManageShowcase = false,
+  isSuperAdmin = false,
 }: Props) {
   const [activeTab, setActiveTab] = useState<"drafts" | "published" | "ai">(
     drafts.length > 0 ? "drafts" : "published"
@@ -42,7 +46,6 @@ export function HistoryTabsClient({
 
   return (
     <div className="space-y-8">
-      {/* Tab Navigation Pill Header */}
       <div className="flex flex-wrap items-center gap-1.5 p-1.5 neu-pressed rounded-2xl w-fit">
         <button type="button" onClick={() => setActiveTab("drafts")} className={tabClass(activeTab === "drafts")}>
           <Layers className="w-4 h-4 text-primary" />
@@ -56,7 +59,7 @@ export function HistoryTabsClient({
 
         <button type="button" onClick={() => setActiveTab("published")} className={tabClass(activeTab === "published")}>
           <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-          <span>ประวัติโพสต์สำเร็จ (Published History)</span>
+          <span>ประวัติโพสต์ (Published History)</span>
           <span className="text-[10px] text-muted-foreground font-bold">({totalPosts})</span>
         </button>
 
@@ -78,6 +81,8 @@ export function HistoryTabsClient({
           totalPosts={totalPosts}
           totalChannels={totalChannels}
           successCount={successCount}
+          canManageShowcase={canManageShowcase}
+          isSuperAdmin={isSuperAdmin}
         />
       )}
 

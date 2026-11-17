@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ExternalLink, Image as ImageIcon, Play } from "lucide-react";
+import { ExternalLink, Image as ImageIcon, Pin, Play } from "lucide-react";
 import {
   formatLandingDate,
   getExternalPostUrl,
@@ -9,20 +9,52 @@ import {
   type LandingLang,
   type LandingPost,
 } from "./landing-types";
+import { ShowcaseCardAdminBar } from "./ShowcaseCardAdminBar";
 
 interface LandingGalleryCardProps {
   post: LandingPost;
   lang: LandingLang;
+  isSuperAdmin?: boolean;
+  isDemoCard?: boolean;
 }
 
-export function LandingGalleryCard({ post, lang }: LandingGalleryCardProps) {
+export function LandingGalleryCard({
+  post,
+  lang,
+  isSuperAdmin = false,
+  isDemoCard = false,
+}: LandingGalleryCardProps) {
   const mainImage = post.images?.[0];
   const isVideo =
     mainImage?.type === "video" || Boolean(mainImage?.fileName?.endsWith(".mp4"));
+  const isHidden = post.effectivelyVisible === false;
 
   return (
-    <article className="neu-raised neu-grain group rounded-3xl border border-[var(--border)] p-3.5 flex flex-col gap-3.5 transition-all duration-200 hover:-translate-y-1">
+    <article
+      className={`neu-raised neu-grain group rounded-3xl border p-3.5 flex flex-col gap-3.5 transition-all duration-200 hover:-translate-y-1 ${
+        isHidden
+          ? "opacity-60 border-dashed border-amber-500/50"
+          : post.isPinnedOnLanding
+          ? "border-primary/45 ring-1 ring-primary/20"
+          : "border-[var(--border)]"
+      }`}
+    >
       <div className="neu-pressed relative aspect-video overflow-hidden rounded-2xl bg-black/30">
+        {isSuperAdmin && !isDemoCard && (
+          <ShowcaseCardAdminBar
+            postId={post.id}
+            showOnLanding={post.showOnLanding ?? true}
+            isPinnedOnLanding={post.isPinnedOnLanding ?? false}
+            workspaceShowOnLanding={post.workspaceShowOnLanding ?? true}
+          />
+        )}
+
+        {!isSuperAdmin && post.isPinnedOnLanding && (
+          <span className="absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2.5 py-0.5 text-[10px] font-extrabold text-black shadow-sm">
+            <Pin className="size-3" /> Featured
+          </span>
+        )}
+
         {mainImage ? (
           isVideo ? (
             <>

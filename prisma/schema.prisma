@@ -29,6 +29,7 @@ model Workspace {
   name          String
   ownerId         String
   dailyVideoQuota Int       @default(5)
+  showOnLanding   Boolean   @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -141,14 +142,17 @@ model Post {
   workspace      Workspace @relation(fields: [workspaceId], references: [id])
   media          PostMedia[]
   targets        PostTarget[]
-  isDeleted      Boolean   @default(false)
-  topicId        String?
-  topic          ContentTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
-  plannedPost    PlannedPost?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  isDeleted         Boolean   @default(false)
+  showOnLanding     Boolean   @default(true)
+  isPinnedOnLanding Boolean   @default(false)
+  topicId           String?
+  topic             ContentTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  plannedPost       PlannedPost?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([topicId])
+  @@index([showOnLanding, isPinnedOnLanding, publishedTime])
 }
 
 enum PostStatus {

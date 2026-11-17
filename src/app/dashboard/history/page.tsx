@@ -1,5 +1,10 @@
 import React from "react";
-import { getPublishedPostsForLanding, getDraftPostsAction } from "@/lib/actions/posts";
+import {
+  getDraftPostsAction,
+  getUserWorkspaceRole,
+  getWorkspacePublishedPostsAction,
+} from "@/lib/actions/posts";
+import { getIsSuperAdminSession } from "@/lib/actions/showcase.actions";
 import { getActiveWorkspaceContext } from "@/lib/actions/workspace";
 import { getAIUsageStatsAction } from "@/lib/actions/ai-generation";
 import { HistoryTabsClient } from "./HistoryTabsClient";
@@ -12,16 +17,21 @@ export const metadata = {
 };
 
 export default async function AutoPostHistoryPage() {
-  const [workspace, { posts, totalPosts, totalChannels }, aiUsageResult, draftsResult] =
+  const [workspace, historyResult, aiUsageResult, draftsResult, isSuperAdmin] =
     await Promise.all([
       getActiveWorkspaceContext(),
-      getPublishedPostsForLanding(),
+      getWorkspacePublishedPostsAction(),
       getAIUsageStatsAction(),
       getDraftPostsAction(),
+      getIsSuperAdminSession(),
     ]);
 
-  const successCount = posts.filter((p) =>
-    p.channels.every((c) => c.status === "PUBLISHED")
+  const role = workspace ? await getUserWorkspaceRole(workspace.id) : null;
+  const canManageShowcase = isSuperAdmin || role === "ADMIN";
+
+  const { posts, totalPosts, totalChannels } = historyResult;
+  const successCount = posts.filter(
+    (p) => p.channels.length > 0 && p.channels.every((c) => c.status === "PUBLISHED")
   ).length;
 
   const aiStats = aiUsageResult.success ? aiUsageResult.stats : null;
@@ -37,12 +47,9 @@ export default async function AutoPostHistoryPage() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out space-y-8 pb-12">
-      {/* ── Page Header ── */}
       <div>
         <div className="flex items-center gap-3 mb-1">
-          <div
-            className="w-10 h-10 rounded-2xl flex items-center justify-center neu-tint-primary"
-          >
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center neu-tint-primary">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -61,7 +68,7 @@ export default async function AutoPostHistoryPage() {
           </div>
           <div>
             <h1 className="font-display text-2xl font-extrabold tracking-tight text-foreground">
-              Content Hub & Post History
+              Content Hub &amp; Post History
             </h1>
             <p className="text-muted-foreground text-xs font-medium">
               คลังแบบร่างรอโพสต์ (Drafts Queue) และประวัติการเผยแพร่อัตโนมัติ
@@ -71,7 +78,6 @@ export default async function AutoPostHistoryPage() {
         </div>
       </div>
 
-      {/* ── Tabbed View: Drafts / Published / AI ── */}
       <HistoryTabsClient
         drafts={drafts}
         connections={connections}
@@ -81,6 +87,8 @@ export default async function AutoPostHistoryPage() {
         successCount={successCount}
         aiStats={aiStats}
         workspaceName={workspace?.name}
+        canManageShowcase={canManageShowcase}
+        isSuperAdmin={isSuperAdmin}
       />
     </div>
   );

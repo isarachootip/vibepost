@@ -5,9 +5,13 @@ import { getActiveWorkspaceContext } from "./workspace";
 import type { PublishMode } from "@/lib/validations/post-schedule.schema";
 import {
   fetchPublishedPostsForLanding,
-  fetchTrashPostsForWorkspace,
+  type LandingShowcasePayload,
   type PublishedPostForGallery as GalleryPostRecord,
 } from "@/lib/repositories/posts/post-gallery.repository";
+import {
+  fetchTrashPostsForWorkspace,
+  fetchWorkspacePublishedHistory,
+} from "@/lib/repositories/posts/post-history.repository";
 import {
   permanentlyDeletePost,
   resolveUserWorkspaceRole,
@@ -29,12 +33,20 @@ import {
 export type PublishedPostForGallery = GalleryPostRecord;
 export type DraftPostItem = DraftPostRecord;
 
-export async function getPublishedPostsForLanding(): Promise<{
+export async function getPublishedPostsForLanding(options?: {
+  includeHidden?: boolean;
+}): Promise<LandingShowcasePayload> {
+  return fetchPublishedPostsForLanding(options);
+}
+
+export async function getWorkspacePublishedPostsAction(): Promise<{
   posts: PublishedPostForGallery[];
   totalPosts: number;
   totalChannels: number;
 }> {
-  return fetchPublishedPostsForLanding();
+  const workspace = await getActiveWorkspaceContext();
+  if (!workspace) return { posts: [], totalPosts: 0, totalChannels: 0 };
+  return fetchWorkspacePublishedHistory(workspace.id);
 }
 
 export async function getUserWorkspaceRole(
@@ -66,6 +78,7 @@ export async function createScheduledPost(data: {
 
   const result = await createAndPublishScheduledPost(workspace.id, data);
   if (result.success) {
+    revalidatePath("/");
     revalidatePath("/dashboard/multi-post");
     revalidatePath("/dashboard/history");
     revalidatePath("/dashboard/monitor");
@@ -76,6 +89,7 @@ export async function createScheduledPost(data: {
 export async function movePostToTrash(postId: string) {
   const result = await softDeletePostInWorkspace(postId);
   if (result.success) {
+    revalidatePath("/");
     revalidatePath("/dashboard/history");
     revalidatePath("/dashboard/trash");
     revalidatePath("/dashboard/monitor");
@@ -86,6 +100,7 @@ export async function movePostToTrash(postId: string) {
 export async function restorePostFromTrash(postId: string) {
   const result = await restoreSoftDeletedPost(postId);
   if (result.success) {
+    revalidatePath("/");
     revalidatePath("/dashboard/history");
     revalidatePath("/dashboard/trash");
   }
@@ -95,6 +110,7 @@ export async function restorePostFromTrash(postId: string) {
 export async function deletePostPermanently(postId: string) {
   const result = await permanentlyDeletePost(postId);
   if (result.success) {
+    revalidatePath("/");
     revalidatePath("/dashboard/history");
     revalidatePath("/dashboard/trash");
   }
@@ -150,6 +166,7 @@ export async function publishDraftPostAction(data: {
 
   const result = await scheduleDraftAndMaybePublish(workspace.id, data);
   if (result.success) {
+    revalidatePath("/");
     revalidatePath("/dashboard/history");
     revalidatePath("/dashboard/monitor");
   }
